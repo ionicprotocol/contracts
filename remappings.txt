@@ -1,0 +1,14 @@
+solmate/=lib/solmate/src/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
+forge-std/=lib/forge-std/src/
+libcompound/=lib/fuse-flywheel/lib/libcompound/src/
+fuse-flywheel/=lib/fuse-flywheel/src/
+ds-test/=lib/ds-test/src/
+weird-erc20/=lib/fuse-flywheel/lib/libcompound/lib/solmate/lib/weird-erc20/src/
+flywheel-v2/=lib/flywheel-v2/src/
+flywheel/=lib/flywheel-v2/src/
+@openzeppelin=lib/openzeppelin-contracts/
+ops=lib/ops/contracts
+pyth-neon/=lib/pyth-neon/contracts/
+@pythnetwork/pyth-sdk-solidity/=lib/pyth-sdk-solidity/
+solidity-bytes-utils/=lib/solidity-bytes-utils/

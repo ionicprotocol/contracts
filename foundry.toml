@@ -1,0 +1,24 @@
+[profile.default]
+src = 'contracts'
+bytecode_hash = 'none'
+solc_version = "0.8.10"
+libs = ["lib"]
+
+[rpc_endpoints]
+bsc = "${BSC_MAINNET_RPC_URL}"
+bsc_chapel = "${BSC_CHAPEL_RPC_URL}"
+polygon = "${POLYGON_MAINNET_RPC_URL}"
+arbitrum = "${ARBITRUM_MAINNET_RPC_URL}"
+neon = "${NEON_RPC_URL}"
+linea = "${LINEA_RPC_URL}"
+ethereum = "${ETHEREUM_MAINNET_RPC_URL}"
+
+bsc_archive = "${BSC_MAINNET_ARCHIVE_RPC_URL}"
+bsc_chapel_archive = "${BSC_CHAPEL_ARCHIVE_RPC_URL}"
+polygon_archive = "${POLYGON_MAINNET_ARCHIVE_RPC_URL}"
+arbitrum_archive = "${ARBITRUM_MAINNET_ARCHIVE_RPC_URL}"
+neon_archive = "${NEON_ARCHIVE_RPC_URL}"
+linea_archive = "${LINEA_ARCHIVE_RPC_URL}"
+ethereum_archive = "${ETHEREUM_MAINNET_ARCHIVE_RPC_URL}"
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config

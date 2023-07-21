@@ -1,0 +1,22 @@
+{
+  "name": "@ionicprotocol/contracts",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "test:forge": "forge test",
+    "forge": "forge",
+    "forge:install": "forge install",
+    "forge:build": "forge build",
+    "prettier": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol' --config .prettierrc",
+    "lint": "prettier --list-different 'contracts/**/*.sol'"
+  },
+  "files": [
+    "contracts"
+  ],
+  "author": "Ionic Protocol",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.19"
+  }
+}
