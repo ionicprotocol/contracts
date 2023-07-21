@@ -4,6 +4,8 @@ pragma solidity >=0.8.0;
 import { BaseTest } from "./BaseTest.t.sol";
 import { FeeDistributor } from "../../FeeDistributor.sol";
 import { CErc20Delegate } from "../../compound/CErc20Delegate.sol";
+import { CErc20PluginDelegate } from "../../compound/CErc20PluginDelegate.sol";
+import { CErc20RewardsDelegate } from "../../compound/CErc20RewardsDelegate.sol";
 import { CErc20PluginRewardsDelegate } from "../../compound/CErc20PluginRewardsDelegate.sol";
 import { DiamondExtension } from "../../ionic/DiamondExtension.sol";
 import { CTokenFirstExtension } from "../../compound/CTokenFirstExtension.sol";
@@ -19,6 +21,8 @@ contract MarketsTest is BaseTest {
   FeeDistributor internal ffd;
 
   CErc20Delegate internal cErc20Delegate;
+  CErc20PluginDelegate internal cErc20PluginDelegate;
+  CErc20RewardsDelegate internal cErc20RewardsDelegate;
   CErc20PluginRewardsDelegate internal cErc20PluginRewardsDelegate;
   CTokenFirstExtension internal newCTokenExtension;
 
@@ -29,6 +33,8 @@ contract MarketsTest is BaseTest {
     ffd = FeeDistributor(payable(ap.getAddress("FeeDistributor")));
     upgradeFfd();
     cErc20Delegate = new CErc20Delegate();
+    cErc20PluginDelegate = new CErc20PluginDelegate();
+    cErc20RewardsDelegate = new CErc20RewardsDelegate();
     cErc20PluginRewardsDelegate = new CErc20PluginRewardsDelegate();
     newCTokenExtension = new CTokenFirstExtension();
 
@@ -63,8 +69,12 @@ contract MarketsTest is BaseTest {
     //emit log_address(implBefore);
 
     CErc20Delegate newImpl;
-    if (compareStrings("CErc20Delegate", market.contractType())) {
+    if (market.delegateType() == 1) {
       newImpl = cErc20Delegate;
+    } else if (market.delegateType() == 2) {
+      newImpl = cErc20PluginDelegate;
+    } else if (market.delegateType() == 3) {
+      newImpl = cErc20RewardsDelegate;
     } else {
       newImpl = cErc20PluginRewardsDelegate;
     }
@@ -77,7 +87,7 @@ contract MarketsTest is BaseTest {
     // add the extension to the auto upgrade config
     DiamondExtension[] memory cErc20DelegateExtensions = new DiamondExtension[](2);
     cErc20DelegateExtensions[0] = newCTokenExtension;
-    cErc20DelegateExtensions[1] = DiamondExtension(address(market));
+    cErc20DelegateExtensions[1] = DiamondExtension(newImpl);
     vm.prank(ffd.owner());
     ffd._setCErc20DelegateExtensions(address(newImpl), cErc20DelegateExtensions);
 
@@ -96,7 +106,7 @@ contract MarketsTest is BaseTest {
 
   function _prepareComptrollerUpgrade(address oldCompImpl) internal {
     vm.startPrank(ffd.owner());
-    ffd._setLatestComptrollerImplementation(address(0), latestComptrollerImplementation);
+    ffd._setLatestComptrollerImplementation(oldCompImpl, latestComptrollerImplementation);
     DiamondExtension[] memory extensions = new DiamondExtension[](2);
     extensions[0] = comptrollerExtension;
     extensions[1] = Comptroller(latestComptrollerImplementation);
@@ -113,10 +123,6 @@ contract MarketsTest is BaseTest {
 
     // upgrade to the new comptroller
     vm.startPrank(asUnitroller.admin());
-    asUnitroller._registerExtension(
-      DiamondExtension(latestComptrollerImplementation),
-      DiamondExtension(oldComptrollerImplementation)
-    );
     asUnitroller._upgrade();
     vm.stopPrank();
   }

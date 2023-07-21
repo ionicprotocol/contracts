@@ -623,7 +623,7 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     collateralMarket = ICErc20(xMarket);
     stableMarket = ICErc20(yMarket);
 
-    //upgradePoolAndMarkets();
+    upgradePoolAndMarkets();
 
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());

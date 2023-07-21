@@ -108,8 +108,8 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
   ) external override {
     if (msg.sender == address(collateralMarket)) {
       // increasing the leverage ratio
-      uint256 borrowAmount = abi.decode(data, (uint256));
-      _leverUpPostFL(borrowAmount);
+      uint256 stableBorrowAmount = abi.decode(data, (uint256));
+      _leverUpPostFL(stableBorrowAmount);
       uint256 positionCollateralBalance = collateralAsset.balanceOf(address(this));
       if (positionCollateralBalance < borrowedAmount)
         revert RepayFlashLoanFailed(address(collateralAsset), positionCollateralBalance, borrowedAmount);
@@ -286,19 +286,32 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (errorCode != 0) revert SupplyCollateralFailed(errorCode);
   }
 
+  function log(string memory, uint256) public pure {}
+
   // @dev flash loan the needed amount, then borrow stables and swap them for the amount needed to repay the FL
   function _leverUp(uint256 ratioDiff) internal {
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
 
-    uint256 flashLoanCollateralAmount = (getEquityAmount() * ratioDiff) / 1e18;
+    uint256 ownEquityAmount = getEquityAmount();
+    uint256 flashLoanCollateralAmount = (ownEquityAmount * ratioDiff) / 1e18;
     uint256 flashLoanedCollateralValueScaled = flashLoanCollateralAmount * collateralAssetPrice;
 
     uint256 stableToBorrow = flashLoanedCollateralValueScaled / stableAssetPrice;
     // accounting for swaps slippage
     uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
     stableToBorrow = (stableToBorrow * (10000 + assumedSlippage)) / 10000;
+
+    uint256 ownCollateralValue = (ownEquityAmount * collateralAssetPrice) / 1e18;
+    uint256 flashloanedValue = (flashLoanCollateralAmount * collateralAssetPrice) / 1e18;
+    uint256 stableValue = (stableToBorrow * stableAssetPrice) / 1e18;
+
+    this.log("own collateral value", ownCollateralValue);
+    this.log("flashloaned value", flashloanedValue);
+    this.log("stable to borrow value", stableValue);
+    this.log("stable to borrow", stableToBorrow);
+    this.log("diff", ownCollateralValue + flashloanedValue - stableValue);
 
     ICErc20(address(collateralMarket)).flash(flashLoanCollateralAmount, abi.encode(stableToBorrow));
     // the execution will first receive a callback to receiveFlashLoan()
@@ -310,6 +323,8 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     // supply the flash loaned collateral
     _supplyCollateral(collateralAsset);
 
+    // TODO remove stacktrace logging
+    pool.getAccountLiquidity(address(this));
     // borrow stables that will be swapped to repay the FL
     uint256 errorCode = stableMarket.borrow(stableToBorrow);
     if (errorCode != 0) revert BorrowStableFailed(errorCode);
