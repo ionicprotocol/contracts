@@ -121,7 +121,6 @@ contract DeployMarketsTest is Test {
     );
 
     Unitroller(payable(comptrollerAddress))._acceptAdmin();
-    Unitroller(payable(comptrollerAddress))._upgrade();
     comptroller = IonicComptroller(comptrollerAddress);
 
     AuthoritiesRegistry impl = new AuthoritiesRegistry();

@@ -172,25 +172,63 @@ contract PoolDirectory is SafeOwnableUpgradeable {
 
     // Setup the pool
     IonicComptroller comptrollerProxy = IonicComptroller(proxy);
-    //    comptrollerProxy._upgrade();
-    //
-    //    // Set pool parameters
-    //    require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
-    //    require(
-    //      comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0,
-    //      "Failed to set pool liquidation incentive."
-    //    );
-    //    require(comptrollerProxy._setPriceOracle(BasePriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
-    //
-    //    // Whitelist
-    //    if (enforceWhitelist)
-    //      require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+    if (block.chainid != 245022934) {
+      _initializePool(
+        comptrollerProxy,
+        enforceWhitelist,
+        closeFactor,
+        liquidationIncentive,
+        priceOracle
+      );
+    }
 
     // Make msg.sender the admin
     require(comptrollerProxy._setPendingAdmin(msg.sender) == 0, "Failed to set pending admin on Unitroller.");
 
     // Register the pool with this PoolDirectory
     return (_registerPool(name, proxy), proxy);
+  }
+
+  function _initializePool(
+    IonicComptroller comptrollerProxy,
+    bool enforceWhitelist,
+    uint256 closeFactor,
+    uint256 liquidationIncentive,
+    address priceOracle
+  ) internal {
+    // Set up the extensions
+    comptrollerProxy._upgrade();
+
+    // Set pool parameters
+    require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
+    require(
+      comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0,
+      "Failed to set pool liquidation incentive."
+    );
+    require(comptrollerProxy._setPriceOracle(BasePriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
+
+    // Whitelist
+    if (enforceWhitelist)
+      require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+  }
+
+  function initializeNeonPool(
+    IonicComptroller comptrollerProxy,
+    bool enforceWhitelist,
+    uint256 closeFactor,
+    uint256 liquidationIncentive,
+    address priceOracle
+  ) external {
+    require(msg.sender == comptrollerProxy.pendingAdmin() || msg.sender == comptrollerProxy.admin(), "!pending admin");
+    require(comptrollerProxy.comptrollerImplementation() == address(0), "!already initialized");
+
+    _initializePool(
+      comptrollerProxy,
+      enforceWhitelist,
+      closeFactor,
+      liquidationIncentive,
+      priceOracle
+    );
   }
 
   /**
