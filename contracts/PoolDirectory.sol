@@ -172,19 +172,19 @@ contract PoolDirectory is SafeOwnableUpgradeable {
 
     // Setup the pool
     IonicComptroller comptrollerProxy = IonicComptroller(proxy);
-    comptrollerProxy._upgrade();
-
-    // Set pool parameters
-    require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
-    require(
-      comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0,
-      "Failed to set pool liquidation incentive."
-    );
-    require(comptrollerProxy._setPriceOracle(BasePriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
-
-    // Whitelist
-    if (enforceWhitelist)
-      require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+    //    comptrollerProxy._upgrade();
+    //
+    //    // Set pool parameters
+    //    require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
+    //    require(
+    //      comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0,
+    //      "Failed to set pool liquidation incentive."
+    //    );
+    //    require(comptrollerProxy._setPriceOracle(BasePriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
+    //
+    //    // Whitelist
+    //    if (enforceWhitelist)
+    //      require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
 
     // Make msg.sender the admin
     require(comptrollerProxy._setPendingAdmin(msg.sender) == 0, "Failed to set pending admin on Unitroller.");
