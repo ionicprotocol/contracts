@@ -3,8 +3,15 @@ pragma solidity ^0.8.0;
 
 import { UpgradesBaseTest } from "./UpgradesBaseTest.sol";
 import { CErc20Delegate } from "../compound/CErc20Delegate.sol";
-import { CTokenFirstExtension } from "../compound/CTokenFirstExtension.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
+import { Comptroller } from "../compound/Comptroller.sol";
+import { CTokenFirstExtension, DiamondExtension } from "../compound/CTokenFirstExtension.sol";
+import { ComptrollerFirstExtension } from "../compound/ComptrollerFirstExtension.sol";
+import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
+import { FeeDistributor } from "../FeeDistributor.sol";
+import { PoolDirectory } from "../PoolDirectory.sol";
+import { CErc20Delegate } from "../compound/CErc20Delegate.sol";
+import { InterestRateModel } from "../compound/InterestRateModel.sol";
 
 struct AccrualDiff {
   uint256 borrowIndex;
@@ -180,5 +187,50 @@ contract AccrueInterestTest is UpgradesBaseTest {
 
     vm.prank(0x4b92cC3452Ef1E37528470495B86d3F976470734);
     _functionCall(0xC40119C7269A5FA813d878BF83d14E3462fC8Fde, hex"8f93bfba", "raw liquidation failed");
+  }
+
+  function testDeployCToken() public debuggingOnly fork(POLYGON_MAINNET) {
+    CErc20Delegate cErc20Delegate = new CErc20Delegate();
+    IonicComptroller pool = IonicComptroller(0x69617fE545804BcDfE853626B4C8EF23475Ac54B);
+    emit log_named_address("admin", pool.admin());
+    pool.adminHasRights();
+    vm.startPrank(0x9308dddeC9B5cCd8a2685A46E913C892FE31C826);
+    pool._deployMarket(
+      cErc20Delegate.delegateType(),
+      abi.encode(
+        address(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63),
+        0x69617fE545804BcDfE853626B4C8EF23475Ac54B,
+        payable(address(0x62E27eA8d0389390039277CFfD83Ca18ce9B2D9c)),
+        InterestRateModel(address(0xA433B7d3a8A87D8fd40dA68A424007Dd8a21Ce41)),
+        "cUnderlyingToken",
+        "CUT",
+        uint256(0),
+        uint256(0)
+      ),
+      "",
+      0.72e18
+    );
+    vm.stopPrank();
+    // _functionCall(0xC40119C7269A5FA813d878BF83d14E3462fC8Fde, hex"8f93bfba", "raw liquidation failed");
+  }
+
+  function testDeployNeonPool() public debuggingOnly fork(NEON_MAINNET) {
+    PoolDirectory poolDirectory = PoolDirectory(0x297a15F615aCdf87580af1Fc497EE57424975Dae);
+    FeeDistributor ionicAdmin = FeeDistributor(payable(0x62E27eA8d0389390039277CFfD83Ca18ce9B2D9c));
+    Comptroller tempComptroller = new Comptroller();
+    ionicAdmin._setLatestComptrollerImplementation(address(0), address(tempComptroller));
+    DiamondExtension[] memory extensions = new DiamondExtension[](2);
+    extensions[0] = new ComptrollerFirstExtension();
+    extensions[1] = tempComptroller;
+    ionicAdmin._setComptrollerExtensions(address(tempComptroller), extensions);
+    (, address comptrollerAddress) = poolDirectory.deployPool(
+      "TestPool",
+      address(tempComptroller),
+      abi.encode(payable(address(ionicAdmin))), // FD
+      false,
+      0.1e18,
+      1.1e18,
+      0xBAAb9986A7002ad67cb5a9C1761210C2Cdd98BFa // MPO
+    );
   }
 }
