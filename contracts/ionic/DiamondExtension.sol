@@ -33,7 +33,7 @@ abstract contract DiamondBase {
     return LibDiamond.listExtensions();
   }
 
-  fallback() external virtual {
+  fallback() external {
     address extension = LibDiamond.getExtensionForFunction(msg.sig);
     if (extension == address(0)) revert FunctionNotFound(msg.sig);
     // Execute external function from extension using delegatecall and return any value.
