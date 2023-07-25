@@ -5,12 +5,14 @@ import "./XERC20Upgradeable.sol";
 
 contract IonicToken is XERC20Upgradeable {
   function initialize() public initializer {
+    __XERC20_init();
     __ERC20_init("Ionic Token", "IONIC");
     //__ERC20Permit_init(_name);
     __ProposedOwnable_init();
 
     _setOwner(msg.sender);
 
-    _mint(msg.sender, 1e9 * 10**decimals());
+    uint256 TEN_BILLION = 10e9;
+    _mint(msg.sender, TEN_BILLION * 10**decimals());
   }
 }
