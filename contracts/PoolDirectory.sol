@@ -172,6 +172,25 @@ contract PoolDirectory is SafeOwnableUpgradeable {
 
     // Setup the pool
     IonicComptroller comptrollerProxy = IonicComptroller(proxy);
+    if (block.chainid != 245022934) {
+      _initializePool(comptrollerProxy, enforceWhitelist, closeFactor, liquidationIncentive, priceOracle);
+    }
+
+    // Make msg.sender the admin
+    require(comptrollerProxy._setPendingAdmin(msg.sender) == 0, "Failed to set pending admin on Unitroller.");
+
+    // Register the pool with this PoolDirectory
+    return (_registerPool(name, proxy), proxy);
+  }
+
+  function _initializePool(
+    IonicComptroller comptrollerProxy,
+    bool enforceWhitelist,
+    uint256 closeFactor,
+    uint256 liquidationIncentive,
+    address priceOracle
+  ) internal {
+    // Set up the extensions
     comptrollerProxy._upgrade();
 
     // Set pool parameters
@@ -185,12 +204,19 @@ contract PoolDirectory is SafeOwnableUpgradeable {
     // Whitelist
     if (enforceWhitelist)
       require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+  }
 
-    // Make msg.sender the admin
-    require(comptrollerProxy._setPendingAdmin(msg.sender) == 0, "Failed to set pending admin on Unitroller.");
+  function initializeNeonPool(
+    IonicComptroller comptrollerProxy,
+    bool enforceWhitelist,
+    uint256 closeFactor,
+    uint256 liquidationIncentive,
+    address priceOracle
+  ) external {
+    require(msg.sender == comptrollerProxy.pendingAdmin() || msg.sender == comptrollerProxy.admin(), "!pending admin");
+    require(comptrollerProxy.comptrollerImplementation() == address(0), "!already initialized");
 
-    // Register the pool with this PoolDirectory
-    return (_registerPool(name, proxy), proxy);
+    _initializePool(comptrollerProxy, enforceWhitelist, closeFactor, liquidationIncentive, priceOracle);
   }
 
   /**
