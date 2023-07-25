@@ -218,11 +218,14 @@ contract AccrueInterestTest is UpgradesBaseTest {
     PoolDirectory poolDirectory = PoolDirectory(0x297a15F615aCdf87580af1Fc497EE57424975Dae);
     FeeDistributor ionicAdmin = FeeDistributor(payable(0x62E27eA8d0389390039277CFfD83Ca18ce9B2D9c));
     Comptroller tempComptroller = new Comptroller();
+    vm.prank(ionicAdmin.owner());
     ionicAdmin._setLatestComptrollerImplementation(address(0), address(tempComptroller));
     DiamondExtension[] memory extensions = new DiamondExtension[](2);
     extensions[0] = new ComptrollerFirstExtension();
     extensions[1] = tempComptroller;
+    vm.prank(ionicAdmin.owner());
     ionicAdmin._setComptrollerExtensions(address(tempComptroller), extensions);
+    vm.prank(ionicAdmin.owner());
     (, address comptrollerAddress) = poolDirectory.deployPool(
       "TestPool",
       address(tempComptroller),
