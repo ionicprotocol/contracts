@@ -173,13 +173,7 @@ contract PoolDirectory is SafeOwnableUpgradeable {
     // Setup the pool
     IonicComptroller comptrollerProxy = IonicComptroller(proxy);
     if (block.chainid != 245022934) {
-      _initializePool(
-        comptrollerProxy,
-        enforceWhitelist,
-        closeFactor,
-        liquidationIncentive,
-        priceOracle
-      );
+      _initializePool(comptrollerProxy, enforceWhitelist, closeFactor, liquidationIncentive, priceOracle);
     }
 
     // Make msg.sender the admin
@@ -222,13 +216,7 @@ contract PoolDirectory is SafeOwnableUpgradeable {
     require(msg.sender == comptrollerProxy.pendingAdmin() || msg.sender == comptrollerProxy.admin(), "!pending admin");
     require(comptrollerProxy.comptrollerImplementation() == address(0), "!already initialized");
 
-    _initializePool(
-      comptrollerProxy,
-      enforceWhitelist,
-      closeFactor,
-      liquidationIncentive,
-      priceOracle
-    );
+    _initializePool(comptrollerProxy, enforceWhitelist, closeFactor, liquidationIncentive, priceOracle);
   }
 
   /**
