@@ -66,7 +66,7 @@ library LibDiamond {
     address extension;
     bytes4 selector;
   }
-  
+
   struct LogicStorage {
     Function[] functions;
     address[] extensions;
