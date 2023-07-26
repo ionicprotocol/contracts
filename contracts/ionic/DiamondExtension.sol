@@ -60,22 +60,17 @@ abstract contract DiamondBase {
  * @notice a library to use in a contract, whose logic is extended with diamond extension
  */
 library LibDiamond {
-  bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.standard.diamond.storage");
-
-  struct Function {
-    address implementation;
-    uint16 index; // used to remove functions without looping
-  }
+  bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.extensions.diamond.storage");
 
   struct LogicStorage {
-    mapping(bytes4 => Function) functions;
+    address[] extensionForFnAtIndex;
     bytes4[] selectorAtIndex;
     address[] extensions;
   }
 
   function getExtensionForFunction(bytes4 msgSig) internal view returns (address) {
     LibDiamond.LogicStorage storage ds = diamondStorage();
-    address extension = ds.functions[msgSig].implementation;
+    address extension = getExtensionForSelector(msgSig);
     //if (extension == address(0)) revert ExtensionNotFound(msgSig);
     return extension;
   }
@@ -125,13 +120,13 @@ library LibDiamond {
     for (uint16 i = 0; i < fnsToRemove.length; i++) {
       bytes4 selectorToRemove = fnsToRemove[i];
       // must never fail
-      assert(address(extension) == ds.functions[selectorToRemove].implementation);
+      assert(address(extension) == getExtensionForSelector(selectorToRemove));
       // swap with the last element in the selectorAtIndex array and remove the last element
-      uint16 indexToKeep = ds.functions[selectorToRemove].index;
+      uint16 indexToKeep = getIndexForSelector(selectorToRemove);
+      ds.extensionForFnAtIndex[indexToKeep] = ds.extensionForFnAtIndex[ds.extensionForFnAtIndex.length - 1];
+      ds.extensionForFnAtIndex.pop();
       ds.selectorAtIndex[indexToKeep] = ds.selectorAtIndex[ds.selectorAtIndex.length - 1];
-      ds.functions[ds.selectorAtIndex[indexToKeep]].index = indexToKeep;
       ds.selectorAtIndex.pop();
-      delete ds.functions[selectorToRemove];
     }
   }
 
@@ -141,11 +136,31 @@ library LibDiamond {
     uint16 selectorCount = uint16(ds.selectorAtIndex.length);
     for (uint256 selectorIndex = 0; selectorIndex < fnsToAdd.length; selectorIndex++) {
       bytes4 selector = fnsToAdd[selectorIndex];
-      address oldImplementation = ds.functions[selector].implementation;
+      address oldImplementation = getExtensionForSelector(selector);
       if (oldImplementation != address(0)) revert FunctionAlreadyAdded(selector, oldImplementation);
-      ds.functions[selector] = Function(address(extension), selectorCount);
+      ds.extensionForFnAtIndex.push(address(extension));
       ds.selectorAtIndex.push(selector);
       selectorCount++;
     }
+  }
+
+  function getExtensionForSelector(bytes4 selector) internal view returns (address) {
+    LogicStorage storage ds = diamondStorage();
+    uint256 fnsLen = ds.extensionForFnAtIndex.length;
+    for (uint256 i = 0; i < fnsLen; i++) {
+      if (ds.selectorAtIndex[i] == selector) return ds.extensionForFnAtIndex[i];
+    }
+
+    return address(0);
+  }
+
+  function getIndexForSelector(bytes4 selector) internal view returns (uint16) {
+    LogicStorage storage ds = diamondStorage();
+    uint16 fnsLen = uint16(ds.extensionForFnAtIndex.length);
+    for (uint16 i = 0; i < fnsLen; i++) {
+      if (ds.selectorAtIndex[i] == selector) return i;
+    }
+
+    return type(uint16).max;
   }
 }
