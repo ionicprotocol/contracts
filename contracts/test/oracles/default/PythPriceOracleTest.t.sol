@@ -6,7 +6,6 @@ import { MasterPriceOracle } from "../../../oracles/MasterPriceOracle.sol";
 import { BaseTest } from "../../config/BaseTest.t.sol";
 import { MockPyth } from "@pythnetwork/pyth-sdk-solidity/MockPyth.sol";
 import { PythStructs } from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-import { Pyth } from "pyth-neon/PythOracle.sol";
 
 contract PythOraclesTest is BaseTest {
   PythPriceOracle oracle;
@@ -19,40 +18,28 @@ contract PythOraclesTest is BaseTest {
   address token = 0x7ff459CE3092e8A866aA06DA88D291E2E31230C1;
 
   function afterForkSetUp() internal override {
-    pythOracle = new MockPyth(0);
+    pythOracle = new MockPyth(0, 0);
+
+    PythStructs.Price memory mockTokenPrice = PythStructs.Price(tokenPrice, 0, 0, uint64(block.timestamp));
+    PythStructs.Price memory mockNativeTokenPrice = PythStructs.Price(nativeTokenPrice, 0, 0, uint64(block.timestamp));
+    PythStructs.Price memory mockTokenPriceEma = PythStructs.Price(tokenPrice, 0, 0, uint64(block.timestamp));
+    PythStructs.Price memory mockNativeTokenPriceEma = PythStructs.Price(
+      nativeTokenPrice,
+      0,
+      0,
+      uint64(block.timestamp)
+    );
 
     PythStructs.PriceFeed memory mockTokenFeed = PythStructs.PriceFeed(
       tokenPriceFeed,
-      tokenPriceFeed,
-      tokenPrice,
-      0,
-      0,
-      PythStructs.PriceStatus.TRADING,
-      0,
-      0,
-      0,
-      0,
-      uint64(block.timestamp),
-      0,
-      0,
-      0
+      mockTokenPrice,
+      mockTokenPriceEma
     );
 
     PythStructs.PriceFeed memory mockNativeTokenFeed = PythStructs.PriceFeed(
       nativeTokenPriceFeed,
-      nativeTokenPriceFeed,
-      nativeTokenPrice,
-      0,
-      0,
-      PythStructs.PriceStatus.TRADING,
-      0,
-      0,
-      0,
-      0,
-      uint64(block.timestamp),
-      0,
-      0,
-      0
+      mockNativeTokenPrice,
+      mockNativeTokenPriceEma
     );
 
     bytes[] memory feedData = new bytes[](2);

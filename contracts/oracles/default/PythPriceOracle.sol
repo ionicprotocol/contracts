@@ -7,7 +7,6 @@ import { MasterPriceOracle } from "../MasterPriceOracle.sol";
 import { BasePriceOracle, ICErc20 } from "../BasePriceOracle.sol";
 import { IPyth } from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import { PythStructs } from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-import { Pyth } from "pyth-neon/PythOracle.sol";
 import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 /**
@@ -38,11 +37,7 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
 
   IPyth public PYTH;
 
-  function initialize(
-    address pythAddress,
-    bytes32 nativeTokenUsdFeed,
-    address usdToken
-  ) public initializer {
+  function initialize(address pythAddress, bytes32 nativeTokenUsdFeed, address usdToken) public initializer {
     __SafeOwnable_init(msg.sender);
     NATIVE_TOKEN_USD_FEED = nativeTokenUsdFeed;
     USD_TOKEN = usdToken;
@@ -82,13 +77,13 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
       // Get price from MasterPriceOracle
       uint256 usdNativeTokenPrice = BasePriceOracle(msg.sender).price(USD_TOKEN);
       uint256 nativeTokenUsdPrice = 1e36 / usdNativeTokenPrice; // 18 decimals -- TODO: doublecheck
-      PythStructs.Price memory tokenUsdPrice = PYTH.getCurrentPrice(feed); // 8 decimals ---  TODO: doublecheck
+      PythStructs.Price memory tokenUsdPrice = PYTH.getPrice(feed); // 8 decimals ---  TODO: doublecheck
       return
         tokenUsdPrice.price >= 0 ? (uint256(uint64(tokenUsdPrice.price)) * 1e28) / uint256(nativeTokenUsdPrice) : 0;
     } else {
-      uint128 nativeTokenUsdPrice = uint128(uint64(PYTH.getCurrentPrice(NATIVE_TOKEN_USD_FEED).price));
+      uint128 nativeTokenUsdPrice = uint128(uint64(PYTH.getPrice(NATIVE_TOKEN_USD_FEED).price));
       if (nativeTokenUsdPrice <= 0) return 0;
-      uint128 tokenUsdPrice = uint128(uint64(PYTH.getCurrentPrice(feed).price));
+      uint128 tokenUsdPrice = uint128(uint64(PYTH.getPrice(feed).price));
       return tokenUsdPrice >= 0 ? (uint256(tokenUsdPrice) * 1e18) / uint256(nativeTokenUsdPrice) : 0;
     }
   }
@@ -116,7 +111,7 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
     uint256 underlyingDecimals = uint256(ERC20Upgradeable(underlying).decimals());
     return
       underlyingDecimals <= 18
-        ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
-        : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
+        ? uint256(oraclePrice) * (10 ** (18 - underlyingDecimals))
+        : uint256(oraclePrice) / (10 ** (underlyingDecimals - 18));
   }
 }
