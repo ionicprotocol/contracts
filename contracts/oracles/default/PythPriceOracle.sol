@@ -37,7 +37,11 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
 
   IPyth public PYTH;
 
-  function initialize(address pythAddress, bytes32 nativeTokenUsdFeed, address usdToken) public initializer {
+  function initialize(
+    address pythAddress,
+    bytes32 nativeTokenUsdFeed,
+    address usdToken
+  ) public initializer {
     __SafeOwnable_init(msg.sender);
     NATIVE_TOKEN_USD_FEED = nativeTokenUsdFeed;
     USD_TOKEN = usdToken;
@@ -111,7 +115,7 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
     uint256 underlyingDecimals = uint256(ERC20Upgradeable(underlying).decimals());
     return
       underlyingDecimals <= 18
-        ? uint256(oraclePrice) * (10 ** (18 - underlyingDecimals))
-        : uint256(oraclePrice) / (10 ** (underlyingDecimals - 18));
+        ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
+        : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
   }
 }
