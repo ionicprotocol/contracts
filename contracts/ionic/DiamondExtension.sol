@@ -60,7 +60,7 @@ abstract contract DiamondBase {
  * @notice a library to use in a contract, whose logic is extended with diamond extension
  */
 library LibDiamond {
-  bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.standard.diamond.storage");
+  bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.extensions.diamond.storage");
 
   struct Function {
     address implementation;
@@ -68,14 +68,15 @@ library LibDiamond {
   }
 
   struct LogicStorage {
-    mapping(bytes4 => Function) functions;
+    //mapping(bytes4 => Function) functions;
+    Function[] functions;
     bytes4[] selectorAtIndex;
     address[] extensions;
   }
 
   function getExtensionForFunction(bytes4 msgSig) internal view returns (address) {
     LibDiamond.LogicStorage storage ds = diamondStorage();
-    address extension = ds.functions[msgSig].implementation;
+    address extension = ds.functions[uint32(msgSig)].implementation;
     //if (extension == address(0)) revert ExtensionNotFound(msgSig);
     return extension;
   }
@@ -125,13 +126,13 @@ library LibDiamond {
     for (uint16 i = 0; i < fnsToRemove.length; i++) {
       bytes4 selectorToRemove = fnsToRemove[i];
       // must never fail
-      assert(address(extension) == ds.functions[selectorToRemove].implementation);
+      assert(address(extension) == ds.functions[uint32(selectorToRemove)].implementation);
       // swap with the last element in the selectorAtIndex array and remove the last element
-      uint16 indexToKeep = ds.functions[selectorToRemove].index;
+      uint16 indexToKeep = ds.functions[uint32(selectorToRemove)].index;
       ds.selectorAtIndex[indexToKeep] = ds.selectorAtIndex[ds.selectorAtIndex.length - 1];
-      ds.functions[ds.selectorAtIndex[indexToKeep]].index = indexToKeep;
+      ds.functions[uint32(ds.selectorAtIndex[indexToKeep])].index = indexToKeep;
       ds.selectorAtIndex.pop();
-      delete ds.functions[selectorToRemove];
+      delete ds.functions[uint32(selectorToRemove)];
     }
   }
 
@@ -141,9 +142,9 @@ library LibDiamond {
     uint16 selectorCount = uint16(ds.selectorAtIndex.length);
     for (uint256 selectorIndex = 0; selectorIndex < fnsToAdd.length; selectorIndex++) {
       bytes4 selector = fnsToAdd[selectorIndex];
-      address oldImplementation = ds.functions[selector].implementation;
+      address oldImplementation = ds.functions[uint32(selector)].implementation;
       if (oldImplementation != address(0)) revert FunctionAlreadyAdded(selector, oldImplementation);
-      ds.functions[selector] = Function(address(extension), selectorCount);
+      ds.functions[uint32(selector)] = Function(address(extension), selectorCount);
       ds.selectorAtIndex.push(selector);
       selectorCount++;
     }
