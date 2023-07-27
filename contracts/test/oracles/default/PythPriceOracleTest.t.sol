@@ -63,4 +63,30 @@ contract PythOraclesTest is BaseTest {
     uint256 priceMpo = mpo.price(wbtc);
     assertApproxEqRel(price, priceMpo, 1e16);
   }
+
+  function testLineaTokenPrice() public fork(LINEA_MAINNET) {
+    PythStructs.Price memory pythPrice = IPyth(lineaPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e14);
+  }
+
+  function testNeonTokenPrice() public fork(NEON_MAINNET) {
+    PythStructs.Price memory pythPriceNeon = IPyth(neonPyth).getPriceUnsafe(neonUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPriceNeon.price)));
+    emit log_named_uint("updated", pythPriceNeon.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+    PythStructs.Price memory pythPrice = IPyth(neonPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e16);
+  }
 }
