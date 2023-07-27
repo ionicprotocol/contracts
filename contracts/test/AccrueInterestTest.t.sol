@@ -189,19 +189,19 @@ contract AccrueInterestTest is UpgradesBaseTest {
     _functionCall(0xC40119C7269A5FA813d878BF83d14E3462fC8Fde, hex"8f93bfba", "raw liquidation failed");
   }
 
-  function testDeployCToken() public debuggingOnly fork(NEON_MAINNET) {
+  function testDeployCToken() public debuggingOnly fork(POLYGON_MAINNET) {
     CErc20Delegate cErc20Delegate = new CErc20Delegate();
-    IonicComptroller pool = IonicComptroller(0xB0E13f399bd9358eeC74F8B46001771C370F7142);
+    IonicComptroller pool = IonicComptroller(0x69617fE545804BcDfE853626B4C8EF23475Ac54B);
     emit log_named_address("admin", pool.admin());
     pool.adminHasRights();
     vm.startPrank(0x9308dddeC9B5cCd8a2685A46E913C892FE31C826);
     pool._deployMarket(
       cErc20Delegate.delegateType(),
       abi.encode(
-        address(0x202C35e517Fa803B537565c40F0a6965D7204609),
-        address(pool),
+        address(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63),
+        0x69617fE545804BcDfE853626B4C8EF23475Ac54B,
         payable(address(0x62E27eA8d0389390039277CFfD83Ca18ce9B2D9c)),
-        InterestRateModel(address(0xA249282BDa8C12DA823d695CD0eE338dbE857b85)),
+        InterestRateModel(address(0xA433B7d3a8A87D8fd40dA68A424007Dd8a21Ce41)),
         "cUnderlyingToken",
         "CUT",
         uint256(0),
