@@ -18,7 +18,8 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     poolAuthLogic = new PoolRolesAuthority();
   }
 
-  function reinitialize() public {
+  function reinitialize(address _leveredPositionsFactory) public onlyOwnerOrAdmin {
+    leveredPositionsFactory = _leveredPositionsFactory;
     poolAuthLogic = new PoolRolesAuthority();
   }
 
