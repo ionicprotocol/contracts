@@ -53,7 +53,7 @@ contract PythOraclesTest is BaseTest {
     vm.stopPrank();
   }
 
-  function testPolygonTokenPrice() public fork(POLYGON_MAINNET) {
+  function testPolygonTokenPrice() public debuggingOnly fork(POLYGON_MAINNET) {
     PythStructs.Price memory pythPrice = IPyth(polygonPyth).getPriceUnsafe(maticUsdTokenPriceFeed);
     emit log_named_uint("price", uint256(uint64(pythPrice.price)));
     emit log_named_uint("updated", pythPrice.publishTime);
@@ -75,7 +75,7 @@ contract PythOraclesTest is BaseTest {
     assertApproxEqRel(price, priceMpo, 1e14);
   }
 
-  function testNeonTokenPrice() public fork(NEON_MAINNET) {
+  function testNeonTokenPrice() public debuggingOnly fork(NEON_MAINNET) {
     PythStructs.Price memory pythPriceNeon = IPyth(neonPyth).getPriceUnsafe(neonUsdTokenPriceFeed);
     emit log_named_uint("price", uint256(uint64(pythPriceNeon.price)));
     emit log_named_uint("updated", pythPriceNeon.publishTime);
