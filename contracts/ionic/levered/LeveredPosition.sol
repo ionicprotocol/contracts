@@ -270,7 +270,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     return collateralMarket.balanceOfUnderlying(address(this)) == 0;
   }
 
-  function getEquityAmount() public view returns (uint256 equityAmount) {
+  function getEquityAmount() external view returns (uint256 equityAmount) {
     BasePriceOracle oracle = pool.oracle();
     uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
