@@ -275,8 +275,8 @@ jobs:
       MNEMONIC: "${{ secrets.MNEMONIC }}"
       TEST_RUN_CHAINID: 59144
       TEST_RUN_LEVEL: ${{ github.event_name == 'pull_request' && '100' || '90' }}
-      LINEA_MAINNET_RPC_URL: https://rpc.linea.build
-      LINEA_MAINNET_ARCHIVE_RPC_URL: https://rpc.linea.build
+      LINEA_RPC_URL: https://rpc.linea.build
+      LINEA_ARCHIVE_RPC_URL: https://rpc.linea.build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
