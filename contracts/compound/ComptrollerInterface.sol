@@ -161,6 +161,8 @@ interface ComptrollerStorageInterface {
 
   function ionicAdminHasRights() external view returns (bool);
 
+  function pendingAdmin() external view returns (address);
+
   function oracle() external view returns (BasePriceOracle);
 
   function pauseGuardian() external view returns (address);

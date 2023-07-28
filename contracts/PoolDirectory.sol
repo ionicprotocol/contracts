@@ -172,6 +172,7 @@ contract PoolDirectory is SafeOwnableUpgradeable {
 
     // Setup the pool
     IonicComptroller comptrollerProxy = IonicComptroller(proxy);
+    // Set up the extensions
     comptrollerProxy._upgrade();
 
     // Set pool parameters

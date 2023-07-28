@@ -1247,7 +1247,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     return ComptrollerExtensionInterface(address(this));
   }
 
-  function _getExtensionFunctions() public pure virtual override returns (bytes4[] memory functionSelectors) {
+  function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory functionSelectors) {
     uint8 fnsCount = 30;
 
     functionSelectors = new bytes4[](fnsCount);
