@@ -94,7 +94,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (targetRatioMantissa < 1e18) _leverDown(type(uint256).max);
 
     uint256 currentRatio = getCurrentLeverageRatio();
-    if (currentRatio < targetRatioMantissa) _leverUp(targetRatioMantissa - currentRatio);
+    if (currentRatio < targetRatioMantissa) _leverUp(targetRatioMantissa);
     else _leverDown(currentRatio - targetRatioMantissa);
 
     // return the de facto achieved ratio
@@ -235,8 +235,9 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
     uint256 maxBorrow = pool.getMaxRedeemOrBorrow(address(this), stableMarket, true);
-    uint256 cash = stableMarket.getCash();
-    if (maxBorrow > cash) maxBorrow = cash;
+    // TODO why isn't this check done in getMaxRedeemOrBorrow?
+    //    uint256 cash = stableMarket.getCash();
+    //    if (maxBorrow > cash) maxBorrow = cash;
     uint256 maxBorrowValueScaled = maxBorrow * stableAssetPrice;
 
     // accounting for swaps slippage
@@ -246,7 +247,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 maxTopUpRepay = maxTopUpCollateralSwapValueScaled / collateralAssetPrice;
     uint256 maxCollateralToRepay = (maxTopUpRepay * stableCollateralFactor) / (1e18 - stableCollateralFactor);
     uint256 maxFlashLoaned = (maxCollateralToRepay * collatCollateralFactor) / 1e18;
-    uint256 suppliedCollateralCurrent = collateralMarket.balanceOfUnderlying(address(this));
+    uint256 suppliedCollateralCurrent = equityAmount; //collateralMarket.balanceOfUnderlying(address(this));
     return ((suppliedCollateralCurrent + maxFlashLoaned) * 1e18) / equityAmount;
   }
 
@@ -268,6 +269,32 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     equityAmount = (equityValue * 1e18) / collateralAssetPrice;
   }
 
+  function getNewSupplyAmountNeeded(uint256 targetRatio) public view returns (uint256) {
+    BasePriceOracle oracle = pool.oracle();
+    uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
+    uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
+    (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
+    uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
+    uint256 debtAmount = stableMarket.borrowBalanceCurrent(address(this));
+    uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
+
+    // s = supply value before
+    // b = borrow value before
+    // r = target ratio after
+    // c = borrow value coefficient to account for the collateral factor and the slippage
+    uint256 s = (collateralAssetPrice * positionSupplyAmount) / 1e18;
+    uint256 b = (borrowedAssetPrice * debtAmount) / 1e18;
+    uint256 r = targetRatio;
+    uint256 r1 = r - 1e18;
+    uint256 c = (collatCollateralFactor * (10000 + assumedSlippage)) / 10000;
+
+    // some math magic here
+    // https://www.wolframalpha.com/input?i2d=true&i=r%3D%5C%2840%29Divide%5B%5C%2840%29s%2Bx%5C%2841%29%2C%5C%2840%29s%2Bx-b-c*x%5C%2841%29%5D+%5C%2841%29+solve+for+x
+    uint256 newSupplyValueNeeded = ((r1 * s) - (b * r)) / ((c * r) / 1e18 - r1);
+
+    return (newSupplyValueNeeded * 1e18) / collateralAssetPrice;
+  }
+
   /*----------------------------------------------------------------
                             Internal Functions
   ----------------------------------------------------------------*/
@@ -286,32 +313,22 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (errorCode != 0) revert SupplyCollateralFailed(errorCode);
   }
 
-  function log(string memory, uint256) public pure {}
-
   // @dev flash loan the needed amount, then borrow stables and swap them for the amount needed to repay the FL
-  function _leverUp(uint256 ratioDiff) internal {
+  function _leverUp(uint256 targetRatio) internal {
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
+    (, uint256 stableCollateralFactor) = pool.markets(address(stableMarket));
+    (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
 
-    uint256 ownEquityAmount = getEquityAmount();
-    uint256 flashLoanCollateralAmount = (ownEquityAmount * ratioDiff) / 1e18;
-    uint256 flashLoanedCollateralValueScaled = flashLoanCollateralAmount * collateralAssetPrice;
+    uint256 flashLoanCollateralAmount = getNewSupplyAmountNeeded(targetRatio);
+    uint256 flashLoanedCollateralValue = (flashLoanCollateralAmount * collateralAssetPrice) / 1e18;
 
-    uint256 stableToBorrow = flashLoanedCollateralValueScaled / stableAssetPrice;
+    uint256 borrowableValueScaled = flashLoanedCollateralValue * collatCollateralFactor;
+    uint256 stableToBorrow = borrowableValueScaled / stableAssetPrice;
     // accounting for swaps slippage
     uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
     stableToBorrow = (stableToBorrow * (10000 + assumedSlippage)) / 10000;
-
-    uint256 ownCollateralValue = (ownEquityAmount * collateralAssetPrice) / 1e18;
-    uint256 flashloanedValue = (flashLoanCollateralAmount * collateralAssetPrice) / 1e18;
-    uint256 stableValue = (stableToBorrow * stableAssetPrice) / 1e18;
-
-    this.log("own collateral value", ownCollateralValue);
-    this.log("flashloaned value", flashloanedValue);
-    this.log("stable to borrow value", stableValue);
-    this.log("stable to borrow", stableToBorrow);
-    this.log("diff", ownCollateralValue + flashloanedValue - stableValue);
 
     ICErc20(address(collateralMarket)).flash(flashLoanCollateralAmount, abi.encode(stableToBorrow));
     // the execution will first receive a callback to receiveFlashLoan()
