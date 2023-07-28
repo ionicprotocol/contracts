@@ -71,7 +71,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
   function closePosition(address withdrawTo) public returns (uint256 withdrawAmount) {
     if (msg.sender != positionOwner && msg.sender != address(factory)) revert NotPositionOwner();
 
-    _leverDown(type(uint256).max);
+    _leverDown(1e18);
 
     // calling accrue and exit allows to redeem the full underlying balance
     collateralMarket.accrueInterest();
@@ -90,8 +90,8 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
   function adjustLeverageRatio(uint256 targetRatioMantissa) public returns (uint256) {
     if (msg.sender != positionOwner && msg.sender != address(factory)) revert NotPositionOwner();
 
-    // anything under 1:1 means removing the leverage
-    if (targetRatioMantissa < 1e18) _leverDown(type(uint256).max);
+    // anything under 1x means removing the leverage
+    if (targetRatioMantissa <= 1e18) _leverDown(1e18);
 
     uint256 currentRatio = getCurrentLeverageRatio();
     if (currentRatio < targetRatioMantissa) _leverUp(targetRatioMantissa);
@@ -284,7 +284,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     equityAmount = (equityValue * 1e18) / collateralAssetPrice;
   }
 
-  function getSupplyAmountDelta(uint256 targetRatio) public view returns (uint256) {
+  function getSupplyAmountDelta(uint256 targetRatio) public view returns (uint256 x) {
     BasePriceOracle oracle = pool.oracle();
     uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
@@ -305,12 +305,12 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
 
     // some math magic here
     // https://www.wolframalpha.com/input?i2d=true&i=r%3D%5C%2840%29Divide%5B%5C%2840%29s%2Bx%5C%2841%29%2C%5C%2840%29s%2Bx-b-c*x%5C%2841%29%5D+%5C%2841%29+solve+for+x
-    int256 supplyValueDelta = ((r1 * s) - (b * r)) / ((c * r) / 1e18 - r1);
+    int256 supplyValueDelta = (((r1 * s) - (b * r)) * 1e18) / ((c * r) - (1e18 * r1));
 
     // abs value
     uint256 supplyValueDeltaAbs = uint256((supplyValueDelta < 0) ? -supplyValueDelta : supplyValueDelta);
 
-    return (supplyValueDeltaAbs * 1e18) / collateralAssetPrice;
+    x = (supplyValueDeltaAbs * 1e18) / collateralAssetPrice;
   }
 
   /*----------------------------------------------------------------
@@ -378,16 +378,15 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (targetRatio <= 1e18) {
       // if max levering down, then derive the amount to redeem from the debt to be repaid
       borrowsToRepay = stableMarket.borrowBalanceCurrent(address(this));
-      uint256 borrowsToRepayValueScaled = borrowsToRepay * stableAssetPrice;
-      amountToRedeem = getSupplyAmountDelta(1e18);
+      uint256 borrowValueToRepayScaled = borrowsToRepay * stableAssetPrice;
+      uint256 amountToRedeemValueScaled = (borrowValueToRepayScaled * 1e18) / collatCollateralFactor;
+      amountToRedeem = amountToRedeemValueScaled / collateralAssetPrice;
     } else {
       // else derive the debt to be repaid from the amount to redeem
       amountToRedeem = getSupplyAmountDelta(targetRatio);
       uint256 amountToRedeemValueScaled = amountToRedeem * collateralAssetPrice;
       uint256 borrowValueToRepayScaled = (amountToRedeemValueScaled * collatCollateralFactor) / 1e18;
       borrowsToRepay = borrowValueToRepayScaled / stableAssetPrice;
-      // round up the division
-      if (amountToRedeemValueScaled % stableAssetPrice != 0) borrowsToRepay += 1;
     }
 
     if (borrowsToRepay > 0) {
