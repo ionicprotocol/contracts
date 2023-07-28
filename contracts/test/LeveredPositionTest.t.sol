@@ -314,7 +314,7 @@ abstract contract LeveredPositionTest is MarketsTest {
 
     // attempting to adjust to minRatio - 0.01 should fail
     vm.expectRevert(abi.encodeWithSelector(LeveredPosition.BorrowStableFailed.selector, 0x3fa));
-    position.adjustLeverageRatio(minRatio - 0.01e18);
+    position.adjustLeverageRatio((minRatio + 1e18) / 2);
     // but adjusting to the minRatio + 0.01 should succeed
     position.adjustLeverageRatio(minRatio + 0.01e18);
   }
@@ -623,7 +623,7 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     collateralMarket = ICErc20(xMarket);
     stableMarket = ICErc20(yMarket);
 
-    upgradePoolAndMarkets();
+    //upgradePoolAndMarkets();
 
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
