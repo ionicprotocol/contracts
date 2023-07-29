@@ -243,7 +243,11 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     return _getLeverageRatioAfterBorrow(maxBorrow, positionSupplyAmount);
   }
 
-  function _getLeverageRatioAfterBorrow(uint256 amountToBorrow, uint256 positionSupplyAmount) internal view returns (uint256 r) {
+  function _getLeverageRatioAfterBorrow(uint256 amountToBorrow, uint256 positionSupplyAmount)
+    internal
+    view
+    returns (uint256 r)
+  {
     (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
@@ -348,7 +352,12 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
     (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
 
-    uint256 flashLoanCollateralAmount = _getSupplyAmountDelta(targetRatio, collateralAssetPrice, stableAssetPrice, collatCollateralFactor);
+    uint256 flashLoanCollateralAmount = _getSupplyAmountDelta(
+      targetRatio,
+      collateralAssetPrice,
+      stableAssetPrice,
+      collatCollateralFactor
+    );
     uint256 flashLoanedCollateralValue = (flashLoanCollateralAmount * collateralAssetPrice) / 1e18;
 
     uint256 borrowableValueScaled = flashLoanedCollateralValue * collatCollateralFactor;
@@ -394,7 +403,12 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
       amountToRedeem = amountToRedeemValueScaled / collateralAssetPrice;
     } else {
       // else derive the debt to be repaid from the amount to redeem
-      amountToRedeem = _getSupplyAmountDelta(targetRatio, collateralAssetPrice, stableAssetPrice, collatCollateralFactor);
+      amountToRedeem = _getSupplyAmountDelta(
+        targetRatio,
+        collateralAssetPrice,
+        stableAssetPrice,
+        collatCollateralFactor
+      );
       uint256 amountToRedeemValueScaled = amountToRedeem * collateralAssetPrice;
       uint256 borrowsToRepayValueScaled = (amountToRedeemValueScaled * collatCollateralFactor) / 1e18;
       borrowsToRepay = borrowsToRepayValueScaled / stableAssetPrice;
