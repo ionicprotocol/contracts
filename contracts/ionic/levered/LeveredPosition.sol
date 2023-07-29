@@ -223,25 +223,27 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
   }
 
   function getMinLeverageRatio() public view returns (uint256) {
-    if (collateralMarket.balanceOfUnderlying(address(this)) == 0) return 0;
+    uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
+    if (positionSupplyAmount == 0) return 0;
 
     BasePriceOracle oracle = pool.oracle();
     uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 minStableBorrowAmount = (factory.getMinBorrowNative() * 1e18) / borrowedAssetPrice;
-    return _getLeverageRatioAfterBorrow(minStableBorrowAmount);
+    return _getLeverageRatioAfterBorrow(minStableBorrowAmount, positionSupplyAmount);
   }
 
   function getMaxLeverageRatio() public view returns (uint256) {
-    if (collateralMarket.balanceOfUnderlying(address(this)) == 0) return 0;
+    uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
+    if (positionSupplyAmount == 0) return 0;
 
     uint256 maxBorrow = pool.getMaxRedeemOrBorrow(address(this), stableMarket, true);
     // TODO why isn't this check done in getMaxRedeemOrBorrow?
     //    uint256 cash = stableMarket.getCash();
     //    if (maxBorrow > cash) maxBorrow = cash;
-    return _getLeverageRatioAfterBorrow(maxBorrow);
+    return _getLeverageRatioAfterBorrow(maxBorrow, positionSupplyAmount);
   }
 
-  function _getLeverageRatioAfterBorrow(uint256 amountToBorrow) internal view returns (uint256 r) {
+  function _getLeverageRatioAfterBorrow(uint256 amountToBorrow, uint256 positionSupplyAmount) internal view returns (uint256 r) {
     (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
@@ -249,7 +251,6 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
 
     uint256 currentBorrowedAmount = stableMarket.borrowBalanceCurrent(address(this));
     uint256 currentBorrowsValue = (currentBorrowedAmount * stableAssetPrice) / 1e18;
-    uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
     uint256 positionValue = (collateralAssetPrice * positionSupplyAmount) / 1e18;
 
     uint256 newBorrowsValue = (amountToBorrow * stableAssetPrice) / 1e18;
@@ -283,11 +284,21 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     equityAmount = (equityValue * 1e18) / collateralAssetPrice;
   }
 
-  function getSupplyAmountDelta(uint256 targetRatio) public view returns (uint256 x) {
+  function getSupplyAmountDelta(uint256 targetRatio) public view returns (uint256) {
     BasePriceOracle oracle = pool.oracle();
-    uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
+    uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
     (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
+
+    return _getSupplyAmountDelta(targetRatio, collateralAssetPrice, stableAssetPrice, collatCollateralFactor);
+  }
+
+  function _getSupplyAmountDelta(
+    uint256 targetRatio,
+    uint256 collateralAssetPrice,
+    uint256 borrowedAssetPrice,
+    uint256 collatCollateralFactor
+  ) internal view returns (uint256 x) {
     uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
     uint256 debtAmount = stableMarket.borrowBalanceCurrent(address(this));
     uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
@@ -337,12 +348,13 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
     (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
 
-    uint256 flashLoanCollateralAmount = getSupplyAmountDelta(targetRatio);
+    uint256 flashLoanCollateralAmount = _getSupplyAmountDelta(targetRatio, collateralAssetPrice, stableAssetPrice, collatCollateralFactor);
     uint256 flashLoanedCollateralValue = (flashLoanCollateralAmount * collateralAssetPrice) / 1e18;
 
     uint256 borrowableValueScaled = flashLoanedCollateralValue * collatCollateralFactor;
     uint256 stableToBorrow = borrowableValueScaled / stableAssetPrice;
-    // accounting for swaps slippage
+
+    // accounting for swaps slippage TODO is it double accounting?
     uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
     stableToBorrow = (stableToBorrow * (10000 + assumedSlippage)) / 10000;
 
@@ -369,10 +381,10 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 amountToRedeem;
     uint256 borrowsToRepay;
 
-    (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
+    (, uint256 collatCollateralFactor) = pool.markets(address(collateralMarket));
 
     if (targetRatio <= 1e18) {
       // if max levering down, then derive the amount to redeem from the debt to be repaid
@@ -382,7 +394,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
       amountToRedeem = amountToRedeemValueScaled / collateralAssetPrice;
     } else {
       // else derive the debt to be repaid from the amount to redeem
-      amountToRedeem = getSupplyAmountDelta(targetRatio);
+      amountToRedeem = _getSupplyAmountDelta(targetRatio, collateralAssetPrice, stableAssetPrice, collatCollateralFactor);
       uint256 amountToRedeemValueScaled = amountToRedeem * collateralAssetPrice;
       uint256 borrowsToRepayValueScaled = (amountToRedeemValueScaled * collatCollateralFactor) / 1e18;
       borrowsToRepay = borrowsToRepayValueScaled / stableAssetPrice;
