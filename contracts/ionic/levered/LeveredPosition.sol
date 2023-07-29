@@ -93,8 +93,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     // anything under 1x means removing the leverage
     if (targetRatioMantissa <= 1e18) _leverDown(1e18);
 
-    uint256 currentRatio = getCurrentLeverageRatio();
-    if (currentRatio < targetRatioMantissa) _leverUp(targetRatioMantissa);
+    if (getCurrentLeverageRatio() < targetRatioMantissa) _leverUp(targetRatioMantissa);
     else _leverDown(targetRatioMantissa);
 
     // return the de facto achieved ratio
@@ -378,15 +377,15 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (targetRatio <= 1e18) {
       // if max levering down, then derive the amount to redeem from the debt to be repaid
       borrowsToRepay = stableMarket.borrowBalanceCurrent(address(this));
-      uint256 borrowValueToRepayScaled = borrowsToRepay * stableAssetPrice;
-      uint256 amountToRedeemValueScaled = (borrowValueToRepayScaled * 1e18) / collatCollateralFactor;
+      uint256 borrowsToRepayValueScaled = borrowsToRepay * stableAssetPrice;
+      uint256 amountToRedeemValueScaled = (borrowsToRepayValueScaled * 1e18) / collatCollateralFactor;
       amountToRedeem = amountToRedeemValueScaled / collateralAssetPrice;
     } else {
       // else derive the debt to be repaid from the amount to redeem
       amountToRedeem = getSupplyAmountDelta(targetRatio);
       uint256 amountToRedeemValueScaled = amountToRedeem * collateralAssetPrice;
-      uint256 borrowValueToRepayScaled = (amountToRedeemValueScaled * collatCollateralFactor) / 1e18;
-      borrowsToRepay = borrowValueToRepayScaled / stableAssetPrice;
+      uint256 borrowsToRepayValueScaled = (amountToRedeemValueScaled * collatCollateralFactor) / 1e18;
+      borrowsToRepay = borrowsToRepayValueScaled / stableAssetPrice;
     }
 
     if (borrowsToRepay > 0) {
