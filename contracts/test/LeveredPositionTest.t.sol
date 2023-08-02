@@ -603,7 +603,6 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     asBase._registerExtension(newExt, DiamondExtension(exts[0]));
   }
 
-
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 

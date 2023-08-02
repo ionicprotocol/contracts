@@ -241,11 +241,11 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     return _getLeverageRatioAfterBorrow(maxBorrow, positionSupplyAmount, positionBorrowAmount);
   }
 
-  function _getLeverageRatioAfterBorrow(uint256 newBorrowsAmount, uint256 positionSupplyAmount, uint256 positionBorrowAmount)
-    internal
-    view
-    returns (uint256 r)
-  {
+  function _getLeverageRatioAfterBorrow(
+    uint256 newBorrowsAmount,
+    uint256 positionSupplyAmount,
+    uint256 positionBorrowAmount
+  ) internal view returns (uint256 r) {
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
@@ -262,10 +262,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     int256 b = int256(currentBorrowsValue);
     int256 x = int256(topUpCollateralValue);
 
-    r = uint256(
-      ((s + x) * 1e18) /
-      (s + x - b - int256(newBorrowsValue))
-    );
+    r = uint256(((s + x) * 1e18) / (s + x - b - int256(newBorrowsValue)));
   }
 
   function isPositionClosed() public view returns (bool) {
@@ -307,7 +304,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 assumedSlippage;
     if (up) assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
     else assumedSlippage = factory.liquidatorsRegistry().getSlippage(collateralAsset, stableAsset);
-    uint256 slippageFactor = 1e18 * (10000 + assumedSlippage) / 10000;
+    uint256 slippageFactor = (1e18 * (10000 + assumedSlippage)) / 10000;
 
     uint256 supplyValueDeltaAbs;
     {
