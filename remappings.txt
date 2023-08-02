@@ -10,3 +10,4 @@ flywheel/=lib/flywheel-v2/src/
 ops=lib/ops/contracts
 @pythnetwork/pyth-sdk-solidity/=lib/pyth-sdk-solidity/
 solidity-bytes-utils/=lib/solidity-bytes-utils/
+adrastia-periphery/=lib/adrastia-periphery/contracts/
