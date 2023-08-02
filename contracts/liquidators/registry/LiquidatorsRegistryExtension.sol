@@ -775,8 +775,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       IERC20Upgradeable chapelBomb = IERC20Upgradeable(0xe45589fBad3A1FB90F5b2A8A3E8958a8BAB5f768);
       IERC20Upgradeable chapelTUsd = IERC20Upgradeable(0x4f1885D25eF219D3D4Fa064809D6D4985FAb9A0b);
       IERC20Upgradeable chapelTDai = IERC20Upgradeable(0x8870f7102F1DcB1c35b01af10f1baF1B00aD6805);
-      XBombSwap xbombSwapTUsd = XBombSwap(0x161FbE0943Af4A39a50262026A81a243B635982d);
-      XBombSwap xbombSwapTDai = XBombSwap(0xd816eb4660615BBF080ddf425F28ea4AF30d04D5);
+      XBombSwap xbombSwapTUsd = XBombSwap(0x3d312B224DeC414FE865e1e9BfC13e2A86947D19);
+      XBombSwap xbombSwapTDai = XBombSwap(0x8146293bf5225b471625372e985FDb7165C35fe2);
 
       if (inputToken == chapelBomb) {
         XBombSwap bombSwap;
