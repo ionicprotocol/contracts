@@ -22,6 +22,7 @@ import { IRedemptionStrategy } from "../liquidators/IRedemptionStrategy.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
 import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
 import { ComptrollerFirstExtension } from "../compound/ComptrollerFirstExtension.sol";
+import { SafeOwnable } from "../ionic/SafeOwnable.sol";
 
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
@@ -147,6 +148,7 @@ abstract contract LeveredPositionTest is MarketsTest {
   ILiquidatorsRegistry registry;
   LeveredPosition position;
   LeveredPositionsLens lens;
+  MasterPriceOracle mpo;
 
   function afterForkSetUp() internal virtual override {
     super.afterForkSetUp();
@@ -159,6 +161,7 @@ abstract contract LeveredPositionTest is MarketsTest {
       ap.setAddress("SOLIDLY_SWAP_ROUTER", 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109);
     }
 
+    mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     registry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
     {
@@ -365,6 +368,10 @@ abstract contract LeveredPositionTest is MarketsTest {
   }
 
   function testLeverMaxDown() public whenForking {
+    IERC20Upgradeable stableAsset = IERC20Upgradeable(stableMarket.underlying());
+    IERC20Upgradeable collateralAsset = IERC20Upgradeable(collateralMarket.underlying());
+    uint256 startingEquity = position.getEquityAmount();
+
     uint256 maxRatio = position.getMaxLeverageRatio();
     uint256 leverageRatioRealized = position.adjustLeverageRatio(maxRatio);
     assertApproxEqRel(leverageRatioRealized, maxRatio, 1e16, "target ratio not matching");
@@ -383,32 +390,12 @@ abstract contract LeveredPositionTest is MarketsTest {
 
     uint256 withdrawAmount = position.closePosition();
     emit log_named_uint("withdraw amount", withdrawAmount);
+    assertApproxEqRel(startingEquity, withdrawAmount, 5e16, "!withdraw amount");
 
     assertEq(position.getEquityAmount(), 0, "!nonzero base collateral");
     assertEq(position.getCurrentLeverageRatio(), 0, "!nonzero leverage ratio");
   }
 }
-
-// HAY is no longer in the pool
-// contract HayAnkrLeveredPositionTest is LeveredPositionTest {
-//   function setUp() public fork(BSC_MAINNET) {}
-
-//   function afterForkSetUp() internal override {
-//     super.afterForkSetUp();
-
-//     uint256 depositAmount = 10e18;
-
-//     address ankrBnbMarket = 0xb2b01D6f953A28ba6C8f9E22986f5bDDb7653aEa;
-//     address hayMarket = 0x10b6f851225c203eE74c369cE876BEB56379FCa3;
-//     address ankrBnbWhale = 0x366B523317Cc95B1a4D30b33f8637882825C5E23;
-
-//     SolidlySwapLiquidator solidlyLiquidator = new SolidlySwapLiquidator();
-//     _configurePairAndLiquidator(ankrBnbMarket, hayMarket, solidlyLiquidator);
-//     _fundMarketAndSelf(ICErc20(ankrBnbMarket), ankrBnbWhale);
-
-//     position = _openLeveredPosition(address(this), depositAmount);
-//   }
-// }
 
 contract WMaticStMaticLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
@@ -604,12 +591,23 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   uint256 depositAmount = 100e18;
   address whale = 0xe7B7dF67C1fe053f1C6B965826d3bFF19603c482;
   uint256 ratioOnCreation = 1.0e18;
-  uint256 minBorrowNative = 1e16;
+  uint256 minBorrowNative = 1e17;
 
   function setUp() public fork(BSC_CHAPEL) {}
 
+  function upgradeRegistry() internal {
+    DiamondBase asBase = DiamondBase(address(registry));
+    address[] memory exts = asBase._listExtensions();
+    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
+    vm.prank(SafeOwnable(address(registry)).owner());
+    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
+  }
+
+
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
+
+    upgradeRegistry();
 
     vm.mockCall(
       address(ffd),
@@ -627,17 +625,17 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
 
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
-    // TODO call to cache the slippage
-    //    vm.startPrank(whale);
-    //    {
-    //      collateralToken.approve(address(registry), 1e36);
-    //      registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
-    //      stableToken.approve(address(registry), 1e36);
-    //      registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
-    //
-    //      collateralToken.transfer(address(this), depositAmount);
-    //    }
-    //    vm.stopPrank();
+    // call amountOutAndSlippageOfSwap to cache the slippage
+    vm.startPrank(whale);
+    {
+      collateralToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
+      stableToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
+
+      collateralToken.transfer(address(this), depositAmount);
+    }
+    vm.stopPrank();
 
     vm.prank(whale);
     collateralToken.transfer(address(this), depositAmount);
