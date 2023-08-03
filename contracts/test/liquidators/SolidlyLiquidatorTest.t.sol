@@ -97,4 +97,26 @@ contract SolidlyLiquidatorTest is BaseTest {
     assertEq(address(outputToken), ankrBnbAddress, "!ankrBNB output");
     assertApproxEqRel(outputValue, inputValue, 8e16, "!ankrBNB amount");
   }
+
+  function testSolidlyDaiUsdrLp() public fork(POLYGON_MAINNET) {
+    address daiUsdrLpAddress = 0x6ab291A9BB3C20F0017f2E93A6d1196842D09bF4;
+    address daiUsdrLpWhale = 0x5E21386E8E0e6C77Abd1E08e21e9D41e760D3747;
+    address usdrAddress = 0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63;
+
+    IERC20Upgradeable daiUsdrLp = IERC20Upgradeable(daiUsdrLpAddress);
+    vm.prank(daiUsdrLpWhale);
+    daiUsdrLp.transfer(address(liquidator), 1e18);
+
+    (IERC20Upgradeable outputToken, uint256 outputAmount) = liquidator.redeem(
+      daiUsdrLp,
+      inputAmount,
+      abi.encode(solidlySwapRouter, usdrAddress, false)
+    );
+
+    uint256 outputValue = mpo.price(usdrAddress) * outputAmount;
+    uint256 inputValue = mpo.price(daiUsdrLpAddress) * inputAmount;
+
+    assertEq(address(outputToken), usdrAddress, "!usdr output");
+    assertApproxEqRel(outputValue, inputValue, 8e16, "!in value != out value");
+  }
 }
