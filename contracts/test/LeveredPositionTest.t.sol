@@ -7,7 +7,6 @@ import { DiamondBase, DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { LeveredPosition } from "../ionic/levered/LeveredPosition.sol";
 import { LeveredPositionFactory, IFeeDistributor } from "../ionic/levered/LeveredPositionFactory.sol";
 import { JarvisLiquidatorFunder } from "../liquidators/JarvisLiquidatorFunder.sol";
-import { SolidlySwapLiquidator } from "../liquidators/SolidlySwapLiquidator.sol";
 import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.sol";
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
@@ -672,8 +671,7 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
     address usdrWhale = 0xa138341185a9D0429B0021A11FB717B225e13e1F; // curve lp token
     address daiUsdrLpWhale = 0x5E21386E8E0e6C77Abd1E08e21e9D41e760D3747;
 
-    IRedemptionStrategy liquidator = new SolidlySwapLiquidator();
-    _configurePairAndLiquidator(usdrMarket, daiUsdrLpMarket, liquidator);
+    _configurePair(usdrMarket, daiUsdrLpMarket);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
     _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
 
