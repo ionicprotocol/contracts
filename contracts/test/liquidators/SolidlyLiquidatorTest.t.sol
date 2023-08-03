@@ -9,7 +9,7 @@ contract SolidlyLiquidatorTest is BaseTest {
   SolidlySwapLiquidator public liquidator;
   MasterPriceOracle public mpo;
   address stableToken;
-  address solidlySwapRouter = 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109;
+  address solidlySwapRouter;
   address hayAddress = 0x0782b6d8c4551B9760e74c0545a9bCD90bdc41E5;
   address ankrAddress = 0xf307910A4c7bbc79691fD374889b36d8531B08e3;
   address ankrBnbAddress = 0x52F24a5e03aee338Da5fd9Df68D2b6FAe1178827;
@@ -19,6 +19,12 @@ contract SolidlyLiquidatorTest is BaseTest {
     liquidator = new SolidlySwapLiquidator();
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     stableToken = ap.getAddress("stableToken");
+
+    if (block.chainid == BSC_MAINNET) {
+      solidlySwapRouter = 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109;
+    } else if (block.chainid == POLYGON_MAINNET) {
+      solidlySwapRouter = 0xda822340F5E8216C277DBF66627648Ff5D57b527;
+    }
   }
 
   function testSolidlyHayBusd() public fork(BSC_MAINNET) {
