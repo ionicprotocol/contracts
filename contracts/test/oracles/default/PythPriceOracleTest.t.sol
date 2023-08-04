@@ -40,6 +40,7 @@ contract PythPriceOracleTest is BaseTest {
     feedIds[0] = usdcUsdTokenPriceFeed;
     feedIds[1] = btcUsdTokenPriceFeed;
 
+    vm.startPrank();
     if (block.chainid == NEON_MAINNET) {
       oracle.initialize(neonPyth, neonUsdTokenPriceFeed, stable);
     } else if (block.chainid == LINEA_MAINNET) {
