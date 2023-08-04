@@ -33,14 +33,15 @@ contract PythPriceOracleTest is BaseTest {
     stable = ap.getAddress("stableToken");
     wtoken = ap.getAddress("wtoken");
     wbtc = ap.getAddress("wBTCToken");
+    mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     oracle = new PythPriceOracle();
 
     // create an array of bytes to pass to the oracle
     bytes32[] memory feedIds = new bytes32[](2);
     feedIds[0] = usdcUsdTokenPriceFeed;
     feedIds[1] = btcUsdTokenPriceFeed;
+    vm.startPrank(mpo.admin());
 
-    vm.startPrank();
     if (block.chainid == NEON_MAINNET) {
       oracle.initialize(neonPyth, neonUsdTokenPriceFeed, stable);
     } else if (block.chainid == LINEA_MAINNET) {
