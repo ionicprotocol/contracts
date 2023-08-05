@@ -15,8 +15,8 @@ import { AdapterConfig } from "../ionic/vault/OptimizedAPRVaultStorage.sol";
 import { OptimizedAPRVaultBase } from "../ionic/vault/OptimizedAPRVaultBase.sol";
 import { IonicFlywheel } from "../ionic/strategies/flywheel/IonicFlywheel.sol";
 
-import { IFlywheelBooster } from "flywheel/interfaces/IFlywheelBooster.sol";
-import { IFlywheelRewards } from "flywheel/interfaces/IFlywheelRewards.sol";
+import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
+import { IFlywheelRewards } from "flywheel-v2/interfaces/IFlywheelRewards.sol";
 import { FuseFlywheelDynamicRewards } from "fuse-flywheel/rewards/FuseFlywheelDynamicRewards.sol";
 import { WETH } from "solmate/tokens/WETH.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
