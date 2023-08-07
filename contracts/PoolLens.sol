@@ -580,4 +580,9 @@ contract PoolLens is Initializable {
     (IonicPoolData[] memory data, bool[] memory errored) = getPoolsData(accountPools);
     return (indexes, accountPools, data, errored);
   }
+
+  function getHealthFactor(address user, IonicComptroller pool) external view returns (uint256) {
+    pool.getAllMarkets();
+    pool.getAccountLiquidity(user);
+  }
 }
