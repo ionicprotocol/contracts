@@ -15,9 +15,6 @@ contract AlgebraPriceOracleTest is BaseTest {
   address stable;
 
   function afterForkSetUp() internal override {
-    // Not using the address provider yet -- config just added
-    // TODO: use ap when deployment is done
-
     stable = ap.getAddress("stableToken");
     wtoken = ap.getAddress("wtoken"); // WETH
     wbtc = ap.getAddress("wBTCToken"); // WBTC
@@ -98,15 +95,6 @@ contract AlgebraPriceOracleTest is BaseTest {
   function testZkEvmAssets() public forkAtBlock(ZKEVM_MAINNET, 4167547) {
     address usdt = 0x1E4a5963aBFD975d8c9021ce480b42188849D41d; // 6 decimals
     address wmatic = 0xa2036f0538221a77A3937F1379699f44945018d0;
-
-    address baseToken = oracle.WTOKEN();
-    emit log_named_address("Base Token", baseToken);
-    emit log_named_address("wtoken", wtoken);
-    emit log_named_address("stable", stable);
-    address[] memory sbt = oracle.getSupportedBaseTokens();
-    for (uint256 i = 0; i < sbt.length; i++) {
-      emit log_named_address("Supported Base Token", sbt[i]);
-    }
 
     address[] memory underlyings = new address[](3);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
