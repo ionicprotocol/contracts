@@ -5,8 +5,8 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { SafeCastLib } from "solmate/utils/SafeCastLib.sol";
 
-import { IFlywheelRewards } from "flywheel/interfaces/IFlywheelRewards.sol";
-import { IFlywheelBooster } from "flywheel/interfaces/IFlywheelBooster.sol";
+import { IFlywheelRewards } from "flywheel-v2/interfaces/IFlywheelRewards.sol";
+import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
 
 import { SafeOwnableUpgradeable } from "../../../ionic/SafeOwnableUpgradeable.sol";
 

@@ -4,64 +4,104 @@ pragma solidity >=0.8.0;
 import { PythPriceOracle } from "../../../oracles/default/PythPriceOracle.sol";
 import { MasterPriceOracle } from "../../../oracles/MasterPriceOracle.sol";
 import { BaseTest } from "../../config/BaseTest.t.sol";
-import { MockPyth } from "@pythnetwork/pyth-sdk-solidity/MockPyth.sol";
+import { IPyth } from "@pythnetwork/pyth-sdk-solidity/MockPyth.sol";
 import { PythStructs } from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import { BasePriceOracle } from "../../../oracles/BasePriceOracle.sol";
 
-contract PythOraclesTest is BaseTest {
+contract PythPriceOracleTest is BaseTest {
   PythPriceOracle oracle;
-  MockPyth pythOracle;
+  IPyth pythOracle;
+  MasterPriceOracle mpo;
 
-  bytes32 nativeTokenPriceFeed = bytes32(bytes("7f57ca775216655022daa88e41c380529211cde01a1517735dbcf30e4a02bdaa"));
-  int64 nativeTokenPrice = 0.5e18;
-  bytes32 tokenPriceFeed = bytes32(bytes("41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722"));
-  int64 tokenPrice = 1e18;
-  address token = 0x7ff459CE3092e8A866aA06DA88D291E2E31230C1;
+  address stable;
+  address wtoken;
+  address wbtc;
+
+  address neonPyth = 0x7f2dB085eFC3560AFF33865dD727225d91B4f9A5;
+  address lineaPyth = 0xA2aa501b19aff244D90cc15a4Cf739D2725B5729;
+  address polygonPyth = 0xff1a0f4744e8582DF1aE09D5611b887B6a12925C;
+  address zkevmPyth = 0xC5E56d6b40F3e3B5fbfa266bCd35C37426537c65;
+
+  bytes32 ethUsdTokenPriceFeed = 0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+  bytes32 btcUsdTokenPriceFeed = 0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43;
+  bytes32 neonUsdTokenPriceFeed = 0xd82183dd487bef3208a227bb25d748930db58862c5121198e723ed0976eb92b7;
+  bytes32 maticUsdTokenPriceFeed = 0x5de33a9112c2b700b8d30b8a3402c103578ccfa2765696471cc672bd5cf6ac52;
+  bytes32 usdcUsdTokenPriceFeed = 0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a;
 
   function afterForkSetUp() internal override {
-    pythOracle = new MockPyth(0, 0);
-
-    PythStructs.Price memory mockTokenPrice = PythStructs.Price(tokenPrice, 0, 0, uint64(block.timestamp));
-    PythStructs.Price memory mockNativeTokenPrice = PythStructs.Price(nativeTokenPrice, 0, 0, uint64(block.timestamp));
-    PythStructs.Price memory mockTokenPriceEma = PythStructs.Price(tokenPrice, 0, 0, uint64(block.timestamp));
-    PythStructs.Price memory mockNativeTokenPriceEma = PythStructs.Price(
-      nativeTokenPrice,
-      0,
-      0,
-      uint64(block.timestamp)
-    );
-
-    PythStructs.PriceFeed memory mockTokenFeed = PythStructs.PriceFeed(
-      tokenPriceFeed,
-      mockTokenPrice,
-      mockTokenPriceEma
-    );
-
-    PythStructs.PriceFeed memory mockNativeTokenFeed = PythStructs.PriceFeed(
-      nativeTokenPriceFeed,
-      mockNativeTokenPrice,
-      mockNativeTokenPriceEma
-    );
-
-    bytes[] memory feedData = new bytes[](2);
-    feedData[0] = abi.encode(mockTokenFeed);
-    feedData[1] = abi.encode(mockNativeTokenFeed);
-    pythOracle.updatePriceFeeds(feedData);
-
+    stable = ap.getAddress("stableToken");
+    wtoken = ap.getAddress("wtoken");
+    wbtc = ap.getAddress("wBTCToken");
+    mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     oracle = new PythPriceOracle();
-    oracle.initialize(address(pythOracle), nativeTokenPriceFeed, address(0));
+
+    // create an array of bytes to pass to the oracle
+    bytes32[] memory feedIds = new bytes32[](2);
+    feedIds[0] = usdcUsdTokenPriceFeed;
+    feedIds[1] = btcUsdTokenPriceFeed;
+    vm.startPrank(mpo.admin());
+
+    if (block.chainid == NEON_MAINNET) {
+      oracle.initialize(neonPyth, neonUsdTokenPriceFeed, stable);
+    } else if (block.chainid == LINEA_MAINNET) {
+      oracle.initialize(lineaPyth, ethUsdTokenPriceFeed, stable);
+    } else if (block.chainid == POLYGON_MAINNET) {
+      oracle.initialize(polygonPyth, maticUsdTokenPriceFeed, stable);
+    } else if (block.chainid == ZKEVM_MAINNET) {
+      oracle.initialize(zkevmPyth, ethUsdTokenPriceFeed, stable);
+    } else {
+      revert("Unsupported chain");
+    }
+    oracle.setPriceFeeds(asArray(stable, wbtc), feedIds);
+    vm.stopPrank();
   }
 
-  function getPrice(address testedTokenAddress, bytes32 feedId) internal returns (uint256 price) {
-    address[] memory underlyings = new address[](1);
-    underlyings[0] = testedTokenAddress;
-    bytes32[] memory feedIds = new bytes32[](1);
-    feedIds[0] = feedId;
-    oracle.setPriceFeeds(underlyings, feedIds);
+  function testPolygonTokenPrice() public debuggingOnly fork(POLYGON_MAINNET) {
+    PythStructs.Price memory pythPrice = IPyth(polygonPyth).getPriceUnsafe(maticUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
 
-    price = oracle.price(testedTokenAddress);
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e16);
   }
 
-  function testTokenPrice() public fork(NEON_MAINNET) {
-    assertEq(getPrice(token, tokenPriceFeed), uint256(uint64((tokenPrice / nativeTokenPrice) * 1e18)));
+  function testLineaTokenPrice() public fork(LINEA_MAINNET) {
+    PythStructs.Price memory pythPrice = IPyth(lineaPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e14);
+  }
+
+  function testNeonTokenPrice() public debuggingOnly fork(NEON_MAINNET) {
+    PythStructs.Price memory pythPriceNeon = IPyth(neonPyth).getPriceUnsafe(neonUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPriceNeon.price)));
+    emit log_named_uint("updated", pythPriceNeon.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+    PythStructs.Price memory pythPrice = IPyth(neonPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e16);
+  }
+
+  function testZkEvmTokenPrice() public fork(ZKEVM_MAINNET) {
+    PythStructs.Price memory pythPrice = IPyth(zkevmPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
+    emit log_named_uint("price", uint256(uint64(pythPrice.price)));
+    emit log_named_uint("updated", pythPrice.publishTime);
+    emit log_named_uint("ts", block.timestamp);
+
+    uint256 price = oracle.price(wbtc);
+    uint256 priceMpo = mpo.price(wbtc);
+    assertApproxEqRel(price, priceMpo, 1e14);
   }
 }

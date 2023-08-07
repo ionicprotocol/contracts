@@ -81,13 +81,13 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
       // Get price from MasterPriceOracle
       uint256 usdNativeTokenPrice = BasePriceOracle(msg.sender).price(USD_TOKEN);
       uint256 nativeTokenUsdPrice = 1e36 / usdNativeTokenPrice; // 18 decimals -- TODO: doublecheck
-      PythStructs.Price memory tokenUsdPrice = PYTH.getPrice(feed); // 8 decimals ---  TODO: doublecheck
+      PythStructs.Price memory tokenUsdPrice = PYTH.getPriceUnsafe(feed); // 8 decimals ---  TODO: doublecheck
       return
         tokenUsdPrice.price >= 0 ? (uint256(uint64(tokenUsdPrice.price)) * 1e28) / uint256(nativeTokenUsdPrice) : 0;
     } else {
-      uint128 nativeTokenUsdPrice = uint128(uint64(PYTH.getPrice(NATIVE_TOKEN_USD_FEED).price));
+      uint128 nativeTokenUsdPrice = uint128(uint64(PYTH.getPriceUnsafe(NATIVE_TOKEN_USD_FEED).price));
       if (nativeTokenUsdPrice <= 0) return 0;
-      uint128 tokenUsdPrice = uint128(uint64(PYTH.getPrice(feed).price));
+      uint128 tokenUsdPrice = uint128(uint64(PYTH.getPriceUnsafe(feed).price));
       return tokenUsdPrice >= 0 ? (uint256(tokenUsdPrice) * 1e18) / uint256(nativeTokenUsdPrice) : 0;
     }
   }

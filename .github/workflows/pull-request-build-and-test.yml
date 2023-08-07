@@ -275,8 +275,8 @@ jobs:
       MNEMONIC: "${{ secrets.MNEMONIC }}"
       TEST_RUN_CHAINID: 59144
       TEST_RUN_LEVEL: ${{ github.event_name == 'pull_request' && '100' || '90' }}
-      LINEA_MAINNET_RPC_URL: ${{ secrets.LINEA_MAINNET_RPC_URL }}
-      LINEA_MAINNET_ARCHIVE_RPC_URL: ${{ secrets.LINEA_MAINNET_ARCHIVE_RPC_URL }}
+      LINEA_RPC_URL: https://rpc.linea.build
+      LINEA_ARCHIVE_RPC_URL: https://rpc.linea.build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -297,7 +297,7 @@ jobs:
           path: "~/.foundry/cache"
           key: rpc-cache-local-${{ hashFiles('rpc-cache-keyfile') }}
 
-      - name: Run base tests for Ethereum mainnet
+      - name: Run base tests for Linea mainnet
         run: forge test -vv --no-match-contract '${{ env.EXCLUDE_TESTS }}|${{ env.FLAKY_TESTS }}|${{ env.SLOW_TESTS }}'
 
       - name: Run slow tests for Linea mainnet
@@ -307,7 +307,46 @@ jobs:
       - name: Run flaky tests for Linea mainnet
         if: always()
         run: forge test -vv --match-contract '${{ env.FLAKY_TESTS }}'
-        
+  
+  build-and-test-zkevm:
+    needs: [lint]
+    env:
+      MNEMONIC: "${{ secrets.MNEMONIC }}"
+      TEST_RUN_CHAINID: 1101
+      TEST_RUN_LEVEL: ${{ github.event_name == 'pull_request' && '100' || '90' }}
+      ZKEVM_MAINNET_RPC_URL: https://zkevm-rpc.com
+      ZKEVM_MAINNET_ARCHIVE_RPC_URL: https://zkevm-rpc.com
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install Forge dependencies
+        run: forge install
+
+      - name: Forge RPC cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.foundry/cache"
+          key: rpc-cache-local-${{ hashFiles('rpc-cache-keyfile') }}
+
+      - name: Run base tests for zkevm mainnet
+        run: forge test -vv --no-match-contract '${{ env.EXCLUDE_TESTS }}|${{ env.FLAKY_TESTS }}|${{ env.SLOW_TESTS }}'
+
+      - name: Run slow tests for zkevm mainnet
+        if: always()
+        run: forge test -vv --match-contract '${{ env.SLOW_TESTS }}'
+
+      - name: Run flaky tests for zkevm mainnet
+        if: always()
+        run: forge test -vv --match-contract '${{ env.FLAKY_TESTS }}'
+                
   build-and-test-local:
     needs: [lint]
     env:
