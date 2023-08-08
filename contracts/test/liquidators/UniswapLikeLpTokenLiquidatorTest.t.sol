@@ -36,7 +36,7 @@ contract UniswapLikeLpTokenLiquidatorTest is BaseTest {
     wtoken = ap.getAddress("wtoken");
     stableToken = ap.getAddress("stableToken");
     solidlyRouter = ap.getAddress("SOLIDLY_SWAP_ROUTER");
-
+    emit log_named_address("solidlyRouter", solidlyRouter);
     uniLiquidator = new UniswapLpTokenLiquidator();
     solidlyLpTokenLiquidator = new SolidlyLpTokenLiquidator();
     solidlyLpTokenWrapper = new SolidlyLpTokenWrapper();
