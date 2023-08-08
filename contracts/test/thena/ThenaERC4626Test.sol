@@ -7,8 +7,8 @@ import { IonicFlywheel } from "../../ionic/strategies/flywheel/IonicFlywheel.sol
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { FuseFlywheelDynamicRewards } from "fuse-flywheel/rewards/FuseFlywheelDynamicRewards.sol";
-import { IFlywheelRewards } from "flywheel/interfaces/IFlywheelRewards.sol";
-import { IFlywheelBooster } from "flywheel/interfaces/IFlywheelBooster.sol";
+import { IFlywheelRewards } from "flywheel-v2/interfaces/IFlywheelRewards.sol";
+import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
 import { FlywheelCore } from "flywheel-v2/FlywheelCore.sol";
 import { ERC20 as SolERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC20Upgradeable as ERC20 } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";

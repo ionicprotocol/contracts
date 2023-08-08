@@ -39,7 +39,7 @@ contract BalancerLpTokenPriceOracleTest is BaseTest, BNum {
 
   // TODO: add test for mimo / par pair, when we deploy the MIMO DIA price oracle
   // See: https://github.com/Midas-Protocol/monorepo/issues/476
-  function testPriceBalancer() public forkAtBlock(POLYGON_MAINNET, 38399353) {
+  function testPriceBalancer() public forkAtBlock(POLYGON_MAINNET, 46024675) {
     // 2-token pools
     uint256 priceWbtcEth = oracle.price(wbtcWeth5050);
     uint256 priceNTokensWbtEth = oracleNTokens.price(wbtcWeth5050);
@@ -54,9 +54,10 @@ contract BalancerLpTokenPriceOracleTest is BaseTest, BNum {
     // (1220 / 0,19722783691) = 6.185,7 USD / wbtcWeth5050
     // 6.185,7 / 1.00 =  6.185,7 wbtcWeth5050 / MATIC   [1 MATIC ~= 1 USD$]
     // 6.185,7 * 1e18 ~ 6.185e21
-    assertEq(priceWbtcEth, 6142342987541477286578);
-    // Max deviation of 6.1e18, or 0.1%
-    assertApproxEqAbs(priceWbtcEth, priceNTokensWbtEth, 6.1e18);
+    // Updated: 07/07/2023
+    assertEq(priceWbtcEth, 11262839540893715595453);
+    // Max deviation of 1e17, or 0.1%
+    assertApproxEqRel(priceWbtcEth, priceNTokensWbtEth, 1e17);
 
     // Based on this tx: https://polygonscan.com/tx/0x38eda84addb9392a1bd15b1fe518de6d9e4a6dc3df7a611aba5d4ddf5cc83b47
     // 0,03 USD$ worth of liquidity was removed for 0,92153 mimoPar8020 tokens
@@ -65,10 +66,10 @@ contract BalancerLpTokenPriceOracleTest is BaseTest, BNum {
     // 0,03255 / 1.00 = 0,03255 mimoPar8020 / MATIC   [1 MATIC ~= 1 USD$]
     // 0,03255 * 1e18 ~ 3,255e16
 
-    assertEq(priceMimoPar, 34147943542125948);
+    assertEq(priceMimoPar, 55237961865401672);
     assertEq(priceMimoPar, underlyingPriceMimoPar);
-    // Max deviation of 3.4e16, or 0.1%
-    assertApproxEqAbs(priceMimoPar, priceNTokensMimoPar, 3.4e16);
+    // Max deviation of 1e17, or 0.1%
+    assertApproxEqRel(priceMimoPar, priceNTokensMimoPar, 1e17);
 
     // 4-token pools
     uint256 priceNTokenswmaticUsdcWethBal = oracleNTokens.price(wmaticUsdcWethBal25252525);
@@ -79,6 +80,7 @@ contract BalancerLpTokenPriceOracleTest is BaseTest, BNum {
     // (5390 / 440,321) = 12,2410 USD / wmaticUsdcWethBal25252525
     // 12,2410 / 1.00 = 12,2410 wmaticUsdcWethBal25252525 / MATIC   [1 MATIC ~= 1 USD$]
     // 12,2410 * 1e18 ~ 1,2241e19
-    assertEq(priceNTokenswmaticUsdcWethBal, 12089492505203555155);
+    // Updated: 07/07/2023
+    assertEq(priceNTokenswmaticUsdcWethBal, 15468228316697206187);
   }
 }

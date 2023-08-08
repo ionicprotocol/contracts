@@ -29,14 +29,33 @@ contract BalancerRateProviderOracleTest is BaseTest {
   address MATICxRateProvider = 0xeE652bbF72689AA59F0B8F981c9c90e2A8Af8d8f;
   address wstETHRateProvider = 0x8c1944E305c590FaDAf0aDe4f737f5f95a4971B6;
 
+  // zkEVM
+  address wstETHzkevmRateProvider = 0x00346D2Fd4B2Dc3468fA38B857409BC99f832ef8;
+  address rETHzkevmRateProvider = 0x60b39BEC6AF8206d1E6E8DFC63ceA214A506D6c3;
+
+  address rETHzkevm = 0xb23C20EFcE6e24Acca0Cef9B7B7aA196b84EC942;
+  address wstETHzkevm = 0x5D8cfF95D7A57c0BF50B30b43c7CC0D52825D4a9;
+
   function afterForkSetUp() internal override {
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     wtoken = ap.getAddress("wtoken");
-    wtokenPrice = mpo.price(wtoken);
-    address[] memory underlyings = asArray(stMATIC, MATICx, csMATIC);
-    address[] memory baseTokens = asArray(wtoken, wtoken, wtoken);
-    address[] memory rateProviders = asArray(stMATICRateProvider, MATICxRateProvider, csMATICRateProvider);
 
+    address[] memory baseTokens;
+    address[] memory underlyings;
+    address[] memory rateProviders;
+
+    if (block.chainid == POLYGON_MAINNET) {
+      wtokenPrice = mpo.price(wtoken);
+      underlyings = asArray(stMATIC, MATICx, csMATIC);
+      baseTokens = asArray(wtoken, wtoken, wtoken);
+      rateProviders = asArray(stMATICRateProvider, MATICxRateProvider, csMATICRateProvider);
+    } else if (block.chainid == ZKEVM_MAINNET) {
+      underlyings = asArray(rETHzkevm, wstETHzkevm);
+      baseTokens = asArray(wtoken, wtoken);
+      rateProviders = asArray(rETHzkevmRateProvider, wstETHzkevmRateProvider);
+    } else {
+      revert("not supported");
+    }
     oracle = new BalancerRateProviderOracle();
     oracle.initialize(rateProviders, baseTokens, underlyings);
   }
@@ -78,6 +97,20 @@ contract BalancerRateProviderOracleTest is BaseTest {
     // Must be close but higher than to the price for WTOKEN
     assertTrue(priceFromRateProviderOracle > wtokenPrice);
     assertApproxEqRel(mpo.price(wtoken), priceFromRateProviderOracle, 2e17, "!diff > 20%");
+  }
+
+  // function tesZkEvmPriceOracle() public fork(ZKEVM_MAINNET) {
+  function testGetZkEvmRP() public fork(ZKEVM_MAINNET) {
+    // We don't have yet a price feed for csMATIC currently live
+    // uint256 priceFromMpo = mpo.price(csMATIC);
+    uint256 rEthPriceFromRateProviderOracle = getTokenPrice(rETHzkevm);
+    uint256 wstEthPriceFromRateProviderOracle = getTokenPrice(wstETHzkevm);
+    // assertApproxEqRel(priceFromMpo, priceFromRateProviderOracle, 1e16, "!diff > 1%");
+    // Must be close but higher than to the price for WTOKEN
+    assertTrue(rEthPriceFromRateProviderOracle > wtokenPrice);
+    assertTrue(wstEthPriceFromRateProviderOracle > wtokenPrice);
+    assertApproxEqRel(mpo.price(wtoken), rEthPriceFromRateProviderOracle, 2e17, "!diff > 20%");
+    assertApproxEqRel(mpo.price(wtoken), wstEthPriceFromRateProviderOracle, 2e17, "!diff > 20%");
   }
 
   function testRegisterNewToken() public fork(POLYGON_MAINNET) {

@@ -35,19 +35,13 @@ contract UniswapLikeLpTokenLiquidatorTest is BaseTest {
     uniswapV2Router = ap.getAddress("IUniswapV2Router02");
     wtoken = ap.getAddress("wtoken");
     stableToken = ap.getAddress("stableToken");
-
+    solidlyRouter = ap.getAddress("SOLIDLY_SWAP_ROUTER");
+    emit log_named_address("solidlyRouter", solidlyRouter);
     uniLiquidator = new UniswapLpTokenLiquidator();
     solidlyLpTokenLiquidator = new SolidlyLpTokenLiquidator();
     solidlyLpTokenWrapper = new SolidlyLpTokenWrapper();
     oracleSolidly = new SolidlyLpTokenPriceOracle(wtoken);
     oracleUniswap = new UniswapLpTokenPriceOracle(wtoken);
-    if (block.chainid == BSC_MAINNET) {
-      // thena
-      solidlyRouter = 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109;
-    } else if (block.chainid == POLYGON_MAINNET) {
-      // pearl
-      solidlyRouter = 0xda822340F5E8216C277DBF66627648Ff5D57b527;
-    }
   }
 
   function setUpOracles(address lpToken, UniswapLikeLpTokenPriceOracle oracle) internal {
@@ -275,25 +269,25 @@ contract UniswapLikeLpTokenLiquidatorTest is BaseTest {
 
   function testWrapSolidlyLpTokensUsdrUsdc() public fork(POLYGON_MAINNET) {
     IERC20Upgradeable usdc = IERC20Upgradeable(ap.getAddress("stableToken"));
-    address USDC_USDR = 0xf6A72Bd46F53Cd5103812ea1f4B5CF38099aB797;
+    address USDC_USDR = 0xD17cb0f162f133e339C0BbFc18c36c357E681D6b;
     address USDCWhale = 0xe7804c37c13166fF0b37F5aE0BB07A3aEbb6e245; // binance hot wallet
 
     _testSolidlyLpTokenWrapper(usdc, 1000e6, USDCWhale, IPair(USDC_USDR));
   }
 
   function testWrapSolidlyLpTokensUsdrUsdr() public fork(POLYGON_MAINNET) {
-    IERC20Upgradeable usdr = IERC20Upgradeable(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63);
-    address WUSDR_USDR = 0x10E1b58B3C93890D04D539b5f39Aa4Df27A362b2;
-    address USDRWhale = 0xa138341185a9D0429B0021A11FB717B225e13e1F; // curve lp token
+    IERC20Upgradeable usdr = IERC20Upgradeable(0x40379a439D4F6795B6fc9aa5687dB461677A2dBa);
+    address WUSDR_USDR = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
+    address USDRWhale = 0xBD02973b441Aa83c8EecEA158b98B5984bb1036E; // curve lp token
 
     _testSolidlyLpTokenWrapper(usdr, 1000e9, USDRWhale, IPair(WUSDR_USDR));
   }
 
-  function testWrapSolidlyLpTokensStMaticUsdr() public fork(POLYGON_MAINNET) {
-    IERC20Upgradeable usdr = IERC20Upgradeable(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63);
-    address STMATIC_USDR = 0x733eEEf37De013283da29cE9EB4758dC59CaFc87;
-    address USDRWhale = 0xa138341185a9D0429B0021A11FB717B225e13e1F; // curve lp token
+  function testWrapSolidlyLpTokensMaticUsdr() public fork(POLYGON_MAINNET) {
+    IERC20Upgradeable usdr = IERC20Upgradeable(0x40379a439D4F6795B6fc9aa5687dB461677A2dBa);
+    address MATIC_USDR = 0xB4d852b92148eAA16467295975167e640E1FE57A;
+    address USDRWhale = 0xBD02973b441Aa83c8EecEA158b98B5984bb1036E; // curve lp token
 
-    _testSolidlyLpTokenWrapper(usdr, 1000e9, USDRWhale, IPair(STMATIC_USDR));
+    _testSolidlyLpTokenWrapper(usdr, 1000e9, USDRWhale, IPair(MATIC_USDR));
   }
 }

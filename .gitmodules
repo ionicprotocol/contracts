@@ -7,9 +7,6 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/rari-capital/solmate
-[submodule "lib/flywheel-v2"]
-	path = lib/flywheel-v2
-	url = https://github.com/fei-protocol/flywheel-v2
 [submodule "lib/fuse-flywheel"]
 	path = lib/fuse-flywheel
 	url = https://github.com/fei-protocol/fuse-flywheel
@@ -28,3 +25,6 @@
 [submodule "lib/adrastia-periphery"]
 	path = lib/adrastia-periphery
 	url = https://github.com/adrastia-oracle/adrastia-periphery
+[submodule "lib/flywheel-v2"]
+	path = lib/flywheel-v2
+	url = https://github.com/ionicprotocol/flywheel-v2
