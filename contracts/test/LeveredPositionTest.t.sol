@@ -156,9 +156,6 @@ abstract contract LeveredPositionTest is MarketsTest {
     if (block.chainid == BSC_MAINNET) {
       vm.prank(ap.owner());
       ap.setAddress("ALGEBRA_SWAP_ROUTER", 0x327Dd3208f0bCF590A66110aCB6e5e6941A4EfA0);
-    } else if (block.chainid == POLYGON_MAINNET) {
-      vm.prank(ap.owner());
-      ap.setAddress("SOLIDLY_SWAP_ROUTER", 0xda822340F5E8216C277DBF66627648Ff5D57b527);
     }
 
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
@@ -194,11 +191,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(
-    address _collat,
-    address _stable,
-    IRedemptionStrategy _liquidator
-  ) internal {
+  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -280,10 +273,10 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
-    internal
-    returns (LeveredPosition _position)
-  {
+  function _openLeveredPosition(
+    address _positionOwner,
+    uint256 _depositAmount
+  ) internal returns (LeveredPosition _position) {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 
@@ -675,17 +668,18 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
+  }
 
+  function testWsdrWusdrUsdrLpLeverage() public {
     uint256 depositAmount = 1000e9;
+    address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
+    address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
+    address wUsdrWhale = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
+    address wUsdrUsdrLpWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
 
-    address usdrMarket = 0xCCF8b9Dc3178Cebdf2C8e7CE8174f820D4A1A866; // 0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63
-    address daiUsdrLpMarket = 0xD8Ab47Fd5211c641034fe8ca2b91F7E8E0cD940c;
-    address usdrWhale = 0xa138341185a9D0429B0021A11FB717B225e13e1F; // curve lp token
-    address daiUsdrLpWhale = 0x5E21386E8E0e6C77Abd1E08e21e9D41e760D3747;
-
-    _configurePair(usdrMarket, daiUsdrLpMarket);
-    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
-    _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
+    _configurePair(wusdrMarket, wUsdrUsdrLpMarket);
+    _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
+    _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
 
     position = _openLeveredPosition(address(this), depositAmount);
   }

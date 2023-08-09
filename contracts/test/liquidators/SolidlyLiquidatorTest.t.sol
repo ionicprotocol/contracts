@@ -23,7 +23,7 @@ contract SolidlyLiquidatorTest is BaseTest {
     if (block.chainid == BSC_MAINNET) {
       solidlySwapRouter = 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109;
     } else if (block.chainid == POLYGON_MAINNET) {
-      solidlySwapRouter = 0xda822340F5E8216C277DBF66627648Ff5D57b527;
+      solidlySwapRouter = 0x06374F57991CDc836E5A318569A910FE6456D230;
     }
   }
 
