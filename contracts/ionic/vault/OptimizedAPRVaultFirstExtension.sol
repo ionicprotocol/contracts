@@ -47,6 +47,8 @@ contract OptimizedAPRVaultFirstExtension is OptimizedAPRVaultExtension {
   function initialize(bytes calldata data) public initializer {
     require(msg.sender == address(this), "!not self call");
 
+    __ReentrancyGuard_init();
+
     (
       IERC20 asset_,
       AdapterConfig[10] memory adapters_,

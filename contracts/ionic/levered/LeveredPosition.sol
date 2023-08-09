@@ -211,14 +211,19 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     uint256 positionSupplyAmount = collateralMarket.balanceOfUnderlying(address(this));
     if (positionSupplyAmount == 0) return 0;
 
-    uint256 debtAmount = stableMarket.borrowBalanceCurrent(address(this));
-
     BasePriceOracle oracle = pool.oracle();
-    uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
+
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
     uint256 positionValue = (collateralAssetPrice * positionSupplyAmount) / 1e18;
-    uint256 debtValue = (borrowedAssetPrice * debtAmount) / 1e18;
 
+    uint256 debtValue = 0;
+    uint256 debtAmount = stableMarket.borrowBalanceCurrent(address(this));
+    if (debtAmount > 0) {
+      uint256 borrowedAssetPrice = oracle.getUnderlyingPrice(stableMarket);
+      debtValue = (borrowedAssetPrice * debtAmount) / 1e18;
+    }
+
+    // s / ( s - b )
     return (positionValue * 1e18) / (positionValue - debtValue);
   }
 
@@ -320,6 +325,8 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
 
       // some math magic here
       // https://www.wolframalpha.com/input?i2d=true&i=r%3D%5C%2840%29Divide%5B%5C%2840%29s%2Bx%5C%2841%29%2C%5C%2840%29s%2Bx-b-c*x%5C%2841%29%5D+%5C%2841%29+solve+for+x
+
+      // x = supplyValueDelta
       int256 supplyValueDelta = (((r1 * s) - (b * r)) * 1e18) / ((c * r) - (1e18 * r1));
       supplyValueDeltaAbs = uint256((supplyValueDelta < 0) ? -supplyValueDelta : supplyValueDelta);
     }
@@ -327,8 +334,9 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     supplyDelta = (supplyValueDeltaAbs * 1e18) / collateralAssetPrice;
     borrowsDelta = (supplyValueDeltaAbs * 1e18) / borrowedAssetPrice;
 
-    // TODO is this double accounting for the slippage?
+    // stables to borrow = c * x
     if (up) borrowsDelta = (borrowsDelta * slippageFactor) / 1e18;
+    // amount to redeem = c * x
     else supplyDelta = (supplyDelta * slippageFactor) / 1e18;
   }
 
@@ -396,13 +404,13 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     BasePriceOracle oracle = pool.oracle();
     uint256 stableAssetPrice = oracle.getUnderlyingPrice(stableMarket);
     uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateralMarket);
-    uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(collateralAsset, stableAsset);
 
     if (targetRatio <= 1e18) {
       // if max levering down, then derive the amount to redeem from the debt to be repaid
       borrowsToRepay = stableMarket.borrowBalanceCurrent(address(this));
       uint256 borrowsToRepayValueScaled = borrowsToRepay * stableAssetPrice;
       // accounting for swaps slippage
+      uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(collateralAsset, stableAsset);
       uint256 amountToRedeemValueScaled = (borrowsToRepayValueScaled * (10000 + assumedSlippage)) / 10000;
       amountToRedeem = amountToRedeemValueScaled / collateralAssetPrice;
     } else {
@@ -413,8 +421,7 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
         collateralAssetPrice,
         stableAssetPrice
       );
-      // accounting for swaps slippage
-      amountToRedeem = (amountToRedeem * (10000 + assumedSlippage)) / 10000;
+      // the slippage is already accounted for in _getSupplyAmountDelta
     }
 
     if (borrowsToRepay > 0) {

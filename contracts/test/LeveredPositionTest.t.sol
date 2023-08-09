@@ -164,6 +164,18 @@ abstract contract LeveredPositionTest is MarketsTest {
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     registry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
+    {
+      // upgrade the factory
+      LeveredPositionFactoryExtension newExt = new LeveredPositionFactoryExtension();
+
+      DiamondBase asBase = DiamondBase(address(factory));
+      address[] memory oldExts = asBase._listExtensions();
+      DiamondExtension oldExt = DiamondExtension(address(0));
+      if (oldExts.length > 0) oldExt = DiamondExtension(oldExts[0]);
+      vm.prank(factory.owner());
+      asBase._registerExtension(newExt, oldExt);
+    }
+
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
   }
 
