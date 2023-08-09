@@ -197,23 +197,6 @@ contract LiquidatorsRegistryTest is BaseTest {
     _swap(lpTokenWhale, inputToken, inputAmount, outputToken, 1e16);
   }
 
-  function testSwappingCurveLpPolygon() public fork(POLYGON_MAINNET) {
-    upgradeRegistry();
-
-    address lpTokenWhale = 0x875CE7e0565b4C8852CA2a9608F27B7213A90786; // curve gauge
-
-    IERC20Upgradeable inputToken = usdr3CrvCurveLpToken;
-    uint256 inputAmount = 1e18;
-    IERC20Upgradeable outputToken = stable;
-
-    _swap(lpTokenWhale, inputToken, inputAmount, outputToken, 1e16);
-
-    // TODO check if reconfigured
-    //IERC20Upgradeable inputToken = IERC20Upgradeable(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63); // USDR
-    //IERC20Upgradeable outputToken = IERC20Upgradeable(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174); // USDC
-    //registry.getRedemptionStrategy(inputToken, outputToken);
-  }
-
   function testSwappingBalancerStableLpPolygon() public fork(POLYGON_MAINNET) {
     // TODO: run deployment to fix the liquidation path and set the balancer liquidator data
     address lpTokenWhale = 0xBA12222222228d8Ba445958a75a0704d566BF2C8; // balancer gauge

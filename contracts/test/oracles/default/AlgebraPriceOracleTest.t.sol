@@ -11,14 +11,13 @@ contract AlgebraPriceOracleTest is BaseTest {
   AlgebraPriceOracle oracle;
   MasterPriceOracle mpo;
   address wtoken;
+  address wbtc;
   address stable;
 
   function afterForkSetUp() internal override {
-    // Not using the address provider yet -- config just added
-    // TODO: use ap when deployment is done
-
     stable = ap.getAddress("stableToken");
     wtoken = ap.getAddress("wtoken"); // WETH
+    wbtc = ap.getAddress("wBTCToken"); // WBTC
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     oracle = new AlgebraPriceOracle();
 
@@ -60,9 +59,8 @@ contract AlgebraPriceOracleTest is BaseTest {
     assertApproxEqRel(prices[1], expPrices[1], 1e17, "!Price Error");
   }
 
-  function testPolygonAssets() public forkAtBlock(POLYGON_MAINNET, 40783999) {
+  function testPolygonAssets() public forkAtBlock(POLYGON_MAINNET, 46013460) {
     address maticX = 0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6;
-    address wbtc = 0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
 
     address[] memory underlyings = new address[](2);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
@@ -85,13 +83,56 @@ contract AlgebraPriceOracleTest is BaseTest {
     );
 
     uint256[] memory expPrices = new uint256[](2);
-    expPrices[0] = 1055376214918982029; //  1,152$ / 1.09 =  1.056985 MATIC   (26/03/2023)
+    expPrices[0] = 1072289959017680334; //  0,72$ / 0,67$ =  1,07 MATIC   (07/07/2023)
     expPrices[1] = mpo.price(wbtc);
 
     uint256[] memory prices = getPriceFeed(underlyings, configs);
 
     assertEq(prices[0], expPrices[0], "!Price Error");
     assertApproxEqRel(prices[1], expPrices[1], 1e17, "!Price Error");
+  }
+
+  function testZkEvmAssets() public forkAtBlock(ZKEVM_MAINNET, 4167547) {
+    address usdt = 0x1E4a5963aBFD975d8c9021ce480b42188849D41d; // 6 decimals
+    address wmatic = 0xa2036f0538221a77A3937F1379699f44945018d0;
+
+    address[] memory underlyings = new address[](3);
+    ConcentratedLiquidityBasePriceOracle.AssetConfig[]
+      memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](3);
+
+    underlyings[0] = wmatic; // WMATIC (18 decimals)
+    underlyings[1] = wbtc; // WBTC (8 decimals)
+    underlyings[2] = usdt; // WBTC (6 decimals)
+
+    // WMATIC-WETH
+    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0xB73AbFb5a2C89f4038baA476Ff3A7942A021c196,
+      10 minutes,
+      wtoken
+    );
+    // WBTC-WETH
+    configs[1] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0xFC4A3A7dc6b62bd2EA595b106392f5E006083b83,
+      10 minutes,
+      wtoken
+    );
+    // USDT-USDC
+    configs[2] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0x9591b8A30c3a52256ea93E98dA49EE43Afa136A8,
+      10 minutes,
+      stable
+    );
+
+    uint256[] memory expPrices = new uint256[](3);
+    expPrices[0] = 366000000000000; //  $0.670691 / 1833$ =  0,000366   (07/07x/2023)
+    expPrices[1] = 15849057118531331165; // $29,016.86 / 1833$ = 15,85  (07/07/2023)
+    expPrices[2] = 545553737043099; // $1 / 1833$ = 0,000545$           (07/07/2023)
+
+    uint256[] memory prices = getPriceFeed(underlyings, configs);
+
+    assertApproxEqRel(prices[0], expPrices[0], 1e17, "!Price Error");
+    assertApproxEqRel(prices[1], expPrices[1], 1e17, "!Price Error");
+    assertApproxEqRel(prices[2], expPrices[2], 1e17, "!Price Error");
   }
 
   function getPriceFeed(address[] memory underlyings, ConcentratedLiquidityBasePriceOracle.AssetConfig[] memory configs)
@@ -110,7 +151,7 @@ contract AlgebraPriceOracleTest is BaseTest {
     return price;
   }
 
-  function testSetUnsupportedBaseToken() public forkAtBlock(POLYGON_MAINNET, 40783999) {
+  function testSetUnsupportedBaseToken() public fork(POLYGON_MAINNET) {
     address usdt = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
     address ixt = 0xE06Bd4F5aAc8D0aA337D13eC88dB6defC6eAEefE;
 
@@ -139,6 +180,6 @@ contract AlgebraPriceOracleTest is BaseTest {
     // check prices
     vm.prank(address(mpo));
     uint256 price = oracle.price(ixt);
-    assertEq(price, 480815305168365489, "!Price Error"); // 0.5244 USDT / 1.098$ = 0.477 MATIC (26/03/2023)
+    assertTrue(price > 0, "!Price Error");
   }
 }

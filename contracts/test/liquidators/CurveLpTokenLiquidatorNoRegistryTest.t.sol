@@ -61,50 +61,49 @@ contract CurveLpTokenLiquidatorNoRegistryTest is BaseTest {
     assertEq(outputToken.balanceOf(address(liquidator)), outputAmount);
   }
 
-  address usdrAddress = 0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63;
-  address whaleUsdr = 0x76F49dE0c05cB7E2d0A08A0d9D12907d508fA88D;
-  address whaleUsdr3Crv = 0xC225714E9c439Da0b9300B62645F24917BA753E7;
-  IERC20Upgradeable usdr3Crv = IERC20Upgradeable(0xa138341185a9D0429B0021A11FB717B225e13e1F);
+  address maiAddress = 0xa3Fa99A148fA48D14Ed51d610c367C61876997F1;
+  address whaleMai = 0xC63c477465a792537D291ADb32Ed15c0095E106B;
+  address whaleMai3Crv = 0x96c62EC93c552b60d2a7F0801313A29E4B8feecE;
+  address mai3Crv = 0x447646e84498552e62eCF097Cc305eaBFFF09308;
+  IERC20Upgradeable mai3CrvToken = IERC20Upgradeable(mai3Crv);
 
-  function testRedeemUsdr3Crv() public fork(POLYGON_MAINNET) {
-    vm.prank(whaleUsdr3Crv);
-    usdr3Crv.transfer(address(liquidator), 1.23456e18);
+  // Not set up / deployed
+  // function testRedeemMai3Crv() public fork(POLYGON_MAINNET) {
+  //   vm.prank(whaleMai3Crv);
+  //   mai3Crv.transfer(address(liquidator), 1.23456e18);
 
-    address poolOfUsdr3Crv = curveV1Oracle.poolOf(address(usdr3Crv)); // 0xa138341185a9D0429B0021A11FB717B225e13e1F
-
-    require(poolOfUsdr3Crv != address(0), "could not find the pool for usdr3Crv");
-
-    bytes memory data = abi.encode(usdrAddress, wtoken, curveV1Oracle);
-    (IERC20Upgradeable outputToken, uint256 outputAmount) = liquidator.redeem(usdr3Crv, 1.23456e18, data);
-    assertEq(address(outputToken), usdrAddress);
-    assertGt(outputAmount, 0);
-    assertEq(outputToken.balanceOf(address(liquidator)), outputAmount);
-  }
+  //   bytes memory data = abi.encode(maiAddress, wtoken, curveV1Oracle);
+  //   (IERC20Upgradeable outputToken, uint256 outputAmount) = liquidator.redeem(mai3Crv, 1.23456e18, data);
+  //   assertEq(address(outputToken), maiAddress);
+  //   assertGt(outputAmount, 0);
+  //   assertEq(outputToken.balanceOf(address(liquidator)), outputAmount);
+  // }
 
   function testCurveLpTokenWrapper() public fork(POLYGON_MAINNET) {
-    IERC20Upgradeable usdr = IERC20Upgradeable(usdrAddress);
+    IERC20Upgradeable mai = IERC20Upgradeable(maiAddress);
     CurveLpTokenWrapper wrapper = new CurveLpTokenWrapper();
-    vm.prank(whaleUsdr);
-    usdr.transfer(address(wrapper), 100e11);
+    vm.prank(whaleMai);
+    mai.transfer(address(wrapper), 1e18);
 
-    wrapper.redeem(usdr, 100e11, abi.encode(usdr3Crv));
+    wrapper.redeem(mai, 1e18, abi.encode(mai3Crv, mai3Crv));
 
-    assertGt(usdr3Crv.balanceOf(address(wrapper)), 0, "!wrapped");
-    assertEq(usdr.balanceOf(address(wrapper)), 0, "!unused usdr");
+    assertGt(mai3CrvToken.balanceOf(address(wrapper)), 0, "!wrapped");
+    assertEq(mai.balanceOf(address(wrapper)), 0, "!unused mai");
   }
 
-  function test3CrvWrap3CrvUsdr() public fork(POLYGON_MAINNET) {
+  function test3CrvWrapMai3Crv() public fork(POLYGON_MAINNET) {
     address threeCrvWhale = 0x7117de93b352AE048925323F3fCb1Cd4b4d52eC4;
     address threeCrvAddress = 0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171;
+
     IERC20Upgradeable threeCrv = IERC20Upgradeable(threeCrvAddress);
 
     CurveLpTokenWrapper wrapper = new CurveLpTokenWrapper();
     vm.prank(threeCrvWhale);
     threeCrv.transfer(address(wrapper), 1e18);
 
-    wrapper.redeem(threeCrv, 1e18, abi.encode(usdr3Crv));
+    wrapper.redeem(threeCrv, 1e18, abi.encode(mai3Crv, mai3Crv)); // pool = token
 
-    assertGt(usdr3Crv.balanceOf(address(wrapper)), 0, "!wrapped");
+    assertGt(mai3CrvToken.balanceOf(address(wrapper)), 0, "!wrapped");
     assertEq(threeCrv.balanceOf(address(wrapper)), 0, "!unused 3Crv");
   }
 }

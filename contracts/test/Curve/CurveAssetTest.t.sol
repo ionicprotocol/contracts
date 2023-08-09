@@ -16,7 +16,7 @@ contract CurveAssetTest is AbstractAssetTest {
   address[] underlyingsForOracle;
   BasePriceOracle[] oracles;
 
-  function setUp() public forkAtBlock(POLYGON_MAINNET, 33063212) {}
+  function setUp() public fork(ARBITRUM_ONE) {}
 
   function afterForkSetUp() internal override {
     test = AbstractERC4626Test(address(new CurveERC4626Test()));

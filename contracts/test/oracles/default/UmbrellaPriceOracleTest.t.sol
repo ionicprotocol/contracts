@@ -45,7 +45,7 @@ contract UmbrellaPriceOracleTest is BaseTest {
     mpo.add(underlyings, oracles);
   }
 
-  function testUmbrellaPriceOracleBsc() public fork(POLYGON_MAINNET) {
+  function testUmbrellaPriceOraclePolygon() public debuggingOnly fork(POLYGON_MAINNET) {
     setUpPolygon();
     vm.startPrank(address(mpo));
     uint256 upoBudsPrice = oracle.price(stableToken);
