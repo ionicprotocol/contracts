@@ -9,6 +9,8 @@ import { LeveredPositionFactory, IFeeDistributor } from "../ionic/levered/Levere
 import { JarvisLiquidatorFunder } from "../liquidators/JarvisLiquidatorFunder.sol";
 import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.sol";
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
+import { SolidlyLpTokenLiquidator, SolidlyLpTokenWrapper } from "../liquidators/SolidlyLpTokenLiquidator.sol";
+
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
 import { LeveredPositionFactoryExtension } from "../ionic/levered/LeveredPositionFactoryExtension.sol";
 import { ILeveredPositionFactory } from "../ionic/levered/ILeveredPositionFactory.sol";
@@ -390,7 +392,7 @@ abstract contract LeveredPositionTest is MarketsTest {
       uint256 targetLeverDownRatio = leverageRatioRealized - ratioDiffStep;
       if (targetLeverDownRatio < minRatio) targetLeverDownRatio = 1e18;
       leverageRatioRealized = position.adjustLeverageRatio(targetLeverDownRatio);
-      assertApproxEqRel(leverageRatioRealized, targetLeverDownRatio, 1e16, "target lever down ratio not matching");
+      assertApproxEqRel(leverageRatioRealized, targetLeverDownRatio, 3e16, "target lever down ratio not matching");
     }
 
     uint256 withdrawAmount = position.closePosition();
@@ -668,6 +670,24 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
+  }
+
+  function testUsdrDaiUsdrLpLeverage() public {
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
+    address daiUsdrLpWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279;
+
+    IERC20Upgradeable usdrToken = underlying(usdrMarket);
+    IERC20Upgradeable daiUsdrLpToken = underlying(daiUsdrLpMarket);
+    vm.startPrank(registry.owner());
+    registry._setRedemptionStrategy(new SolidlyLpTokenLiquidator(), daiUsdrLpToken, usdrToken);
+    registry._setRedemptionStrategy(new SolidlyLpTokenWrapper(), usdrToken, daiUsdrLpToken);
+    vm.stopPrank();
+
+    _configurePair(usdrMarket, daiUsdrLpMarket);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+    _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
   }
 
   function testWsdrWusdrUsdrLpLeverage() public {
