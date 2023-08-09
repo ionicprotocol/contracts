@@ -335,8 +335,9 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     borrowsDelta = (supplyValueDeltaAbs * 1e18) / borrowedAssetPrice;
 
     // stables to borrow = c * x
-    if (up) borrowsDelta = (borrowsDelta * slippageFactor) / 1e18;
-    // amount to redeem = c * x
+    if (up)
+      borrowsDelta = (borrowsDelta * slippageFactor) / 1e18;
+      // amount to redeem = c * x
     else supplyDelta = (supplyDelta * slippageFactor) / 1e18;
   }
 
