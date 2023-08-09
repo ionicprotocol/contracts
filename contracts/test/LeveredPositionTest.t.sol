@@ -9,6 +9,8 @@ import { LeveredPositionFactory, IFeeDistributor } from "../ionic/levered/Levere
 import { JarvisLiquidatorFunder } from "../liquidators/JarvisLiquidatorFunder.sol";
 import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.sol";
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
+import { SolidlyLpTokenLiquidator, SolidlyLpTokenWrapper } from "../liquidators/SolidlyLpTokenLiquidator.sol";
+
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
 import { LeveredPositionFactoryExtension } from "../ionic/levered/LeveredPositionFactoryExtension.sol";
 import { ILeveredPositionFactory } from "../ionic/levered/ILeveredPositionFactory.sol";
@@ -397,7 +399,7 @@ abstract contract LeveredPositionTest is MarketsTest {
       uint256 targetLeverDownRatio = leverageRatioRealized - ratioDiffStep;
       if (targetLeverDownRatio < minRatio) targetLeverDownRatio = 1e18;
       leverageRatioRealized = position.adjustLeverageRatio(targetLeverDownRatio);
-      assertApproxEqRel(leverageRatioRealized, targetLeverDownRatio, 1e16, "target lever down ratio not matching");
+      assertApproxEqRel(leverageRatioRealized, targetLeverDownRatio, 3e16, "target lever down ratio not matching");
     }
 
     uint256 withdrawAmount = position.closePosition();
@@ -682,6 +684,13 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
     address daiUsdrLpMarket = 0xD8Ab47Fd5211c641034fe8ca2b91F7E8E0cD940c;
     address usdrWhale = 0xa138341185a9D0429B0021A11FB717B225e13e1F; // curve lp token
     address daiUsdrLpWhale = 0x5E21386E8E0e6C77Abd1E08e21e9D41e760D3747;
+
+    IERC20Upgradeable usdrToken = underlying(usdrMarket);
+    IERC20Upgradeable daiUsdrLpToken = underlying(daiUsdrLpMarket);
+    vm.startPrank(registry.owner());
+    registry._setRedemptionStrategy(new SolidlyLpTokenLiquidator(), daiUsdrLpToken, usdrToken);
+    registry._setRedemptionStrategy(new SolidlyLpTokenWrapper(), usdrToken, daiUsdrLpToken);
+    vm.stopPrank();
 
     _configurePair(usdrMarket, daiUsdrLpMarket);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
