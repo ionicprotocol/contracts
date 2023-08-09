@@ -16,7 +16,7 @@ contract AaveTokenLiquidatorTest is BaseTest {
   }
 
   function testAmUsdcPolygon() public fork(POLYGON_MAINNET) {
-    address amUsdcWhale = 0xe52F5349153b8eb3B89675AF45aC7502C4997E6A; // curve pool
+    address amUsdcWhale = 0xe8599F3cc5D38a9aD6F3684cd5CEa72f10Dbc383; // curve pool
     inputAmount = 1000e6;
 
     IERC20Upgradeable amUsdcToken = IERC20Upgradeable(amUsdc);
