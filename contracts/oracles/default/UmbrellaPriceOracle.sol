@@ -75,12 +75,14 @@ contract UmbrellaPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
 
     // Get the NATIVE/USD price feed from Native Price Feed
     // 8 decimals are used
-    IUmbrellaFeeds.PriceData memory nativeTokenUsdPriceData = UMBRELLA_FEEDS_ADDRESS.priceData(NATIVE_TOKEN_USD_KEY);
+    IUmbrellaFeeds.PriceData memory nativeTokenUsdPriceData = UMBRELLA_FEEDS_ADDRESS.getPriceDataByName(
+      NATIVE_TOKEN_USD_KEY
+    );
     uint256 nativeTokenUsdPrice = uint256(nativeTokenUsdPriceData.price);
 
     if (nativeTokenUsdPriceData.price == 0) return 0;
     // 8 decimals are used
-    IUmbrellaFeeds.PriceData memory priceData = UMBRELLA_FEEDS_ADDRESS.priceData(feed);
+    IUmbrellaFeeds.PriceData memory priceData = UMBRELLA_FEEDS_ADDRESS.getPriceDataByName(feed);
     // Umbrella price feed is 8 decimals:
     return (uint256(priceData.price) * 1e18) / uint256(nativeTokenUsdPrice);
   }
