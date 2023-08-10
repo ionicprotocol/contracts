@@ -35,25 +35,6 @@ contract UniswapV3PriceOracle is ConcentratedLiquidityBasePriceOracle {
     uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(tick);
 
     uint256 tokenPrice = getPriceX96FromSqrtPriceX96(pool.token0(), token, sqrtPriceX96);
-
-    if (baseToken == address(0) || baseToken == WTOKEN) {
-      return tokenPrice;
-    } else {
-      uint256 baseNativePrice = BasePriceOracle(msg.sender).price(baseToken);
-      // scale tokenPrice by 1e18
-      uint256 baseTokenDecimals = uint256(ERC20Upgradeable(baseToken).decimals());
-      uint256 tokenDecimals = uint256(ERC20Upgradeable(token).decimals());
-      uint256 tokenPriceScaled;
-
-      if (baseTokenDecimals > tokenDecimals) {
-        tokenPriceScaled = tokenPrice / (10**(baseTokenDecimals - tokenDecimals));
-      } else if (baseTokenDecimals < tokenDecimals) {
-        tokenPriceScaled = tokenPrice * (10**(tokenDecimals - baseTokenDecimals));
-      } else {
-        tokenPriceScaled = tokenPrice;
-      }
-
-      return (tokenPriceScaled * baseNativePrice) / 1e18;
-    }
+    return scalePrices(baseToken, token, tokenPrice);
   }
 }

@@ -190,11 +190,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(
-    address _collat,
-    address _stable,
-    IRedemptionStrategy _liquidator
-  ) internal {
+  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -265,10 +261,10 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
-    internal
-    returns (LeveredPosition _position)
-  {
+  function _openLeveredPosition(
+    address _positionOwner,
+    uint256 _depositAmount
+  ) internal returns (LeveredPosition _position) {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 
@@ -658,6 +654,46 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
 
   function testOpenLeveredPosition() public override whenForking {
     assertApproxEqRel(position.getCurrentLeverageRatio(), ratioOnCreation, 1e16, "initial leverage ratio mismatch");
+  }
+}
+
+contract PearlFarmLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+  }
+
+  function testUsdrDaiUsdrLpLeverage() public fork(POLYGON_MAINNET) {
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
+    address daiUsdrLpWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279;
+
+    IERC20Upgradeable usdrToken = underlying(usdrMarket);
+    IERC20Upgradeable daiUsdrLpToken = underlying(daiUsdrLpMarket);
+    vm.startPrank(registry.owner());
+    registry._setRedemptionStrategy(new SolidlyLpTokenLiquidator(), daiUsdrLpToken, usdrToken);
+    registry._setRedemptionStrategy(new SolidlyLpTokenWrapper(), usdrToken, daiUsdrLpToken);
+    vm.stopPrank();
+
+    _configurePair(usdrMarket, daiUsdrLpMarket);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+    _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
+  }
+
+  function testWsdrWusdrUsdrLpLeverage() public fork(POLYGON_MAINNET) {
+    uint256 depositAmount = 1000e9;
+    address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
+    address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
+    address wUsdrWhale = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
+    address wUsdrUsdrLpWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
+
+    _configurePair(wusdrMarket, wUsdrUsdrLpMarket);
+    _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
+    _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
+
+    position = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
