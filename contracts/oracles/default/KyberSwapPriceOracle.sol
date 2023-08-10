@@ -29,7 +29,7 @@ contract KyberSwapPriceOracle is ConcentratedLiquidityBasePriceOracle {
     uint256 twapWindow = poolFeeds[token].twapWindow;
     address baseToken = poolFeeds[token].baseToken;
 
-    secondsAgos[0] = 0;
+    secondsAgos[0] = 1;
     secondsAgos[1] = uint32(twapWindow);
 
     IPool pool = IPool(poolFeeds[token].poolAddress);

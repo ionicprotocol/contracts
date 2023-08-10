@@ -26,7 +26,7 @@ contract KyberSwapPriceOracleTest is BaseTest {
     oracle.initialize(wtoken, asArray(stable));
   }
 
-  function testLineaAssets() public debuggingOnly fork(LINEA_MAINNET) {
+  function testLineaAssets() public debuggingOnly forkAtBlock(LINEA_MAINNET, 167856) {
     address busd = 0x7d43AABC515C356145049227CeE54B608342c0ad;
     address wmatic = 0x265B25e22bcd7f10a5bD6E6410F10537Cc7567e8;
     address avax = 0x5471ea8f739dd37E9B81Be9c5c77754D8AA953E4;
@@ -43,16 +43,26 @@ contract KyberSwapPriceOracleTest is BaseTest {
     IPool wmaticWethPool = IPool(0x0330fdDD733eA64F92B348fF19a2Bb4d29d379D5);
     IPool avaxWethPool = IPool(0x76F12b1B0FF9a53810894F94B31EE2569e0D9BC4);
 
-    IPoolOracle(busdWethPool.poolOracle()).increaseObservationCardinalityNext(address(busdWethPool), 3600);
-    IPoolOracle(wmaticWethPool.poolOracle()).increaseObservationCardinalityNext(address(wmaticWethPool), 3600);
-    IPoolOracle(avaxWethPool.poolOracle()).increaseObservationCardinalityNext(address(avaxWethPool), 3600);
+    IPoolOracle busdWethPoolOracle = IPoolOracle(busdWethPool.poolOracle());
+    IPoolOracle wmaticWethPoolOracle = IPoolOracle(wmaticWethPool.poolOracle());
+    IPoolOracle avaxWethOracle = IPoolOracle(avaxWethPool.poolOracle());
+
+    busdWethPoolOracle.initializeOracle(uint32(block.timestamp));
+    wmaticWethPoolOracle.initializeOracle(uint32(block.timestamp));
+    avaxWethOracle.initializeOracle(uint32(block.timestamp));
+
+    vm.warp(block.timestamp + 36000);
+
+    busdWethPoolOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
+    wmaticWethPoolOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
+    avaxWethOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
 
     vm.roll(100);
 
     // BUSD-WETH
-    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(busdWethPool), 10, wtoken);
+    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(busdWethPool), 60, wtoken);
     // WMATIC-WETH
-    configs[1] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(wmaticWethPool), 10, wtoken);
+    configs[1] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(wmaticWethPool), 60, wtoken);
     // AVAX-ETH
     configs[2] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(avaxWethPool), 600, wtoken);
 
