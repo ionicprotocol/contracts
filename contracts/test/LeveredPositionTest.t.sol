@@ -8,6 +8,7 @@ import { LeveredPosition } from "../ionic/levered/LeveredPosition.sol";
 import { LeveredPositionFactory, IFeeDistributor } from "../ionic/levered/LeveredPositionFactory.sol";
 import { JarvisLiquidatorFunder } from "../liquidators/JarvisLiquidatorFunder.sol";
 import { SolidlySwapLiquidator } from "../liquidators/SolidlySwapLiquidator.sol";
+import { SolidlyLpTokenLiquidator } from "../liquidators/SolidlyLpTokenLiquidator.sol";
 import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.sol";
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
