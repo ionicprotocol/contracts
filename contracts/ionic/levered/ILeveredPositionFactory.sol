@@ -29,14 +29,30 @@ interface ILeveredPositionFactoryBase {
   ) external;
 }
 
-interface ILeveredPositionFactoryExtension {
+interface ILeveredPositionFactoryFirstExtension {
   function getRedemptionStrategies(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
-    external
-    view
-    returns (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData);
+  external
+  view
+  returns (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData);
 
   function getMinBorrowNative() external view returns (uint256);
 
+  function removeClosedPosition(address closedPosition) external returns (bool removed);
+
+  function closeAndRemoveUserPosition(LeveredPosition position) external returns (bool);
+
+  function getPositionsByAccount(address account) external view returns (address[] memory, bool[] memory);
+
+  function getAccountsWithOpenPositions() external view returns (address[] memory);
+
+  function getWhitelistedCollateralMarkets() external view returns (address[] memory);
+
+  function getBorrowableMarketsByCollateral(ICErc20 _collateralMarket) external view returns (address[] memory);
+
+  function getPositionsExtension(bytes4 msgSig) external view returns (address);
+}
+
+interface ILeveredPositionFactorySecondExtension {
   function createPosition(ICErc20 _collateralMarket, ICErc20 _stableMarket) external returns (LeveredPosition);
 
   function createAndFundPosition(
@@ -53,20 +69,10 @@ interface ILeveredPositionFactoryExtension {
     uint256 _fundingAmount,
     uint256 _leverageRatio
   ) external returns (LeveredPosition);
+}
 
-  function removeClosedPosition(address closedPosition) external returns (bool removed);
+interface ILeveredPositionFactoryExtension is ILeveredPositionFactoryFirstExtension, ILeveredPositionFactorySecondExtension {
 
-  function closeAndRemoveUserPosition(LeveredPosition position) external returns (bool);
-
-  function getPositionsByAccount(address account) external view returns (address[] memory, bool[] memory);
-
-  function getAccountsWithOpenPositions() external view returns (address[] memory);
-
-  function getWhitelistedCollateralMarkets() external view returns (address[] memory);
-
-  function getBorrowableMarketsByCollateral(ICErc20 _collateralMarket) external view returns (address[] memory);
-
-  function getPositionsExtension(bytes4 msgSig) external view returns (address);
 }
 
 interface ILeveredPositionFactory is
