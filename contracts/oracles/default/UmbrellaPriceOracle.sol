@@ -43,6 +43,13 @@ contract UmbrellaPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
     UMBRELLA_FEEDS_ADDRESS = IUmbrellaFeeds(umbrellaFeeds);
   }
 
+  function reinitialize(string memory nativeTokenUsd, IRegistry registry) public onlyOwnerOrAdmin {
+    NATIVE_TOKEN_USD_KEY = nativeTokenUsd;
+    address umbrellaFeeds = registry.getAddressByString("UmbrellaFeeds");
+    require(umbrellaFeeds != address(0), "UmbrellaFeeds address not found");
+    UMBRELLA_FEEDS_ADDRESS = IUmbrellaFeeds(umbrellaFeeds);
+  }
+
   /**
    * @dev Admin-only function to set price feeds.
    * @param underlyings Underlying token addresses for which to set price feeds.

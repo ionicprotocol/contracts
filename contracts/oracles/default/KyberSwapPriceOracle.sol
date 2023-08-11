@@ -29,7 +29,7 @@ contract KyberSwapPriceOracle is ConcentratedLiquidityBasePriceOracle {
     uint256 twapWindow = poolFeeds[token].twapWindow;
     address baseToken = poolFeeds[token].baseToken;
 
-    secondsAgos[0] = 1;
+    secondsAgos[0] = 0;
     secondsAgos[1] = uint32(twapWindow);
 
     IPool pool = IPool(poolFeeds[token].poolAddress);
@@ -40,8 +40,21 @@ contract KyberSwapPriceOracle is ConcentratedLiquidityBasePriceOracle {
     int24 tick = int24((tickCumulatives[1] - tickCumulatives[0]) / int56(int256(twapWindow)));
     uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(tick);
 
-    uint256 tokenPrice = getPriceX96FromSqrtPriceX96(pool.token0(), token, sqrtPriceX96);
+    uint256 baseTokenDecimals = uint256(ERC20Upgradeable(baseToken).decimals());
+    uint256 tokenDecimals = uint256(ERC20Upgradeable(token).decimals());
 
-    return scalePrices(baseToken, token, tokenPrice);
+    uint256 tokenPrice = getPriceX96FromSqrtPriceX96(baseToken, token, sqrtPriceX96);
+    uint256 tokenPriceScaled;
+
+    if (baseTokenDecimals > tokenDecimals) {
+      tokenPriceScaled = tokenPrice / (10**(baseTokenDecimals - tokenDecimals));
+    } else if (baseTokenDecimals < tokenDecimals) {
+      tokenPriceScaled = tokenPrice / (10**(tokenDecimals - baseTokenDecimals));
+    } else {
+      tokenPriceScaled = tokenPrice;
+    }
+
+    uint256 baseNativePrice = BasePriceOracle(msg.sender).price(baseToken);
+    return (tokenPriceScaled * baseNativePrice) / 1e18;
   }
 }

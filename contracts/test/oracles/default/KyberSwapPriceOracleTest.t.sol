@@ -8,6 +8,13 @@ import { IPoolOracle } from "../../../external/kyber/IPoolOracle.sol";
 import { MasterPriceOracle } from "../../../oracles/MasterPriceOracle.sol";
 import { BaseTest } from "../../config/BaseTest.t.sol";
 
+import { BasePriceOracle } from "../../../oracles/BasePriceOracle.sol";
+import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import { ConcentratedLiquidityBasePriceOracle } from "../../../oracles/default/ConcentratedLiquidityBasePriceOracle.sol";
+
+import "../../../external/uniswap/TickMath.sol";
+import "../../../external/uniswap/FullMath.sol";
+
 contract KyberSwapPriceOracleTest is BaseTest {
   KyberSwapPriceOracle oracle;
   MasterPriceOracle mpo;
@@ -16,7 +23,8 @@ contract KyberSwapPriceOracleTest is BaseTest {
   address stable;
 
   function afterForkSetUp() internal override {
-    stable = ap.getAddress("stableToken");
+    stable = 0x176211869cA2b568f2A7D4EE941E073a821EE1ff; // ap.getAddress("stableToken");
+
     wtoken = ap.getAddress("wtoken"); // WETH
     wbtc = ap.getAddress("wBTCToken"); // WBTC
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
@@ -26,55 +34,53 @@ contract KyberSwapPriceOracleTest is BaseTest {
     oracle.initialize(wtoken, asArray(stable));
   }
 
-  function testLineaAssets() public debuggingOnly forkAtBlock(LINEA_MAINNET, 167856) {
-    address busd = 0x7d43AABC515C356145049227CeE54B608342c0ad;
-    address wmatic = 0x265B25e22bcd7f10a5bD6E6410F10537Cc7567e8;
-    address avax = 0x5471ea8f739dd37E9B81Be9c5c77754D8AA953E4;
+  function getPriceX96FromSqrtPriceX96(
+    address token0,
+    address priceToken,
+    uint160 sqrtPriceX96
+  ) public pure returns (uint256 price_) {
+    price_ = FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, uint256(2**(96 * 2)) / 1e18);
+    if (token0 != priceToken) price_ = 1e36 / price_;
+  }
+
+  function testLineaAssets() public debuggingOnly forkAtBlock(LINEA_MAINNET, 173370) {
+    address axlUsdc = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
+    address dai = 0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5;
 
     address[] memory underlyings = new address[](3);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
       memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](3);
 
-    underlyings[0] = busd; // WMATIC (18 decimals)
-    underlyings[1] = wmatic; // WBTC (18 decimals)
-    underlyings[2] = avax; // AVAX (18 decimals)
+    underlyings[0] = stable; // (6 decimals)
+    underlyings[1] = axlUsdc; // (6 decimals)
+    underlyings[2] = dai; // (6 decimals)
 
-    IPool busdWethPool = IPool(0xe2dF725E44ab983e8513eCfC9c3E13Bc21eA867e);
-    IPool wmaticWethPool = IPool(0x0330fdDD733eA64F92B348fF19a2Bb4d29d379D5);
-    IPool avaxWethPool = IPool(0x76F12b1B0FF9a53810894F94B31EE2569e0D9BC4);
+    // 6 / 18
+    IPool usdcWethPool = IPool(0x4b21d64Cf83e56860F1739452817E4c0fa1D399D);
+    // 6 / 6
+    IPool axlUsdcUsdcPool = IPool(0xFbEdC4eBEB2951fF96A636c934FCE35117847c9d);
+    // 18 / 6
+    IPool daiUsdcPool = IPool(0xB6E91bA27bB6C3b2ADC31884459D3653F9293e33);
 
-    IPoolOracle busdWethPoolOracle = IPoolOracle(busdWethPool.poolOracle());
-    IPoolOracle wmaticWethPoolOracle = IPoolOracle(wmaticWethPool.poolOracle());
-    IPoolOracle avaxWethOracle = IPoolOracle(avaxWethPool.poolOracle());
-
-    busdWethPoolOracle.initializeOracle(uint32(block.timestamp));
-    wmaticWethPoolOracle.initializeOracle(uint32(block.timestamp));
-    avaxWethOracle.initializeOracle(uint32(block.timestamp));
-
-    vm.warp(block.timestamp + 36000);
-
-    busdWethPoolOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
-    wmaticWethPoolOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
-    avaxWethOracle.increaseObservationCardinalityNext(address(busdWethPool), 3600);
-
-    vm.roll(100);
-
-    // BUSD-WETH
-    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(busdWethPool), 60, wtoken);
-    // WMATIC-WETH
-    configs[1] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(wmaticWethPool), 60, wtoken);
-    // AVAX-ETH
-    configs[2] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(avaxWethPool), 600, wtoken);
+    // WETH-USDC
+    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(usdcWethPool), 1200, wtoken);
+    // USDC-axlUSDC
+    configs[1] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(axlUsdcUsdcPool), 1200, stable);
+    // DAI-USDC
+    configs[2] = ConcentratedLiquidityBasePriceOracle.AssetConfig(address(daiUsdcPool), 1200, stable);
 
     uint256 priceUsdc = mpo.price(stable);
     uint256[] memory expPrices = new uint256[](3);
+
     expPrices[0] = priceUsdc;
+    expPrices[1] = priceUsdc;
+    expPrices[2] = priceUsdc;
 
     uint256[] memory prices = getPriceFeed(underlyings, configs);
 
     assertApproxEqRel(prices[0], expPrices[0], 1e17, "!Price Error");
-    assertLt(prices[1], prices[0], "!Price Error");
-    assertGt(prices[2], prices[1], "!Price Error");
+    assertApproxEqRel(prices[1], expPrices[1], 1e17, "!Price Error");
+    assertApproxEqRel(prices[2], expPrices[2], 1e17, "!Price Error");
   }
 
   function getPriceFeed(address[] memory underlyings, ConcentratedLiquidityBasePriceOracle.AssetConfig[] memory configs)

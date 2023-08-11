@@ -32,6 +32,7 @@ contract AlgebraPriceOracle is ConcentratedLiquidityBasePriceOracle {
 
     int24 tick = int24((tickCumulatives[1] - tickCumulatives[0]) / int56(int256(twapWindow)));
     uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(tick);
+
     uint256 tokenPrice = getPriceX96FromSqrtPriceX96(pool.token0(), token, sqrtPriceX96);
     return scalePrices(baseToken, token, tokenPrice);
   }
