@@ -31,9 +31,9 @@ interface ILeveredPositionFactoryBase {
 
 interface ILeveredPositionFactoryFirstExtension {
   function getRedemptionStrategies(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
-  external
-  view
-  returns (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData);
+    external
+    view
+    returns (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData);
 
   function getMinBorrowNative() external view returns (uint256);
 
@@ -71,9 +71,10 @@ interface ILeveredPositionFactorySecondExtension {
   ) external returns (LeveredPosition);
 }
 
-interface ILeveredPositionFactoryExtension is ILeveredPositionFactoryFirstExtension, ILeveredPositionFactorySecondExtension {
-
-}
+interface ILeveredPositionFactoryExtension is
+  ILeveredPositionFactoryFirstExtension,
+  ILeveredPositionFactorySecondExtension
+{}
 
 interface ILeveredPositionFactory is
   ILeveredPositionFactoryStorage,
