@@ -669,14 +669,13 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract PearlFarmLeveredPositionTest is LeveredPositionTest {
+contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
-  }
 
-  function testUsdrDaiUsdrLpLeverage() public {
+    uint256 depositAmount = 1000e9;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
     address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
@@ -692,9 +691,17 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
     _configurePair(usdrMarket, daiUsdrLpMarket);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
     _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
-  }
 
-  function testWsdrWusdrUsdrLpLeverage() public {
+    position = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
     uint256 depositAmount = 1000e9;
     address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
     address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
