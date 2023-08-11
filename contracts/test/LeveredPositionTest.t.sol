@@ -12,7 +12,8 @@ import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol"
 import { SolidlyLpTokenLiquidator, SolidlyLpTokenWrapper } from "../liquidators/SolidlyLpTokenLiquidator.sol";
 
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
-import { LeveredPositionFactoryExtension } from "../ionic/levered/LeveredPositionFactoryExtension.sol";
+import { LeveredPositionFactoryFirstExtension } from "../ionic/levered/LeveredPositionFactoryFirstExtension.sol";
+import { LeveredPositionFactorySecondExtension } from "../ionic/levered/LeveredPositionFactorySecondExtension.sol";
 import { ILeveredPositionFactory } from "../ionic/levered/ILeveredPositionFactory.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 import { LeveredPositionsLens } from "../ionic/levered/LeveredPositionsLens.sol";
@@ -96,14 +97,6 @@ contract LeveredPositionFactoryTest is BaseTest {
     lens.initialize(factory);
   }
 
-  function testChapelViewFn() public debuggingOnly fork(BSC_CHAPEL) {
-    ICErc20 stableMarket = ICErc20(address(1)); // TDAI
-    uint256 borrowAmount = 14925373134328358;
-
-    uint256 borrowValue = (mpo.getUnderlyingPrice(stableMarket) * borrowAmount) / 1e18;
-    emit log_named_uint("borrow value", borrowValue);
-  }
-
   function testChapelNetApy() public debuggingOnly fork(BSC_CHAPEL) {
     ICErc20 _stableMarket = ICErc20(address(1)); // DAI
 
@@ -114,14 +107,23 @@ contract LeveredPositionFactoryTest is BaseTest {
       abi.encode(borrowRate / factory.blocksPerYear())
     );
 
-    LeveredPositionFactoryExtension newExt = new LeveredPositionFactoryExtension();
+    {
+      // upgrade the factory
+      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
+      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
 
-    DiamondBase asBase = DiamondBase(address(factory));
-    address[] memory oldExts = asBase._listExtensions();
-    DiamondExtension oldExt = DiamondExtension(address(0));
-    if (oldExts.length > 0) oldExt = DiamondExtension(oldExts[0]);
-    vm.prank(factory.owner());
-    asBase._registerExtension(newExt, oldExt);
+      DiamondBase asBase = DiamondBase(address(factory));
+      address[] memory oldExts = asBase._listExtensions();
+      vm.startPrank(factory.owner());
+      if (oldExts.length == 1) {
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
+      } else if (oldExts.length == 2) {
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
+      }
+      vm.stopPrank();
+    }
 
     uint256 _borrowRate = _stableMarket.borrowRatePerBlock() * factory.blocksPerYear();
     emit log_named_uint("_borrowRate", _borrowRate);
@@ -165,14 +167,20 @@ abstract contract LeveredPositionTest is MarketsTest {
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
     {
       // upgrade the factory
-      LeveredPositionFactoryExtension newExt = new LeveredPositionFactoryExtension();
+      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
+      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
 
       DiamondBase asBase = DiamondBase(address(factory));
       address[] memory oldExts = asBase._listExtensions();
-      DiamondExtension oldExt = DiamondExtension(address(0));
-      if (oldExts.length > 0) oldExt = DiamondExtension(oldExts[0]);
-      vm.prank(factory.owner());
-      asBase._registerExtension(newExt, oldExt);
+      if (oldExts.length == 1) {
+        vm.prank(factory.owner());
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
+      } else if (oldExts.length == 2) {
+        vm.prank(factory.owner());
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
+      }
     }
 
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
@@ -669,14 +677,13 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract PearlFarmLeveredPositionTest is LeveredPositionTest {
+contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
-  }
 
-  function testUsdrDaiUsdrLpLeverage() public {
+    uint256 depositAmount = 1000e9;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
     address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
@@ -692,9 +699,17 @@ contract PearlFarmLeveredPositionTest is LeveredPositionTest {
     _configurePair(usdrMarket, daiUsdrLpMarket);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
     _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
-  }
 
-  function testWsdrWusdrUsdrLpLeverage() public {
+    position = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
     uint256 depositAmount = 1000e9;
     address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
     address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
