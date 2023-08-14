@@ -57,12 +57,7 @@ contract PoolRolesAuthority is RolesAuthority, Initializable {
       PoolRolesAuthority.configureLeveredPositionCapabilities.selector,
       true
     );
-    setRoleCapability(
-      REGISTRY_ROLE,
-      address(this),
-      PoolRolesAuthority.setUserRole.selector,
-      true
-    );
+    setRoleCapability(REGISTRY_ROLE, address(this), PoolRolesAuthority.setUserRole.selector, true);
   }
 
   function openPoolSupplierCapabilities(IonicComptroller pool) external requiresAuth {
