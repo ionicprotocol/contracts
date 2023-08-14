@@ -101,23 +101,23 @@ contract PoolRolesAuthority is RolesAuthority, Initializable {
     return selectors;
   }
 
-  function isDefaultOpenCall(address target, bytes4 selector) external pure returns (bool) {
-    if (selector == CTokenSecondExtensionInterface.repayBorrow.selector) return true;
-
-    return isSupplierCall(target, selector);
-  }
-
-  function isSupplierCall(address target, bytes4 selector) public pure returns (bool) {
-    if (selector == ComptrollerInterface.enterMarkets.selector) return true;
-    if (selector == ComptrollerInterface.exitMarket.selector) return true;
-
-    bytes4[] memory supplierSelectors = getSupplierMarketSelectors();
-    for (uint256 i = 0; i < supplierSelectors.length; i++) {
-      if (selector == supplierSelectors[i]) return true;
-    }
-
-    return false;
-  }
+  //  function isDefaultOpenCall(address target, bytes4 selector) external pure returns (bool) {
+  //    if (selector == CTokenSecondExtensionInterface.repayBorrow.selector) return true;
+  //
+  //    return isSupplierCall(target, selector);
+  //  }
+  //
+  //  function isSupplierCall(address target, bytes4 selector) public pure returns (bool) {
+  //    if (selector == ComptrollerInterface.enterMarkets.selector) return true;
+  //    if (selector == ComptrollerInterface.exitMarket.selector) return true;
+  //
+  //    bytes4[] memory supplierSelectors = getSupplierMarketSelectors();
+  //    for (uint256 i = 0; i < supplierSelectors.length; i++) {
+  //      if (selector == supplierSelectors[i]) return true;
+  //    }
+  //
+  //    return false;
+  //  }
 
   function _configurePoolSupplierCapabilities(IonicComptroller pool, uint8 role) internal {
     setRoleCapability(role, address(pool), pool.enterMarkets.selector, true);

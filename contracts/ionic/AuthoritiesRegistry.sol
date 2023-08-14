@@ -30,6 +30,8 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     auth = PoolRolesAuthority(address(proxy));
     auth.initialize(address(this));
 
+    auth.openPoolSupplierCapabilities(IonicComptroller(pool));
+
     poolsAuthorities[pool] = auth;
 
     reconfigureAuthority(pool);
@@ -60,12 +62,7 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     bytes4 functionSig
   ) external view returns (bool) {
     PoolRolesAuthority authorityForPool = poolsAuthorities[pool];
-    if (address(authorityForPool) == address(0)) {
-      // allow everyone to be a supplier by default
-      return poolAuthLogic.isDefaultOpenCall(target, functionSig);
-    }
-
-    return authorityForPool.canCall(user, target, functionSig);
+    return address(authorityForPool) != address(0) && authorityForPool.canCall(user, target, functionSig);
   }
 
   function setUserRole(
