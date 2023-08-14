@@ -29,13 +29,12 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(poolAuthLogic), _getProxyAdmin(), "");
     auth = PoolRolesAuthority(address(proxy));
     auth.initialize(address(this));
-
-    auth.openPoolSupplierCapabilities(IonicComptroller(pool));
-
     poolsAuthorities[pool] = auth;
 
-    reconfigureAuthority(pool);
+    auth.openPoolSupplierCapabilities(IonicComptroller(pool));
     auth.setUserRole(address(this), auth.REGISTRY_ROLE(), true);
+    // sets the registry owner as the auth owner
+    reconfigureAuthority(pool);
   }
 
   function reconfigureAuthority(address poolAddress) public {
@@ -52,6 +51,10 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
       // everyone can be a liquidator
       auth.configureOpenPoolLiquidatorCapabilities(pool);
       auth.configureLeveredPositionCapabilities(pool);
+
+      if (auth.owner() != owner()) {
+        auth.setOwner(owner());
+      }
     }
   }
 
