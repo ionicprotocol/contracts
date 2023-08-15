@@ -55,18 +55,24 @@ contract WithPool is BaseTest {
     underlyingToken = _underlyingToken;
 
     ionicAdmin = FeeDistributor(payable(ap.getAddress("FeeDistributor")));
-    // upgrade
-    {
-      FeeDistributor newImpl = new FeeDistributor();
-      TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(ionicAdmin)));
-      bytes32 bytesAtSlot = vm.load(address(proxy), 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103);
-      address admin = address(uint160(uint256(bytesAtSlot)));
-      vm.prank(admin);
-      proxy.upgradeTo(address(newImpl));
+    if (address(ionicAdmin) != address(0)) {
+      // upgrade
+      {
+        FeeDistributor newImpl = new FeeDistributor();
+        TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(ionicAdmin)));
+        bytes32 bytesAtSlot = vm.load(
+          address(proxy),
+          0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103
+        );
+        address admin = address(uint160(uint256(bytesAtSlot)));
+        vm.prank(admin);
+        proxy.upgradeTo(address(newImpl));
+      }
+    } else {
+      ionicAdmin = new FeeDistributor();
+      ionicAdmin.initialize(1e16);
     }
 
-    //    ionicAdmin = new FeeDistributor();
-    //    ionicAdmin.initialize(1e16);
     {
       vm.prank(ionicAdmin.owner());
       ionicAdmin._setPendingOwner(address(this));

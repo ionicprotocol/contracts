@@ -29,11 +29,12 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(poolAuthLogic), _getProxyAdmin(), "");
     auth = PoolRolesAuthority(address(proxy));
     auth.initialize(address(this));
-
     poolsAuthorities[pool] = auth;
 
-    reconfigureAuthority(pool);
+    auth.openPoolSupplierCapabilities(IonicComptroller(pool));
     auth.setUserRole(address(this), auth.REGISTRY_ROLE(), true);
+    // sets the registry owner as the auth owner
+    reconfigureAuthority(pool);
   }
 
   function reconfigureAuthority(address poolAddress) public {
@@ -50,6 +51,10 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
       // everyone can be a liquidator
       auth.configureOpenPoolLiquidatorCapabilities(pool);
       auth.configureLeveredPositionCapabilities(pool);
+
+      if (auth.owner() != owner()) {
+        auth.setOwner(owner());
+      }
     }
   }
 
@@ -60,12 +65,7 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     bytes4 functionSig
   ) external view returns (bool) {
     PoolRolesAuthority authorityForPool = poolsAuthorities[pool];
-    if (address(authorityForPool) == address(0)) {
-      // allow everyone to be a supplier by default
-      return poolAuthLogic.isDefaultOpenCall(target, functionSig);
-    }
-
-    return authorityForPool.canCall(user, target, functionSig);
+    return address(authorityForPool) != address(0) && authorityForPool.canCall(user, target, functionSig);
   }
 
   function setUserRole(

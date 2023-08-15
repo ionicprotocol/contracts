@@ -112,9 +112,9 @@ contract LeveredPositionFactoryTest is BaseTest {
       LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
       LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
 
+      vm.startPrank(factory.owner());
       DiamondBase asBase = DiamondBase(address(factory));
       address[] memory oldExts = asBase._listExtensions();
-      vm.startPrank(factory.owner());
       if (oldExts.length == 1) {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
@@ -170,17 +170,17 @@ abstract contract LeveredPositionTest is MarketsTest {
       LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
       LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
 
+      vm.startPrank(factory.owner());
       DiamondBase asBase = DiamondBase(address(factory));
       address[] memory oldExts = asBase._listExtensions();
       if (oldExts.length == 1) {
-        vm.prank(factory.owner());
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        vm.prank(factory.owner());
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
       }
+      vm.stopPrank();
     }
 
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
