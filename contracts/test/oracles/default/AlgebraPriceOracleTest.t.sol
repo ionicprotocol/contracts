@@ -61,13 +61,17 @@ contract AlgebraPriceOracleTest is BaseTest {
 
   function testPolygonAssets() public forkAtBlock(POLYGON_MAINNET, 46013460) {
     address maticX = 0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6;
-
-    address[] memory underlyings = new address[](2);
+    address dai = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
+    address[] memory underlyings = new address[](3);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
-      memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](2);
+      memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](3);
 
+    // 18 / 18
     underlyings[0] = maticX; // MaticX (18 decimals)
+    // 8 / 6
     underlyings[1] = wbtc; // WBTC (8 decimals)
+    // 18 / 6
+    underlyings[2] = dai; // DAI (18 decimals)
 
     // MaticX-Wmatic
     configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
@@ -81,15 +85,23 @@ contract AlgebraPriceOracleTest is BaseTest {
       10 minutes,
       stable
     );
+    // DAI-USDC
+    configs[2] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2,
+      10 minutes,
+      stable
+    );
 
-    uint256[] memory expPrices = new uint256[](2);
+    uint256[] memory expPrices = new uint256[](3);
     expPrices[0] = 1072289959017680334; //  0,72$ / 0,67$ =  1,07 MATIC   (07/07/2023)
     expPrices[1] = mpo.price(wbtc);
+    expPrices[2] = mpo.price(dai);
 
     uint256[] memory prices = getPriceFeed(underlyings, configs);
 
     assertEq(prices[0], expPrices[0], "!Price Error");
     assertApproxEqRel(prices[1], expPrices[1], 1e17, "!Price Error");
+    assertApproxEqRel(prices[2], expPrices[2], 1e17, "!Price Error");
   }
 
   function testZkEvmAssets() public forkAtBlock(ZKEVM_MAINNET, 4167547) {

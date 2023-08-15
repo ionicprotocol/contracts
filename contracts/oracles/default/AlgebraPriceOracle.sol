@@ -34,27 +34,6 @@ contract AlgebraPriceOracle is ConcentratedLiquidityBasePriceOracle {
     uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(tick);
 
     uint256 tokenPrice = getPriceX96FromSqrtPriceX96(pool.token0(), token, sqrtPriceX96);
-
-    uint256 baseTokenDecimals;
-    uint256 tokenPriceScaled;
-
-    if (baseToken == address(0) || baseToken == WTOKEN) {
-      baseTokenDecimals = 18;
-    } else {
-      baseTokenDecimals = uint256(ERC20Upgradeable(baseToken).decimals());
-    }
-
-    uint256 baseNativePrice = BasePriceOracle(msg.sender).price(baseToken);
-
-    // scale tokenPrice by 1e18
-    uint256 tokenDecimals = uint256(ERC20Upgradeable(token).decimals());
-    if (baseTokenDecimals > tokenDecimals) {
-      tokenPriceScaled = tokenPrice / (10**(baseTokenDecimals - tokenDecimals));
-    } else if (baseTokenDecimals < tokenDecimals) {
-      tokenPriceScaled = tokenPrice * (10**(tokenDecimals - baseTokenDecimals));
-    } else {
-      tokenPriceScaled = tokenPrice;
-    }
-    return (tokenPriceScaled * baseNativePrice) / 1e18;
+    return scalePrices(baseToken, token, tokenPrice);
   }
 }

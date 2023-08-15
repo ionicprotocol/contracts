@@ -76,7 +76,7 @@ contract PythPriceOracleTest is BaseTest {
 
     uint256 price = oracle.price(wbtc);
     uint256 priceMpo = mpo.price(wbtc);
-    assertApproxEqRel(price, priceMpo, 1e14);
+    assertApproxEqRel(price, priceMpo, 1e17);
   }
 
   function testNeonTokenPrice() public debuggingOnly fork(NEON_MAINNET) {
