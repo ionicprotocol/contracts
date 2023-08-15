@@ -60,7 +60,7 @@ contract PoolRolesAuthority is RolesAuthority, Initializable {
     setRoleCapability(
       REGISTRY_ROLE,
       address(this),
-      PoolRolesAuthority.setUserRole.selector,
+      RolesAuthority.setUserRole.selector,
       true
     );
   }
