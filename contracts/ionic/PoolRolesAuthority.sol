@@ -57,12 +57,7 @@ contract PoolRolesAuthority is RolesAuthority, Initializable {
       PoolRolesAuthority.configureLeveredPositionCapabilities.selector,
       true
     );
-    setRoleCapability(
-      REGISTRY_ROLE,
-      address(this),
-      RolesAuthority.setUserRole.selector,
-      true
-    );
+    setRoleCapability(REGISTRY_ROLE, address(this), RolesAuthority.setUserRole.selector, true);
   }
 
   function openPoolSupplierCapabilities(IonicComptroller pool) external requiresAuth {
@@ -95,35 +90,13 @@ contract PoolRolesAuthority is RolesAuthority, Initializable {
     selectors[--fnsCount] = CTokenSecondExtensionInterface.mint.selector;
     selectors[--fnsCount] = CTokenSecondExtensionInterface.redeem.selector;
     selectors[--fnsCount] = CTokenSecondExtensionInterface.redeemUnderlying.selector;
-
-    // TODO transfer/approve fns needed at all?
     selectors[--fnsCount] = CTokenFirstExtensionInterface.transfer.selector;
     selectors[--fnsCount] = CTokenFirstExtensionInterface.transferFrom.selector;
     selectors[--fnsCount] = CTokenFirstExtensionInterface.approve.selector;
 
-    // selectors[--fnsCount] = ICErc20.multicall.selector;
-
     require(fnsCount == 0, "use the correct array length");
     return selectors;
   }
-
-  //  function isDefaultOpenCall(address target, bytes4 selector) external pure returns (bool) {
-  //    if (selector == CTokenSecondExtensionInterface.repayBorrow.selector) return true;
-  //
-  //    return isSupplierCall(target, selector);
-  //  }
-  //
-  //  function isSupplierCall(address target, bytes4 selector) public pure returns (bool) {
-  //    if (selector == ComptrollerInterface.enterMarkets.selector) return true;
-  //    if (selector == ComptrollerInterface.exitMarket.selector) return true;
-  //
-  //    bytes4[] memory supplierSelectors = getSupplierMarketSelectors();
-  //    for (uint256 i = 0; i < supplierSelectors.length; i++) {
-  //      if (selector == supplierSelectors[i]) return true;
-  //    }
-  //
-  //    return false;
-  //  }
 
   function _configurePoolSupplierCapabilities(IonicComptroller pool, uint8 role) internal {
     setRoleCapability(role, address(pool), pool.enterMarkets.selector, true);
