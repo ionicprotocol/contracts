@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import { EIP20Interface } from "../../compound/EIP20Interface.sol";
-
+import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import { BasePriceOracle } from "../../oracles/BasePriceOracle.sol";
 import { ICErc20 } from "../../compound/CTokenInterfaces.sol";
 
@@ -115,5 +115,33 @@ abstract contract ConcentratedLiquidityBasePriceOracle is BasePriceOracle, SafeO
 
   function getSupportedBaseTokens() external view returns (address[] memory) {
     return SUPPORTED_BASE_TOKENS;
+  }
+
+  function scalePrices(
+    address baseToken,
+    address token,
+    uint256 tokenPrice
+  ) internal view returns (uint256) {
+    uint256 baseTokenDecimals;
+    uint256 tokenPriceScaled;
+
+    if (baseToken == address(0) || baseToken == WTOKEN) {
+      baseTokenDecimals = 18;
+    } else {
+      baseTokenDecimals = uint256(ERC20Upgradeable(baseToken).decimals());
+    }
+
+    uint256 baseNativePrice = BasePriceOracle(msg.sender).price(baseToken);
+
+    // scale tokenPrice by 1e18
+    uint256 tokenDecimals = uint256(ERC20Upgradeable(token).decimals());
+    if (baseTokenDecimals > tokenDecimals) {
+      tokenPriceScaled = tokenPrice / (10**(baseTokenDecimals - tokenDecimals));
+    } else if (baseTokenDecimals < tokenDecimals) {
+      tokenPriceScaled = tokenPrice * (10**(tokenDecimals - baseTokenDecimals));
+    } else {
+      tokenPriceScaled = tokenPrice;
+    }
+    return (tokenPriceScaled * baseNativePrice) / 1e18;
   }
 }

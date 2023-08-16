@@ -482,14 +482,9 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     flywheelPreBorrowerAction(cToken, borrower);
 
     // Perform a hypothetical liquidity check to guard against shortfall
-    (Error err, , uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
-      borrower,
-      ICErc20(cToken),
-      0,
-      borrowAmount
-    );
-    if (err != Error.NO_ERROR) {
-      return uint256(err);
+    (uint256 err, , uint256 shortfall) = this.getHypotheticalAccountLiquidity(borrower, cToken, 0, borrowAmount);
+    if (err != uint256(Error.NO_ERROR)) {
+      return err;
     }
     if (shortfall > 0) {
       return uint256(Error.INSUFFICIENT_LIQUIDITY);

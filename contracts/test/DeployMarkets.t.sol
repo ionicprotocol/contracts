@@ -166,7 +166,7 @@ contract DeployMarketsTest is Test {
     cTokens[0] = address(cToken);
     comptroller.enterMarkets(cTokens);
     vm.roll(1);
-    cToken.mint(10e18);
+    require(cToken.mint(10e18) == 0, "mint failed");
     assertEq(cToken.totalSupply(), 10e18 * 5);
     assertEq(underlyingToken.balanceOf(address(cToken)), 10e18);
   }
