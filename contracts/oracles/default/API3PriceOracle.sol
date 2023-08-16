@@ -9,12 +9,12 @@ import "../BasePriceOracle.sol";
 import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 /**
- * @title Api3PriceOracle
+ * @title API3PriceOracle
  * @notice Returns prices from Api3.
  * @dev Implements `PriceOracle`.
  * @author Carlo Mazzaferro <carlo@ionic.money> (https://github.com/carlomazzaferro)
  */
-contract Api3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
+contract API3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
   /**
    * @notice Maps ERC20 token addresses to ETH-based Chainlink price feed contracts.
    */
