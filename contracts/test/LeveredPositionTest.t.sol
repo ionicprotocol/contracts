@@ -693,13 +693,6 @@ contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
     address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
     address daiUsdrLpWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279;
 
-    IERC20Upgradeable usdrToken = underlying(usdrMarket);
-    IERC20Upgradeable daiUsdrLpToken = underlying(daiUsdrLpMarket);
-    vm.startPrank(registry.owner());
-    registry._setRedemptionStrategy(new SolidlyLpTokenLiquidator(), daiUsdrLpToken, usdrToken);
-    registry._setRedemptionStrategy(new SolidlyLpTokenWrapper(), usdrToken, daiUsdrLpToken);
-    vm.stopPrank();
-
     _configurePair(usdrMarket, daiUsdrLpMarket);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
     _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
