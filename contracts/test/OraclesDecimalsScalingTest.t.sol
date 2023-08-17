@@ -12,10 +12,12 @@ import { IERC20MetadataUpgradeable } from "openzeppelin-contracts-upgradeable/co
 contract OraclesDecimalsScalingTest is BaseTest {
   MasterPriceOracle mpo;
   PoolDirectory poolDirectory;
+  address stable;
 
   function afterForkSetUp() internal override {
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     poolDirectory = PoolDirectory(ap.getAddress("PoolDirectory"));
+    stable = ap.getAddress("stableToken");
   }
 
   function testOracleDecimalsBsc() public fork(BSC_MAINNET) {
@@ -30,13 +32,8 @@ contract OraclesDecimalsScalingTest is BaseTest {
     testOraclesDecimals();
   }
 
-  function testOracleDecimalsNeonDev() public fork(NEON_MAINNET) {
-    vm.mockCall(
-      0x4F6B3c357c439E15FB61c1187cc5E28eC72bBc55,
-      abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector),
-      abi.encode(6)
-    );
-
+  function testOracleDecimalsNeon() public fork(NEON_MAINNET) {
+    vm.mockCall(stable, abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector), abi.encode(6));
     testOraclesDecimals();
   }
 
