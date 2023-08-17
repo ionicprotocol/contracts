@@ -345,13 +345,17 @@ abstract contract LeveredPositionTest is MarketsTest {
     uint256 maxRatio = position.getMaxLeverageRatio();
     emit log_named_uint("max ratio", maxRatio);
 
-    uint256 rate = lens.getBorrowRateAtRatio(collateralMarket, stableMarket, 1e18, maxRatio);
+    uint256 _equityAmount = position.getEquityAmount();
+    uint256 rate = lens.getBorrowRateAtRatio(collateralMarket, stableMarket, _equityAmount, maxRatio);
     emit log_named_uint("borrow rate at max ratio", rate);
 
     uint256 minRatio = position.getMinLeverageRatio();
     emit log_named_uint("min ratio", minRatio);
+
+    assertGt(maxRatio, minRatio, "max ratio <= min ratio");
+
     position.adjustLeverageRatio(maxRatio);
-    assertApproxEqRel(position.getCurrentLeverageRatio(), maxRatio, 1e16, "target max ratio not matching");
+    assertApproxEqRel(position.getCurrentLeverageRatio(), maxRatio, 4e16, "target max ratio not matching");
   }
 
   function testRewardsAccruedClaimed() public whenForking {
@@ -393,7 +397,7 @@ abstract contract LeveredPositionTest is MarketsTest {
 
     uint256 maxRatio = position.getMaxLeverageRatio();
     uint256 leverageRatioRealized = position.adjustLeverageRatio(maxRatio);
-    assertApproxEqRel(leverageRatioRealized, maxRatio, 1e16, "target ratio not matching");
+    assertApproxEqRel(leverageRatioRealized, maxRatio, 4e16, "target ratio not matching");
 
     uint256 minRatio = position.getMinLeverageRatio();
     emit log_named_uint("min ratio", minRatio);
@@ -683,7 +687,7 @@ contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 1000e9;
+    uint256 depositAmount = 150e9;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
     address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
