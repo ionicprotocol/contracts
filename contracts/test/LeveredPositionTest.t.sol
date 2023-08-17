@@ -316,6 +316,9 @@ abstract contract LeveredPositionTest is MarketsTest {
   function testAnyLeverageRatio(uint64 ratioDiff) public whenForking {
     // ratioDiff is between 0 and 2^64 ~= 18.446e18
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
+    emit log_named_uint("fuzz max ratio", maxLevRatio);
+    emit log_named_uint("fuzz min ratio", minLevRatio);
+    emit log_named_uint("target ratio", targetLeverageRatio);
     vm.assume(targetLeverageRatio < maxLevRatio);
     vm.assume(minLevRatio < targetLeverageRatio);
 

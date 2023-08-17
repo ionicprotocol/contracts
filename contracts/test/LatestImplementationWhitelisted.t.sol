@@ -15,7 +15,8 @@ contract LatestImplementationWhitelisted is BaseTest {
   FeeDistributor ionicAdmin;
   PoolDirectory poolDirectory;
 
-  address[] implementationsSet;
+  address[] poolsImplementationsSet;
+  address[] marketsImplementationsSet;
   address[] pluginsSet;
 
   function testBscImplementations() public fork(BSC_MAINNET) {
@@ -43,21 +44,21 @@ contract LatestImplementationWhitelisted is BaseTest {
       address implementation = comptroller.comptrollerImplementation();
 
       bool added = false;
-      for (uint8 k = 0; k < implementationsSet.length; k++) {
-        if (implementationsSet[k] == implementation) {
+      for (uint8 k = 0; k < poolsImplementationsSet.length; k++) {
+        if (poolsImplementationsSet[k] == implementation) {
           added = true;
         }
       }
 
-      if (!added) implementationsSet.push(implementation);
+      if (!added) poolsImplementationsSet.push(implementation);
     }
 
     emit log("listing the set");
-    for (uint8 k = 0; k < implementationsSet.length; k++) {
-      emit log_address(implementationsSet[k]);
+    for (uint8 k = 0; k < poolsImplementationsSet.length; k++) {
+      emit log_address(poolsImplementationsSet[k]);
 
-      address latestImpl = ionicAdmin.latestComptrollerImplementation(implementationsSet[k]);
-      assertTrue(implementationsSet[k] == latestImpl, "some pool is not upgraded the latest impl");
+      address latestImpl = ionicAdmin.latestComptrollerImplementation(poolsImplementationsSet[k]);
+      assertTrue(poolsImplementationsSet[k] == latestImpl, "some pool is not upgraded the latest impl");
     }
   }
 
@@ -72,24 +73,24 @@ contract LatestImplementationWhitelisted is BaseTest {
         address implementation = market.implementation();
 
         bool added = false;
-        for (uint8 k = 0; k < implementationsSet.length; k++) {
-          if (implementationsSet[k] == implementation) {
+        for (uint8 k = 0; k < marketsImplementationsSet.length; k++) {
+          if (marketsImplementationsSet[k] == implementation) {
             added = true;
           }
         }
 
-        if (!added) implementationsSet.push(implementation);
+        if (!added) marketsImplementationsSet.push(implementation);
       }
     }
 
     emit log("listing the set");
-    for (uint8 k = 0; k < implementationsSet.length; k++) {
-      emit log_address(implementationsSet[k]);
+    for (uint8 k = 0; k < marketsImplementationsSet.length; k++) {
+      emit log_address(marketsImplementationsSet[k]);
       (address latestCErc20Delegate, bytes memory becomeImplementationData) = ionicAdmin.latestCErc20Delegate(
-        CErc20Delegate(implementationsSet[k]).delegateType()
+        CErc20Delegate(marketsImplementationsSet[k]).delegateType()
       );
 
-      assertTrue(implementationsSet[k] == latestCErc20Delegate, "some markets need to be upgraded");
+      assertTrue(marketsImplementationsSet[k] == latestCErc20Delegate, "some markets need to be upgraded");
     }
   }
 
