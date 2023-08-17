@@ -66,23 +66,29 @@ contract API3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
    * @dev If the oracle got constructed with `nativeTokenUsd` = TRUE this will return a price denominated in USD otherwise in the native token
    */
   function _price(address underlying) internal view returns (uint256) {
-    // Get token/ETH price from API3
     IProxy proxy = proxies[underlying];
     require(address(proxy) != address(0), "No API3 price feed found for this underlying ERC20 token.");
 
     uint256 nativeTokenUsdPrice;
 
     if (NATIVE_TOKEN_USD_PRICE_FEED == address(0)) {
+      // get the USDX/USD price from the MPO
       uint256 usdNativeTokenPrice = BasePriceOracle(msg.sender).price(USD_TOKEN);
       nativeTokenUsdPrice = 1e36 / usdNativeTokenPrice; // 18 decimals
     } else {
       (int224 nativeTokenUsdPrice224, ) = IProxy(NATIVE_TOKEN_USD_PRICE_FEED).read();
+      if (nativeTokenUsdPrice224 <= 0) {
+        revert("API3PriceOracle: native token price <= 0");
+      }
       nativeTokenUsdPrice = uint256(uint224(nativeTokenUsdPrice224));
-      if (nativeTokenUsdPrice <= 0) return 0;
     }
     (int224 tokenUsdPrice, ) = proxy.read();
 
-    return tokenUsdPrice >= 0 ? (uint256(uint224(tokenUsdPrice)) * 1e18) / nativeTokenUsdPrice : 0;
+    if (tokenUsdPrice <= 0) {
+      revert("API3PriceOracle: token price <= 0");
+    }
+
+    return (uint256(uint224(tokenUsdPrice)) * 1e18) / nativeTokenUsdPrice;
   }
 
   /**

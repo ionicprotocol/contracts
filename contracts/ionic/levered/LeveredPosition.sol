@@ -261,6 +261,10 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
 
     // accounting for swaps slippage
     uint256 assumedSlippage = factory.liquidatorsRegistry().getSlippage(stableAsset, collateralAsset);
+    {
+      // add 10 bps just to not go under the min borrow value
+      assumedSlippage += 10;
+    }
     uint256 topUpCollateralValue = (newBorrowsValue * 10000) / (10000 + assumedSlippage);
 
     int256 s = int256(positionValue);
@@ -334,11 +338,13 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     supplyDelta = (supplyValueDeltaAbs * 1e18) / collateralAssetPrice;
     borrowsDelta = (supplyValueDeltaAbs * 1e18) / borrowedAssetPrice;
 
-    // stables to borrow = c * x
-    if (up)
+    if (up) {
+      // stables to borrow = c * x
       borrowsDelta = (borrowsDelta * slippageFactor) / 1e18;
+    } else {
       // amount to redeem = c * x
-    else supplyDelta = (supplyDelta * slippageFactor) / 1e18;
+      supplyDelta = (supplyDelta * slippageFactor) / 1e18;
+    }
   }
 
   /*----------------------------------------------------------------
