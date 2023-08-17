@@ -48,6 +48,16 @@ contract PythPriceOracle is BasePriceOracle, SafeOwnableUpgradeable {
     PYTH = IPyth(pythAddress);
   }
 
+  function reinitialize(
+    address pythAddress,
+    bytes32 nativeTokenUsdFeed,
+    address usdToken
+  ) public onlyOwnerOrAdmin {
+    NATIVE_TOKEN_USD_FEED = nativeTokenUsdFeed;
+    USD_TOKEN = usdToken;
+    PYTH = IPyth(pythAddress);
+  }
+
   /**
    * @dev Admin-only function to set price feeds.
    * @param underlyings Underlying token addresses for which to set price feeds.

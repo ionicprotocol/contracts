@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 import "../../ionic/DiamondExtension.sol";
 import { LeveredPositionFactoryStorage } from "./LeveredPositionFactoryStorage.sol";
-import { ILeveredPositionFactoryExtension } from "./ILeveredPositionFactory.sol";
+import { ILeveredPositionFactoryFirstExtension } from "./ILeveredPositionFactory.sol";
 import { ICErc20 } from "../../compound/CTokenInterfaces.sol";
 import { IRedemptionStrategy } from "../../liquidators/IRedemptionStrategy.sol";
 import { LeveredPosition } from "./LeveredPosition.sol";
@@ -16,10 +16,10 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract LeveredPositionFactoryExtension is
+contract LeveredPositionFactoryFirstExtension is
   LeveredPositionFactoryStorage,
   DiamondExtension,
-  ILeveredPositionFactoryExtension
+  ILeveredPositionFactoryFirstExtension
 {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -29,11 +29,8 @@ contract LeveredPositionFactoryExtension is
   error PositionNotClosed();
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 11;
+    uint8 fnsCount = 8;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
-    functionSelectors[--fnsCount] = this.createPosition.selector;
-    functionSelectors[--fnsCount] = this.createAndFundPosition.selector;
-    functionSelectors[--fnsCount] = this.createAndFundPositionAtRatio.selector;
     functionSelectors[--fnsCount] = this.removeClosedPosition.selector;
     functionSelectors[--fnsCount] = this.getMinBorrowNative.selector;
     functionSelectors[--fnsCount] = this.getRedemptionStrategies.selector;
@@ -49,49 +46,6 @@ contract LeveredPositionFactoryExtension is
   /*----------------------------------------------------------------
                           Mutable Functions
   ----------------------------------------------------------------*/
-
-  function createPosition(ICErc20 _collateralMarket, ICErc20 _stableMarket) public returns (LeveredPosition) {
-    if (!borrowableMarketsByCollateral[_collateralMarket].contains(address(_stableMarket))) revert PairNotWhitelisted();
-
-    LeveredPosition position = new LeveredPosition(msg.sender, _collateralMarket, _stableMarket);
-
-    accountsWithOpenPositions.add(msg.sender);
-    positionsByAccount[msg.sender].add(address(position));
-
-    AuthoritiesRegistry authoritiesRegistry = feeDistributor.authoritiesRegistry();
-    address poolAddress = address(_collateralMarket.comptroller());
-    PoolRolesAuthority poolAuth = authoritiesRegistry.poolsAuthorities(poolAddress);
-    if (address(poolAuth) != address(0)) {
-      authoritiesRegistry.setUserRole(poolAddress, address(position), poolAuth.LEVERED_POSITION_ROLE(), true);
-    }
-
-    return position;
-  }
-
-  function createAndFundPosition(
-    ICErc20 _collateralMarket,
-    ICErc20 _stableMarket,
-    IERC20Upgradeable _fundingAsset,
-    uint256 _fundingAmount
-  ) public returns (LeveredPosition) {
-    LeveredPosition position = createPosition(_collateralMarket, _stableMarket);
-    _fundingAsset.safeTransferFrom(msg.sender, address(this), _fundingAmount);
-    _fundingAsset.approve(address(position), _fundingAmount);
-    position.fundPosition(_fundingAsset, _fundingAmount);
-    return position;
-  }
-
-  function createAndFundPositionAtRatio(
-    ICErc20 _collateralMarket,
-    ICErc20 _stableMarket,
-    IERC20Upgradeable _fundingAsset,
-    uint256 _fundingAmount,
-    uint256 _leverageRatio
-  ) external returns (LeveredPosition) {
-    LeveredPosition position = createAndFundPosition(_collateralMarket, _stableMarket, _fundingAsset, _fundingAmount);
-    position.adjustLeverageRatio(_leverageRatio);
-    return position;
-  }
 
   // @return true if removed, otherwise false
   function removeClosedPosition(address closedPosition) external returns (bool) {
