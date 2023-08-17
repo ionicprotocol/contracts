@@ -42,6 +42,16 @@ contract API3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
   }
 
   /**
+   * @dev Constructor to set wtoken address and native token USD price feed address
+   * @param _usdToken The Wrapped native asset address
+   * @param nativeTokenUsd Will this oracle return prices denominated in USD or in the native token.
+   */
+  function reinitialize(address _usdToken, address nativeTokenUsd) public onlyOwnerOrAdmin {
+    USD_TOKEN = _usdToken;
+    NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsd;
+  }
+
+  /**
    * @dev Admin-only function to set price feeds.
    * @param underlyings Underlying token addresses for which to set price feeds.
    * @param feeds The Chainlink price feed contract addresses for each of `underlyings`.
