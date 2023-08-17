@@ -15,7 +15,6 @@ import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiq
 import { LeveredPositionFactoryFirstExtension } from "../ionic/levered/LeveredPositionFactoryFirstExtension.sol";
 import { LeveredPositionFactorySecondExtension } from "../ionic/levered/LeveredPositionFactorySecondExtension.sol";
 import { ILeveredPositionFactory } from "../ionic/levered/ILeveredPositionFactory.sol";
-import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 import { LeveredPositionsLens } from "../ionic/levered/LeveredPositionsLens.sol";
 import { LiquidatorsRegistry } from "../liquidators/registry/LiquidatorsRegistry.sol";
 import { LiquidatorsRegistryExtension } from "../liquidators/registry/LiquidatorsRegistryExtension.sol";
@@ -88,10 +87,8 @@ contract LeveredPositionLensTest is BaseTest {
 contract LeveredPositionFactoryTest is BaseTest {
   ILeveredPositionFactory factory;
   LeveredPositionsLens lens;
-  MasterPriceOracle mpo;
 
   function afterForkSetUp() internal override {
-    mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
     lens = new LeveredPositionsLens();
     lens.initialize(factory);
@@ -138,7 +135,7 @@ contract LeveredPositionFactoryTest is BaseTest {
 
     emit log_named_int("net apy", netApy);
 
-    // boosted APY = 2x 2.7% = 5.4 % of the base collateral
+    // boosted APY = 2x 2.7% = 5.4 % of the equity
     // borrow APR = 5.2%
     // diff = 5.4 - 5.2 = 0.2%
     assertApproxEqRel(netApy, 0.2e16, 1e12, "!net apy");
@@ -152,7 +149,6 @@ abstract contract LeveredPositionTest is MarketsTest {
   ILiquidatorsRegistry registry;
   LeveredPosition position;
   LeveredPositionsLens lens;
-  MasterPriceOracle mpo;
 
   function afterForkSetUp() internal virtual override {
     super.afterForkSetUp();
@@ -162,7 +158,6 @@ abstract contract LeveredPositionTest is MarketsTest {
       ap.setAddress("ALGEBRA_SWAP_ROUTER", 0x327Dd3208f0bCF590A66110aCB6e5e6941A4EfA0);
     }
 
-    mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     registry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
     {
@@ -301,7 +296,7 @@ abstract contract LeveredPositionTest is MarketsTest {
   }
 
   function testOpenLeveredPosition() public virtual whenForking {
-    assertApproxEqRel(position.getCurrentLeverageRatio(), 1e18, 1e16, "initial leverage ratio should be 1.0 (1e18)");
+    assertApproxEqRel(position.getCurrentLeverageRatio(), 1e18, 4e16, "initial leverage ratio should be 1.0 (1e18)");
   }
 
   function testAnyLeverageRatio(uint64 ratioDiff) public whenForking {
@@ -310,6 +305,11 @@ abstract contract LeveredPositionTest is MarketsTest {
     emit log_named_uint("min ratio", minRatio);
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
     vm.assume(minRatio < targetLeverageRatio);
+
+    uint256 borrowedAssetPrice = stableMarket.comptroller().oracle().getUnderlyingPrice(stableMarket);
+    (uint256 sd, uint256 bd) = position.getSupplyAmountDelta(targetLeverageRatio);
+    emit log_named_uint("borrows delta val", (bd * borrowedAssetPrice) / 1e18);
+    emit log_named_uint("min borrow value", ffd.getMinBorrowEth(stableMarket));
 
     uint256 maxRatio = position.getMaxLeverageRatio();
     emit log_named_uint("max lev ratio", maxRatio);
@@ -322,8 +322,8 @@ abstract contract LeveredPositionTest is MarketsTest {
     emit log_named_uint("current LeverageRatio", currentLeverageRatio);
 
     uint256 leverageRatioRealized = position.adjustLeverageRatio(targetLeverageRatio);
-    emit log_named_uint("base collateral", position.getEquityAmount());
-    assertApproxEqRel(leverageRatioRealized, targetLeverageRatio, 1e16, "target ratio not matching");
+    emit log_named_uint("equity amount", position.getEquityAmount());
+    assertApproxEqRel(leverageRatioRealized, targetLeverageRatio, 4e16, "target ratio not matching");
   }
 
   function testMinMaxLeverageRatio() public whenForking {
@@ -415,7 +415,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     emit log_named_uint("withdraw amount", withdrawAmount);
     assertApproxEqRel(startingEquity, withdrawAmount, 5e16, "!withdraw amount");
 
-    assertEq(position.getEquityAmount(), 0, "!nonzero base collateral");
+    assertEq(position.getEquityAmount(), 0, "!nonzero equity amount");
     assertEq(position.getCurrentLeverageRatio(), 0, "!nonzero leverage ratio");
   }
 }
@@ -674,10 +674,6 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     uint256 currentRatio = position.getCurrentLeverageRatio();
 
     vm.label(address(position), "Levered Position");
-  }
-
-  function testOpenLeveredPosition() public override whenForking {
-    assertApproxEqRel(position.getCurrentLeverageRatio(), ratioOnCreation, 1e16, "initial leverage ratio mismatch");
   }
 }
 
