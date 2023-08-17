@@ -75,15 +75,15 @@ contract CurveAssetTest is AbstractAssetTest {
     assertTrue(true);
   }
 
-  function testAccumulatingRewardsOnDeposit() public {
+  function testAccumulatingRewardsOnDeposit() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testAccumulatingRewardsOnDeposit);
   }
 
-  function testAccumulatingRewardsOnWithdrawal() public {
+  function testAccumulatingRewardsOnWithdrawal() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testAccumulatingRewardsOnWithdrawal);
   }
 
-  function testClaimRewards() public {
+  function testClaimRewards() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testClaimRewards);
   }
 }

@@ -168,7 +168,7 @@ abstract contract BaseTest is Test {
     } else if (chainid == NEON_MAINNET) {
       ap = AddressesProvider(0xF4C60F6ac6b3AF54044757a1a54D76EEe28244CE);
     } else if (chainid == ARBITRUM_ONE) {
-      ap = AddressesProvider(address(0));
+      ap = AddressesProvider(0x3B12BA992259Fb3855C4E1D452a754dCa2E276fC);
     } else if (chainid == LINEA_MAINNET) {
       ap = AddressesProvider(0x914694DA0bED80e74ef1a28029f016119782C0f1);
     } else if (chainid == ZKEVM_MAINNET) {
