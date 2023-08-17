@@ -261,19 +261,26 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       // Get the supply cap from Adrastia Prudentia
       supplyCap = IHistoricalRates(capConfig.controller).getRateAt(cTokenAddress, capConfig.offset).current;
 
-      // Prudentia stores the supply cap as a whole token amount while our code requires the mantissa amount, so we
-      // must scale the supply cap by the underlying token decimals
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
 
-      uint256 underlyingDecimals = 18;
+      int256 scaleByDecimals = 18;
       address underlyingToken = ICErc20(cTokenAddress).underlying();
       // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
       (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
       if (success && data.length == 32) {
-        underlyingDecimals = abi.decode(data, (uint8));
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
       }
 
-      // Scale the supply cap by the decimals
-      supplyCap *= 10**underlyingDecimals;
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        supplyCap *= 10**uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        supplyCap /= 10**uint256(-scaleByDecimals);
+      }
     } else {
       // We don't have a controller, so we're using the local supply cap
 
@@ -510,19 +517,26 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       // Get the borrow cap from Adrastia Prudentia
       borrowCap = IHistoricalRates(capConfig.controller).getRateAt(cToken, capConfig.offset).current;
 
-      // Prudentia stores the borrow cap as a whole token amount while our code requires the mantissa amount, so we
-      // must scale the borrow cap by the underlying token decimals
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
 
-      uint256 underlyingDecimals = 18;
+      int256 scaleByDecimals = 18;
       address underlyingToken = ICErc20(cToken).underlying();
       // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
       (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
       if (success && data.length == 32) {
-        underlyingDecimals = abi.decode(data, (uint8));
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
       }
 
-      // Scale the borrow cap by the decimals
-      borrowCap *= 10**underlyingDecimals;
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        borrowCap *= 10**uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        borrowCap /= 10**uint256(-scaleByDecimals);
+      }
     } else {
       // We don't have a controller, so we're using the local borrow cap
       borrowCap = borrowCaps[cToken];
