@@ -150,6 +150,9 @@ abstract contract LeveredPositionTest is MarketsTest {
   LeveredPosition position;
   LeveredPositionsLens lens;
 
+  uint256 minLevRatio;
+  uint256 maxLevRatio;
+
   function afterForkSetUp() internal virtual override {
     super.afterForkSetUp();
 
@@ -284,7 +287,11 @@ abstract contract LeveredPositionTest is MarketsTest {
 
   function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
     internal
-    returns (LeveredPosition _position)
+    returns (
+      LeveredPosition _position,
+      uint256 _maxRatio,
+      uint256 _minRatio
+    )
   {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
@@ -293,6 +300,13 @@ abstract contract LeveredPositionTest is MarketsTest {
     collateralToken.approve(address(factory), _depositAmount);
     _position = factory.createAndFundPosition(collateralMarket, stableMarket, collateralToken, _depositAmount);
     vm.stopPrank();
+
+    _maxRatio = _position.getMaxLeverageRatio();
+    emit log_named_uint("max ratio", maxLevRatio);
+    _minRatio = _position.getMinLeverageRatio();
+    emit log_named_uint("min ratio", minLevRatio);
+
+    assertGt(_maxRatio, _minRatio, "max ratio <= min ratio");
   }
 
   function testOpenLeveredPosition() public virtual whenForking {
@@ -301,25 +315,20 @@ abstract contract LeveredPositionTest is MarketsTest {
 
   function testAnyLeverageRatio(uint64 ratioDiff) public whenForking {
     // ratioDiff is between 0 and 2^64 ~= 18.446e18
-    uint256 minRatio = position.getMinLeverageRatio();
-    emit log_named_uint("min ratio", minRatio);
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
-    vm.assume(minRatio < targetLeverageRatio);
+    vm.assume(targetLeverageRatio < maxLevRatio);
+    vm.assume(minLevRatio < targetLeverageRatio);
 
     uint256 borrowedAssetPrice = stableMarket.comptroller().oracle().getUnderlyingPrice(stableMarket);
     (uint256 sd, uint256 bd) = position.getSupplyAmountDelta(targetLeverageRatio);
     emit log_named_uint("borrows delta val", (bd * borrowedAssetPrice) / 1e18);
     emit log_named_uint("min borrow value", ffd.getMinBorrowEth(stableMarket));
 
-    uint256 maxRatio = position.getMaxLeverageRatio();
-    emit log_named_uint("max lev ratio", maxRatio);
-    vm.assume(targetLeverageRatio < maxRatio);
-
     uint256 equityAmount = position.getEquityAmount();
     emit log_named_uint("equity amount", equityAmount);
 
     uint256 currentLeverageRatio = position.getCurrentLeverageRatio();
-    emit log_named_uint("current LeverageRatio", currentLeverageRatio);
+    emit log_named_uint("current ratio", currentLeverageRatio);
 
     uint256 leverageRatioRealized = position.adjustLeverageRatio(targetLeverageRatio);
     emit log_named_uint("equity amount", position.getEquityAmount());
@@ -327,35 +336,22 @@ abstract contract LeveredPositionTest is MarketsTest {
   }
 
   function testMinMaxLeverageRatio() public whenForking {
-    uint256 maxRatio = position.getMaxLeverageRatio();
-    emit log_named_uint("max ratio", maxRatio);
-    uint256 minRatio = position.getMinLeverageRatio();
-    emit log_named_uint("min ratio", minRatio);
+    assertGt(maxLevRatio, minLevRatio, "max ratio <= min ratio");
 
-    assertGt(maxRatio, minRatio, "max ratio <= min ratio");
-
-    // attempting to adjust to minRatio - 0.01 should fail
+    // attempting to adjust to minLevRatio - 0.01 should fail
     vm.expectRevert(abi.encodeWithSelector(LeveredPosition.BorrowStableFailed.selector, 0x3fa));
-    position.adjustLeverageRatio((minRatio + 1e18) / 2);
-    // but adjusting to the minRatio + 0.01 should succeed
-    position.adjustLeverageRatio(minRatio + 0.01e18);
+    position.adjustLeverageRatio((minLevRatio + 1e18) / 2);
+    // but adjusting to the minLevRatio + 0.01 should succeed
+    position.adjustLeverageRatio(minLevRatio + 0.01e18);
   }
 
   function testMaxLeverageRatio() public whenForking {
-    uint256 maxRatio = position.getMaxLeverageRatio();
-    emit log_named_uint("max ratio", maxRatio);
-
     uint256 _equityAmount = position.getEquityAmount();
-    uint256 rate = lens.getBorrowRateAtRatio(collateralMarket, stableMarket, _equityAmount, maxRatio);
+    uint256 rate = lens.getBorrowRateAtRatio(collateralMarket, stableMarket, _equityAmount, maxLevRatio);
     emit log_named_uint("borrow rate at max ratio", rate);
 
-    uint256 minRatio = position.getMinLeverageRatio();
-    emit log_named_uint("min ratio", minRatio);
-
-    assertGt(maxRatio, minRatio, "max ratio <= min ratio");
-
-    position.adjustLeverageRatio(maxRatio);
-    assertApproxEqRel(position.getCurrentLeverageRatio(), maxRatio, 4e16, "target max ratio not matching");
+    position.adjustLeverageRatio(maxLevRatio);
+    assertApproxEqRel(position.getCurrentLeverageRatio(), maxLevRatio, 4e16, "target max ratio not matching");
   }
 
   function testRewardsAccruedClaimed() public whenForking {
@@ -395,18 +391,14 @@ abstract contract LeveredPositionTest is MarketsTest {
     IERC20Upgradeable collateralAsset = IERC20Upgradeable(collateralMarket.underlying());
     uint256 startingEquity = position.getEquityAmount();
 
-    uint256 maxRatio = position.getMaxLeverageRatio();
-    uint256 leverageRatioRealized = position.adjustLeverageRatio(maxRatio);
-    assertApproxEqRel(leverageRatioRealized, maxRatio, 4e16, "target ratio not matching");
-
-    uint256 minRatio = position.getMinLeverageRatio();
-    emit log_named_uint("min ratio", minRatio);
+    uint256 leverageRatioRealized = position.adjustLeverageRatio(maxLevRatio);
+    assertApproxEqRel(leverageRatioRealized, maxLevRatio, 4e16, "target ratio not matching");
 
     // decrease the ratio in 10 equal steps
-    uint256 ratioDiffStep = (maxRatio - 1e18) / 9;
+    uint256 ratioDiffStep = (maxLevRatio - 1e18) / 9;
     while (leverageRatioRealized > 1e18) {
       uint256 targetLeverDownRatio = leverageRatioRealized - ratioDiffStep;
-      if (targetLeverDownRatio < minRatio) targetLeverDownRatio = 1e18;
+      if (targetLeverDownRatio < minLevRatio) targetLeverDownRatio = 1e18;
       leverageRatioRealized = position.adjustLeverageRatio(targetLeverDownRatio);
       assertApproxEqRel(leverageRatioRealized, targetLeverDownRatio, 3e16, "target lever down ratio not matching");
     }
@@ -438,7 +430,7 @@ contract WMaticStMaticLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(stmaticMarket), stmaticWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -467,7 +459,7 @@ contract JbrlBusdLeveredPositionTest is LeveredPositionTest {
     _configurePairAndLiquidator(jbrlMarket, busdMarket, liquidator);
     _fundMarketAndSelf(ICErc20(jbrlMarket), jbrlWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -488,7 +480,7 @@ contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(maticxMarket), maticxWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -547,7 +539,7 @@ contract Jbrl2BrlLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(twoBrlMarket), twoBrlWhale);
     _fundMarketAndSelf(ICErc20(jBrlMarket), jBrlWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -573,7 +565,7 @@ contract Par2EurLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(twoEurMarket), twoEurWhale);
     _fundMarketAndSelf(ICErc20(parMarket), parWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -601,7 +593,7 @@ contract MaticXMaticXBbaWMaticLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(maticXBbaWMaticMarket), maticXBbaWMaticWhale);
     _fundMarketAndSelf(ICErc20(maticXMarket), maticXWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
 
     {
       vm.prank(pool.admin());
@@ -693,7 +685,7 @@ contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
     _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -713,7 +705,7 @@ contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
     _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
@@ -736,7 +728,7 @@ contract XYLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(xMarket), xWhale);
     _fundMarketAndSelf(ICErc20(yMarket), yWhale);
 
-    position = _openLeveredPosition(address(this), depositAmount);
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 */
