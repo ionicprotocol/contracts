@@ -304,6 +304,9 @@ abstract contract LeveredPositionTest is MarketsTest {
     uint256 minRatio = position.getMinLeverageRatio();
     emit log_named_uint("min ratio", minRatio);
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
+    uint256 maxRatio = position.getMaxLeverageRatio();
+    emit log_named_uint("max lev ratio", maxRatio);
+    vm.assume(targetLeverageRatio < maxRatio);
     vm.assume(minRatio < targetLeverageRatio);
 
     uint256 borrowedAssetPrice = stableMarket.comptroller().oracle().getUnderlyingPrice(stableMarket);
@@ -311,15 +314,11 @@ abstract contract LeveredPositionTest is MarketsTest {
     emit log_named_uint("borrows delta val", (bd * borrowedAssetPrice) / 1e18);
     emit log_named_uint("min borrow value", ffd.getMinBorrowEth(stableMarket));
 
-    uint256 maxRatio = position.getMaxLeverageRatio();
-    emit log_named_uint("max lev ratio", maxRatio);
-    vm.assume(targetLeverageRatio < maxRatio);
-
     uint256 equityAmount = position.getEquityAmount();
     emit log_named_uint("equity amount", equityAmount);
 
     uint256 currentLeverageRatio = position.getCurrentLeverageRatio();
-    emit log_named_uint("current LeverageRatio", currentLeverageRatio);
+    emit log_named_uint("current ratio", currentLeverageRatio);
 
     uint256 leverageRatioRealized = position.adjustLeverageRatio(targetLeverageRatio);
     emit log_named_uint("equity amount", position.getEquityAmount());
