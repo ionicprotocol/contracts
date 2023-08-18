@@ -30,6 +30,13 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   error NoRedemptionPath();
   error OutputTokenMismatch();
 
+  event SlippageUpdated(
+    IERC20Upgradeable indexed from,
+    IERC20Upgradeable indexed to,
+    uint256 prevValue,
+    uint256 newValue
+  );
+
   // @notice maximum slippage in swaps, in bps
   uint256 public constant MAX_SLIPPAGE = 900; // 9%
 
@@ -100,13 +107,15 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
 
     if (outputTokensValue < inputTokensValue) {
       slippage = ((inputTokensValue - outputTokensValue) * 1e18) / inputTokensValue;
+      // min slippage should be non-zero
+      if (slippage == 0) slippage = 1;
     }
 
     // cache the slippage
-    if (
-      conversionSlippage[inputToken][outputToken] == 0 ||
-      block.timestamp - conversionSlippageUpdated[inputToken][outputToken] > 5000
-    ) {
+    uint256 prevValue = conversionSlippage[inputToken][outputToken];
+    if (prevValue == 0 || block.timestamp - conversionSlippageUpdated[inputToken][outputToken] > 5000) {
+      emit SlippageUpdated(inputToken, outputToken, prevValue, slippage);
+
       conversionSlippage[inputToken][outputToken] = slippage;
       conversionSlippageUpdated[inputToken][outputToken] = block.timestamp;
     }

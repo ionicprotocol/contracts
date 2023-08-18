@@ -10,7 +10,7 @@ import { Authority } from "solmate/auth/Auth.sol";
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { IERC20MetadataUpgradeable, IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
-import { IFlywheelBooster } from "flywheel/interfaces/IFlywheelBooster.sol";
+import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
 import { FlywheelStaticRewards } from "flywheel-v2/rewards/FlywheelStaticRewards.sol";
 import { FuseFlywheelCore } from "fuse-flywheel/FuseFlywheelCore.sol";
 

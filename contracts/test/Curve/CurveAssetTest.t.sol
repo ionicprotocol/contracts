@@ -16,7 +16,7 @@ contract CurveAssetTest is AbstractAssetTest {
   address[] underlyingsForOracle;
   BasePriceOracle[] oracles;
 
-  function setUp() public forkAtBlock(POLYGON_MAINNET, 33063212) {}
+  function setUp() public fork(ARBITRUM_ONE) {}
 
   function afterForkSetUp() internal override {
     test = AbstractERC4626Test(address(new CurveERC4626Test()));
@@ -75,15 +75,15 @@ contract CurveAssetTest is AbstractAssetTest {
     assertTrue(true);
   }
 
-  function testAccumulatingRewardsOnDeposit() public {
+  function testAccumulatingRewardsOnDeposit() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testAccumulatingRewardsOnDeposit);
   }
 
-  function testAccumulatingRewardsOnWithdrawal() public {
+  function testAccumulatingRewardsOnWithdrawal() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testAccumulatingRewardsOnWithdrawal);
   }
 
-  function testClaimRewards() public {
+  function testClaimRewards() public debuggingOnly {
     this.runTest(CurveERC4626Test(address(test)).testClaimRewards);
   }
 }

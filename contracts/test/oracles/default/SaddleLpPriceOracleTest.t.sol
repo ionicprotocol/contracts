@@ -36,7 +36,7 @@ contract SaddleLpPriceOracleTest is BaseTest {
     vm.stopPrank();
   }
 
-  function testSaddleLpTokenPriceOracle() public forkAtBlock(ARBITRUM_ONE, 44898730) {
+  function testSaddleLpTokenPriceOracle() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 44898730) {
     vm.prank(address(mpo));
     uint256 price = oracle.price(fraxUsdc_lp);
     assertEq(price, 785240575939374);

@@ -11,6 +11,7 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
   mapping(address => PoolRolesAuthority) public poolsAuthorities;
   PoolRolesAuthority public poolAuthLogic;
   address public leveredPositionsFactory;
+  bool public noAuthRequired;
 
   function initialize(address _leveredPositionsFactory) public initializer {
     __SafeOwnable_init(msg.sender);
@@ -21,6 +22,8 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
   function reinitialize(address _leveredPositionsFactory) public onlyOwnerOrAdmin {
     leveredPositionsFactory = _leveredPositionsFactory;
     poolAuthLogic = new PoolRolesAuthority();
+    // for Neon the auth is not required
+    noAuthRequired = block.chainid == 245022934;
   }
 
   function createPoolAuthority(address pool) public onlyOwner returns (PoolRolesAuthority auth) {
@@ -29,11 +32,12 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(poolAuthLogic), _getProxyAdmin(), "");
     auth = PoolRolesAuthority(address(proxy));
     auth.initialize(address(this));
-
     poolsAuthorities[pool] = auth;
 
-    reconfigureAuthority(pool);
+    auth.openPoolSupplierCapabilities(IonicComptroller(pool));
     auth.setUserRole(address(this), auth.REGISTRY_ROLE(), true);
+    // sets the registry owner as the auth owner
+    reconfigureAuthority(pool);
   }
 
   function reconfigureAuthority(address poolAddress) public {
@@ -50,6 +54,10 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
       // everyone can be a liquidator
       auth.configureOpenPoolLiquidatorCapabilities(pool);
       auth.configureLeveredPositionCapabilities(pool);
+
+      if (auth.owner() != owner()) {
+        auth.setOwner(owner());
+      }
     }
   }
 
@@ -60,12 +68,13 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     bytes4 functionSig
   ) external view returns (bool) {
     PoolRolesAuthority authorityForPool = poolsAuthorities[pool];
-    if (address(authorityForPool) == address(0)) {
+    if (noAuthRequired && address(authorityForPool) == address(0)) {
       // allow everyone to be a supplier by default
-      return poolAuthLogic.isDefaultOpenCall(target, functionSig);
+      return true;
+    } else {
+      // allow only if an auth exists and it allows the action
+      return address(authorityForPool) != address(0) && authorityForPool.canCall(user, target, functionSig);
     }
-
-    return authorityForPool.canCall(user, target, functionSig);
   }
 
   function setUserRole(

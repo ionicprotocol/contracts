@@ -8,8 +8,8 @@ import { Auth, Authority } from "solmate/auth/Auth.sol";
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { FuseFlywheelDynamicRewardsPlugin } from "fuse-flywheel/rewards/FuseFlywheelDynamicRewardsPlugin.sol";
 import { FlywheelCore } from "flywheel-v2/FlywheelCore.sol";
-import { IFlywheelBooster } from "flywheel/interfaces/IFlywheelBooster.sol";
-import { IFlywheelRewards } from "flywheel/interfaces/IFlywheelRewards.sol";
+import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
+import { IFlywheelRewards } from "flywheel-v2/interfaces/IFlywheelRewards.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { ICErc20, ICErc20Plugin, ICErc20PluginRewards } from "../compound/CTokenInterfaces.sol";
@@ -166,7 +166,7 @@ contract DeployMarketsTest is Test {
     cTokens[0] = address(cToken);
     comptroller.enterMarkets(cTokens);
     vm.roll(1);
-    cToken.mint(10e18);
+    require(cToken.mint(10e18) == 0, "mint failed");
     assertEq(cToken.totalSupply(), 10e18 * 5);
     assertEq(underlyingToken.balanceOf(address(cToken)), 10e18);
   }

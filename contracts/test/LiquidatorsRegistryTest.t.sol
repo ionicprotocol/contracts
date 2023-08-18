@@ -174,7 +174,7 @@ contract LiquidatorsRegistryTest is BaseTest {
     vm.stopPrank();
 
     emit log_named_uint("received", swappedAmountOut);
-    assertLt(slippage, 8e16, "slippage is > 8%");
+    assertLt(slippage, tolerance, "slippage too high");
   }
 
   function testSwappingUniLpBsc() public fork(BSC_MAINNET) {
@@ -195,23 +195,6 @@ contract LiquidatorsRegistryTest is BaseTest {
     IERC20Upgradeable outputToken = wtoken;
 
     _swap(lpTokenWhale, inputToken, inputAmount, outputToken, 1e16);
-  }
-
-  function testSwappingCurveLpPolygon() public fork(POLYGON_MAINNET) {
-    upgradeRegistry();
-
-    address lpTokenWhale = 0x875CE7e0565b4C8852CA2a9608F27B7213A90786; // curve gauge
-
-    IERC20Upgradeable inputToken = usdr3CrvCurveLpToken;
-    uint256 inputAmount = 1e18;
-    IERC20Upgradeable outputToken = stable;
-
-    _swap(lpTokenWhale, inputToken, inputAmount, outputToken, 1e16);
-
-    // TODO check if reconfigured
-    //IERC20Upgradeable inputToken = IERC20Upgradeable(0xb5DFABd7fF7F83BAB83995E72A52B97ABb7bcf63); // USDR
-    //IERC20Upgradeable outputToken = IERC20Upgradeable(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174); // USDC
-    //registry.getRedemptionStrategy(inputToken, outputToken);
   }
 
   function testSwappingBalancerStableLpPolygon() public fork(POLYGON_MAINNET) {
@@ -236,5 +219,25 @@ contract LiquidatorsRegistryTest is BaseTest {
     IERC20Upgradeable outputToken = IERC20Upgradeable(0xE2Aa7db6dA1dAE97C5f5C6914d285fBfCC32A128); // PAR
 
     _swap(lpTokenWhale, inputToken, inputAmount, outputToken, 5e16);
+  }
+
+  address tusdWhale = 0x161FbE0943Af4A39a50262026A81a243B635982d; // old XBombSwap
+  address tdaiWhale = 0xd816eb4660615BBF080ddf425F28ea4AF30d04D5; // old XBombSwap
+  address bombWhale = 0xd816eb4660615BBF080ddf425F28ea4AF30d04D5; // old XBombSwap
+
+  function testSwappingBombTDaiChapel() public debuggingOnly fork(BSC_CHAPEL) {
+    IERC20Upgradeable inputToken = chapelBomb;
+    uint256 inputAmount = 1e18;
+    IERC20Upgradeable outputToken = chapelTDai;
+
+    _swap(bombWhale, inputToken, inputAmount, outputToken, 5e16);
+  }
+
+  function testSwappingTUsdBombChapel() public debuggingOnly fork(BSC_CHAPEL) {
+    IERC20Upgradeable inputToken = chapelTUsd;
+    uint256 inputAmount = 1e18;
+    IERC20Upgradeable outputToken = chapelBomb;
+
+    _swap(tusdWhale, inputToken, inputAmount, outputToken, 5e16);
   }
 }

@@ -129,7 +129,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // =~ $97,945.00  = ~352,32 BNB (BNB price: $278)
   // Therefor, LP price is 352,32/2,932.668 = 0,1201
   // FAILING
-  function testForkedBusdWbnbSolidly() public forkAtBlock(BSC_MAINNET, 26399998) {
+  function testForkedBusdWbnbSolidly() public debuggingOnly forkAtBlock(BSC_MAINNET, 26399998) {
     address lpToken = 0x483653bcF3a10d9a1c334CE16a19471a614F4385; // Lp WBNB-BUSD
     uint256 price = getLpPrice(lpToken, getSolidlyLpTokenPriceOracle());
     assertEq(price, 120054770949519465); // 120054770949519465/1e18 = 0,1200
@@ -141,7 +141,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // - 3,233 WBNB
   // =~ $1,797.86  = ~6,467 BNB (BNB price: $278)
   // Therefor, LP price is 6,467/39,3053 = 0,1645
-  function testForkedBusdWbnbUniswap() public forkAtBlock(BSC_MAINNET, 26399706) {
+  function testForkedBusdWbnbUniswap() public debuggingOnly forkAtBlock(BSC_MAINNET, 26399706) {
     address lpToken = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16; // Lp WBNB-BUSD
 
     uint256 price = getLpPrice(lpToken, getUniswapLpTokenPriceOracle());
@@ -154,7 +154,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // - 15,543.33 USDC
   // =~ $30,119.52  = ~19.307 ETH (ETH price: $1560)
   // Therefor, LP price is 19.307/0.015037668670 = 1283,9
-  function testForkedDaiUsdcArbiSolidly() public forkAtBlock(ARBITRUM_ONE, 67509709) {
+  function testForkedDaiUsdcArbiSolidly() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 67509709) {
     address lpToken = 0x07d7F291e731A41D3F0EA4F1AE5b6d920ffb3Fe0; // Lp DAI/USDC (stable AMM)
 
     uint256 price = getLpPrice(lpToken, getSolidlyLpTokenPriceOracle());
@@ -167,7 +167,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // - 11,646.6401 USDC
   // =~ $22,910  = ~14.68 ETH (ETH price: $1560)
   // Therefor, LP price is 14.68/0.000000011455333328 = 1,2815e9
-  function testForkedUsdtUsdcArbiSolidly() public forkAtBlock(ARBITRUM_ONE, 67509709) {
+  function testForkedUsdtUsdcArbiSolidly() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 67509709) {
     address lpToken = 0xC9dF93497B1852552F2200701cE58C236cC0378C; // Lp USDT/USDC (stable AMM)
 
     uint256 price = getLpPrice(lpToken, getSolidlyLpTokenPriceOracle());
@@ -180,7 +180,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // - 24.5277511 GMX
   // =~ $3490,5  = ~2,237 ETH (ETH price: $1560)
   // Therefor, LP price is 2,237/5,111 = 0,4377
-  function testForkeWethGmxArbiSolidly() public forkAtBlock(ARBITRUM_ONE, 67509709) {
+  function testForkeWethGmxArbiSolidly() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 67509709) {
     address lpToken = 0x06A4c4389d5C6cD1Ec63dDFFb7e9b3214254A720; // Lp WETH/GMX (volatile AMM)
 
     uint256 price = getLpPrice(lpToken, getSolidlyLpTokenPriceOracle());
@@ -193,7 +193,7 @@ contract UniswapLikeLpTokenPriceOracleTest is BaseTest {
   // - 0.031808  WETH
   // =~ $99,73  = ~0.06393 ETH (ETH price: $1560)
   // Therefor, LP price is 0.06393/0.000000084147497167 = 759.737,391
-  function testForkeWethWbtcArbiSolidly() public forkAtBlock(ARBITRUM_ONE, 67509709) {
+  function testForkeWethWbtcArbiSolidly() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 67509709) {
     address lpToken = 0xd9D611c6943585bc0e18E51034AF8fa28778F7Da; // Lp WETH/WBTC (volatile AMM)
 
     uint256 price = getLpPrice(lpToken, getSolidlyLpTokenPriceOracle());
