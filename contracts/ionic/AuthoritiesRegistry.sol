@@ -68,12 +68,11 @@ contract AuthoritiesRegistry is SafeOwnableUpgradeable {
     bytes4 functionSig
   ) external view returns (bool) {
     PoolRolesAuthority authorityForPool = poolsAuthorities[pool];
-    if (noAuthRequired && address(authorityForPool) == address(0)) {
-      // allow everyone to be a supplier by default
-      return true;
+    if (address(authorityForPool) == address(0)) {
+      return noAuthRequired;
     } else {
       // allow only if an auth exists and it allows the action
-      return address(authorityForPool) != address(0) && authorityForPool.canCall(user, target, functionSig);
+      return authorityForPool.canCall(user, target, functionSig);
     }
   }
 
