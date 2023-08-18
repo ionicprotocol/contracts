@@ -70,14 +70,19 @@ contract AuthoritiesRegistryTest is WithPool {
     dpa.upgrade(proxy, address(newImpl));
   }
 
-  function testAuthPermissions() public debuggingOnly fork(POLYGON_MAINNET) {
-    address pool = 0xbc2889CC2bC2c31943f0A35465527F2c3C3f5984;
-    registry = AuthoritiesRegistry(0xc8D8F8a8bB89A7ADD3c9f4FF3b72Ff22D03ad8C6);
+  function testAuthPermissions() public debuggingOnly fork(BSC_CHAPEL) {
+    address pool = 0xa4bc2fCF2F9d87EB349f74f8729024F92A030330;
+    registry = AuthoritiesRegistry(0xa5E190Fa38F325617381e835da8b2DB2D12cE5eb);
     //upgradeRegistry();
 
-    PoolRolesAuthority auth = PoolRolesAuthority(0xB964d419cF9CEcFEfD7f6B7F50d0C67AD3fE787B);
+    PoolRolesAuthority auth = PoolRolesAuthority(0xFe5AfFFC8b55A2d139cb2ef76699C8B58c1EA299);
     //upgradeAuth(auth);
+    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(auth)));
 
+    vm.prank(address(dpa));
+    emit log_named_address("proxy.implementation", proxy.implementation());
+
+    emit log_named_address("registry.poolAuthLogic", address(registry.poolAuthLogic()));
     //vm.prank(registry.owner());
     //registry.reconfigureAuthority(pool);
 
