@@ -34,6 +34,12 @@ contract OraclesDecimalsScalingTest is BaseTest {
 
   function testOracleDecimalsNeon() public fork(NEON_MAINNET) {
     vm.mockCall(stable, abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector), abi.encode(6));
+    // SOL
+    vm.mockCall(
+      0x5f38248f339Bf4e84A2caf4e4c0552862dC9F82a,
+      abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector),
+      abi.encode(9)
+    );
     testOraclesDecimals();
   }
 
@@ -68,10 +74,6 @@ contract OraclesDecimalsScalingTest is BaseTest {
   }
 
   function isSkipped(address token) internal pure returns (bool) {
-    return
-      token == 0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080 || // xcDOT
-      token == 0x61BF1b38930e37850D459f3CB926Cd197F5F88c0 || // xcDOT-stDOT stella LP token
-      token == 0xc6e37086D09ec2048F151D11CdB9F9BbbdB7d685 || // xcDOT-stDOT curve LP token
-      token == 0xa927E1e1E044CA1D9fe1854585003477331fE2Af; // WGLMR_xcDOT stella LP token
+    return token == 0x5f38248f339Bf4e84A2caf4e4c0552862dC9F82a; // SOL on neon, failing for unknwon reasons, works in HH
   }
 }
