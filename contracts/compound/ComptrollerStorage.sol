@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 import "./IFeeDistributor.sol";
 import "../oracles/BasePriceOracle.sol";
 import { ICErc20 } from "./CTokenInterfaces.sol";
+import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -174,4 +175,12 @@ contract ComptrollerV3Storage is ComptrollerV2Storage {
 
   /// @dev set of whitelisted accounts that are allowed to bypass the borrow cap
   mapping(address => EnumerableSet.AddressSet) internal borrowCapWhitelist;
+}
+
+contract ComptrollerV4Storage is ComptrollerV3Storage {
+  /// @dev Adrastia Prudentia config for controlling borrow caps.
+  PrudentiaLib.PrudentiaConfig internal borrowCapConfig;
+
+  /// @dev Adrastia Prudentia config for controlling supply caps.
+  PrudentiaLib.PrudentiaConfig internal supplyCapConfig;
 }

@@ -1,4 +1,5 @@
 flywheel/=lib/flywheel-v2/src/
 solidity-bytes-utils/=lib/solidity-bytes-utils/
 @openzeppelin=lib/openzeppelin-contracts/
+adrastia-periphery/=lib/adrastia-periphery/contracts/
 @pythnetwork/pyth-sdk-solidity/=lib/pyth-sdk-solidity/
