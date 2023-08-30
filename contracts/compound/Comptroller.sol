@@ -727,12 +727,12 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       uint256
     )
   {
-    (Error err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
-      account,
-      ICErc20(address(0)),
-      0,
-      0
-    );
+    (
+      Error err,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = getHypotheticalAccountLiquidityInternal(account, ICErc20(address(0)), 0, 0);
     return (uint256(err), collateralValue, liquidity, shortfall);
   }
 
@@ -761,12 +761,12 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       uint256
     )
   {
-    (Error err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
-      account,
-      ICErc20(cTokenModify),
-      redeemTokens,
-      borrowAmount
-    );
+    (
+      Error err,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = getHypotheticalAccountLiquidityInternal(account, ICErc20(cTokenModify), redeemTokens, borrowAmount);
     return (uint256(err), collateralValue, liquidity, shortfall);
   }
 
@@ -809,7 +809,9 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       {
         // Read the balances and exchange rate from the cToken
         uint256 oErr;
-        (oErr, vars.cTokenBalance, vars.borrowBalance, vars.exchangeRateMantissa) = vars.asset.getAccountSnapshot(account);
+        (oErr, vars.cTokenBalance, vars.borrowBalance, vars.exchangeRateMantissa) = vars.asset.getAccountSnapshot(
+          account
+        );
         if (oErr != 0) {
           // semi-opaque error code, we assume NO_ERROR == 0 is invariant between upgrades
           return (Error.SNAPSHOT_ERROR, 0, 0, 0);
