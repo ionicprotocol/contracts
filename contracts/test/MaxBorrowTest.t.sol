@@ -153,7 +153,7 @@ contract MaxBorrowTest is WithPool {
     uint256 borrowAmount = marketToBorrow.borrowBalanceCurrent(someBorrower);
 
     {
-      (uint256 errBefore, uint256 liquidityBefore, uint256 shortfallBefore) = pool.getHypotheticalAccountLiquidity(
+      (uint256 errBefore, , uint256 liquidityBefore, uint256 shortfallBefore) = pool.getHypotheticalAccountLiquidity(
         someBorrower,
         address(marketToBorrow),
         0,
@@ -173,7 +173,7 @@ contract MaxBorrowTest is WithPool {
     asExtension._setBorrowCapForCollateral(address(marketToBorrow), address(cappedCollateralMarket), 1);
     emit log("");
 
-    (uint256 errAfter, uint256 liquidityAfter, uint256 shortfallAfter) = pool.getHypotheticalAccountLiquidity(
+    (uint256 errAfter, , uint256 liquidityAfter, uint256 shortfallAfter) = pool.getHypotheticalAccountLiquidity(
       someBorrower,
       address(marketToBorrow),
       0,
