@@ -303,7 +303,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     }
 
     /* Otherwise, perform a hypothetical liquidity check to guard against shortfall */
-    (Error err, , uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
+    (Error err, , , uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
       redeemer,
       ICErc20(cToken),
       redeemTokens,
@@ -367,7 +367,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     uint256 balanceOfUnderlying = cTokenModify.balanceOfUnderlying(account);
 
     // Get account liquidity
-    (Error err, uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
+    (Error err, , uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
       account,
       isBorrow ? cTokenModify : ICErc20(address(0)),
       0,
@@ -482,7 +482,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     flywheelPreBorrowerAction(cToken, borrower);
 
     // Perform a hypothetical liquidity check to guard against shortfall
-    (uint256 err, , uint256 shortfall) = this.getHypotheticalAccountLiquidity(borrower, cToken, 0, borrowAmount);
+    (uint256 err, , , uint256 shortfall) = this.getHypotheticalAccountLiquidity(borrower, cToken, 0, borrowAmount);
     if (err != uint256(Error.NO_ERROR)) {
       return err;
     }
@@ -573,7 +573,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       require(borrowBalance >= repayAmount, "!borrow>repay");
     } else {
       /* The borrower must have shortfall in order to be liquidateable */
-      (Error err, , uint256 shortfall) = getHypotheticalAccountLiquidityInternal(borrower, ICErc20(address(0)), 0, 0);
+      (Error err, , , uint256 shortfall) = getHypotheticalAccountLiquidityInternal(borrower, ICErc20(address(0)), 0, 0);
       if (err != Error.NO_ERROR) {
         return uint256(err);
       }
@@ -701,6 +701,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    *  whereas `borrowBalance` is the amount of underlying that the account has borrowed.
    */
   struct AccountLiquidityLocalVars {
+    ICErc20 asset;
     uint256 sumCollateral;
     uint256 sumBorrowPlusEffects;
     uint256 cTokenBalance;
@@ -722,16 +723,17 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     returns (
       uint256,
       uint256,
+      uint256,
       uint256
     )
   {
-    (Error err, uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
-      account,
-      ICErc20(address(0)),
-      0,
-      0
-    );
-    return (uint256(err), liquidity, shortfall);
+    (
+      Error err,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = getHypotheticalAccountLiquidityInternal(account, ICErc20(address(0)), 0, 0);
+    return (uint256(err), collateralValue, liquidity, shortfall);
   }
 
   /**
@@ -755,16 +757,17 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     returns (
       uint256,
       uint256,
+      uint256,
       uint256
     )
   {
-    (Error err, uint256 liquidity, uint256 shortfall) = getHypotheticalAccountLiquidityInternal(
-      account,
-      ICErc20(cTokenModify),
-      redeemTokens,
-      borrowAmount
-    );
-    return (uint256(err), liquidity, shortfall);
+    (
+      Error err,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = getHypotheticalAccountLiquidityInternal(account, ICErc20(cTokenModify), redeemTokens, borrowAmount);
+    return (uint256(err), collateralValue, liquidity, shortfall);
   }
 
   /**
@@ -774,6 +777,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
      * @param redeemTokens The number of tokens to hypothetically redeem
      * @param borrowAmount The amount of underlying to hypothetically borrow
      * @return (possible error code,
+                hypothetical account collateral value,
                 hypothetical account liquidity in excess of collateral requirements,
      *          hypothetical account shortfall below collateral requirements)
      */
@@ -788,6 +792,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     returns (
       Error,
       uint256,
+      uint256,
       uint256
     )
   {
@@ -799,25 +804,27 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
 
     // For each asset the account is in
     for (uint256 i = 0; i < accountAssets[account].length; i++) {
-      ICErc20 asset = accountAssets[account][i];
+      vars.asset = accountAssets[account][i];
 
       {
         // Read the balances and exchange rate from the cToken
         uint256 oErr;
-        (oErr, vars.cTokenBalance, vars.borrowBalance, vars.exchangeRateMantissa) = asset.getAccountSnapshot(account);
+        (oErr, vars.cTokenBalance, vars.borrowBalance, vars.exchangeRateMantissa) = vars.asset.getAccountSnapshot(
+          account
+        );
         if (oErr != 0) {
           // semi-opaque error code, we assume NO_ERROR == 0 is invariant between upgrades
-          return (Error.SNAPSHOT_ERROR, 0, 0);
+          return (Error.SNAPSHOT_ERROR, 0, 0, 0);
         }
       }
       {
-        vars.collateralFactor = Exp({ mantissa: markets[address(asset)].collateralFactorMantissa });
+        vars.collateralFactor = Exp({ mantissa: markets[address(vars.asset)].collateralFactorMantissa });
         vars.exchangeRate = Exp({ mantissa: vars.exchangeRateMantissa });
 
         // Get the normalized price of the asset
-        vars.oraclePriceMantissa = oracle.getUnderlyingPrice(asset);
+        vars.oraclePriceMantissa = oracle.getUnderlyingPrice(vars.asset);
         if (vars.oraclePriceMantissa == 0) {
-          return (Error.PRICE_ERROR, 0, 0);
+          return (Error.PRICE_ERROR, 0, 0, 0);
         }
         vars.oraclePrice = Exp({ mantissa: vars.oraclePriceMantissa });
 
@@ -827,7 +834,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       {
         // Exclude the asset-to-be-borrowed from the liquidity, except for when redeeming
         uint256 assetAsCollateralValueCap = asComptrollerExtension().getAssetAsCollateralValueCap(
-          asset,
+          vars.asset,
           cTokenModify,
           redeemTokens > 0,
           account
@@ -847,7 +854,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       );
 
       // Calculate effects of interacting with cTokenModify
-      if (asset == cTokenModify) {
+      if (vars.asset == cTokenModify) {
         // redeem effect
         // sumBorrowPlusEffects += tokensToDenom * redeemTokens
         vars.sumBorrowPlusEffects = mul_ScalarTruncateAddUInt(
@@ -868,9 +875,9 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
 
     // These are safe, as the underflow condition is checked first
     if (vars.sumCollateral > vars.sumBorrowPlusEffects) {
-      return (Error.NO_ERROR, vars.sumCollateral - vars.sumBorrowPlusEffects, 0);
+      return (Error.NO_ERROR, vars.sumCollateral, vars.sumCollateral - vars.sumBorrowPlusEffects, 0);
     } else {
-      return (Error.NO_ERROR, 0, vars.sumBorrowPlusEffects - vars.sumCollateral);
+      return (Error.NO_ERROR, vars.sumCollateral, 0, vars.sumBorrowPlusEffects - vars.sumCollateral);
     }
   }
 
