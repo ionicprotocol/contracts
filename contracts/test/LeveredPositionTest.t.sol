@@ -184,6 +184,14 @@ abstract contract LeveredPositionTest is MarketsTest {
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
   }
 
+  function upgradeRegistry() internal {
+    DiamondBase asBase = DiamondBase(address(registry));
+    address[] memory exts = asBase._listExtensions();
+    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
+    vm.prank(SafeOwnable(address(registry)).owner());
+    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
+  }
+
   function upgradePoolAndMarkets() internal {
     _upgradeExistingPool(address(collateralMarket.comptroller()));
     _upgradeMarket(collateralMarket);
@@ -433,24 +441,6 @@ contract WMaticStMaticLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(stmaticMarket), stmaticWhale);
 
-    //    // call amountOutAndSlippageOfSwap to cache the slippage
-    //    {
-    //      IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
-    //      IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
-    //
-    //      vm.startPrank(wmaticWhale);
-    //      collateralToken.approve(address(registry), 1e36);
-    //      registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
-    //      vm.stopPrank();
-    //      vm.startPrank(stmaticWhale);
-    //      stableToken.approve(address(registry), 1e36);
-    //      registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
-    //      vm.stopPrank();
-    //
-    //      emit log_named_uint("slippage coll->stable", registry.getSlippage(collateralToken, stableToken));
-    //      emit log_named_uint("slippage stable->coll", registry.getSlippage(stableToken, collateralToken));
-    //    }
-
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
@@ -490,6 +480,8 @@ contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
+    upgradeRegistry();
+
     uint256 depositAmount = 500e18;
 
     address wmaticMarket = 0xCb8D7c2690536d3444Da3d207f62A939483c8A93;
@@ -500,6 +492,24 @@ contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
     _configurePair(wmaticMarket, maticxMarket);
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(maticxMarket), maticxWhale);
+
+    // call amountOutAndSlippageOfSwap to cache the slippage
+    {
+      IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
+      IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
+
+      vm.startPrank(wmaticWhale);
+      collateralToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(collateralToken, 100e18, stableToken);
+      vm.stopPrank();
+      vm.startPrank(maticxWhale);
+      stableToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(stableToken, 100e18, collateralToken);
+      vm.stopPrank();
+
+      emit log_named_uint("slippage coll->stable", registry.getSlippage(collateralToken, stableToken));
+      emit log_named_uint("slippage stable->coll", registry.getSlippage(stableToken, collateralToken));
+    }
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
@@ -630,14 +640,6 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   uint256 minBorrowNative = 1e17;
 
   function setUp() public fork(BSC_CHAPEL) {}
-
-  function upgradeRegistry() internal {
-    DiamondBase asBase = DiamondBase(address(registry));
-    address[] memory exts = asBase._listExtensions();
-    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
-    vm.prank(SafeOwnable(address(registry)).owner());
-    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
-  }
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();

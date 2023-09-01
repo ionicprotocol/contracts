@@ -106,10 +106,11 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     uint256 outputTokensValue = outputAmount * toScaledPrice(outputTokenPrice, outputToken);
 
     if (outputTokensValue < inputTokensValue) {
-      slippage = ((inputTokensValue - outputTokensValue) * 1e18) / inputTokensValue;
-      // min slippage should be non-zero
-      if (slippage == 0) slippage = 1;
+      slippage = ((inputTokensValue - outputTokensValue) * 10000) / inputTokensValue;
     }
+    // min slippage should be non-zero
+    // just in case of rounding errors
+    slippage += 1;
 
     // cache the slippage
     uint256 prevValue = conversionSlippage[inputToken][outputToken];
