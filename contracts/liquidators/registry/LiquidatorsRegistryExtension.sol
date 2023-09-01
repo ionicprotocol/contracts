@@ -457,6 +457,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       strategyData = solidlyLpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "UniswapV2LiquidatorFunder")) {
       strategyData = uniswapV2LiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "UniswapV3Liquidator")) {
+      strategyData = uniswapV3LiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "AlgebraSwapLiquidator") || isStrategy(strategy, "GammaLpTokenLiquidator")) {
       strategyData = algebraSwapLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "BalancerSwapLiquidator")) {
@@ -509,6 +511,22 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       if (tokens[i] == wbtc) return wbtc;
     }
     return tokens[0];
+  }
+
+  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) internal view returns (address) {
+    address CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
+    address USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+
+    if (
+      (address(inputToken) == USDC && address(outputToken) == CASH)
+    ||
+      (address(inputToken) == CASH && address(outputToken) == USDC)
+    ) {
+      return ap.getAddress("CASH_UNISWAP_V3_ROUTER");
+    } else {
+      // get asset specific router or default
+      return ap.getAddress("UNISWAP_V3_ROUTER");
+    }
   }
 
   function getUniswapV2Router(IERC20Upgradeable inputToken) internal view returns (address) {
@@ -581,6 +599,17 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     returns (bytes memory strategyData)
   {
     strategyData = abi.encode(outputToken);
+  }
+
+
+  function uniswapV3LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    uint24 fee;
+    address router = getUniswapV3Router(inputToken, outputToken);
+    strategyData = abi.encode(inputToken, outputToken, fee, router, ap.getAddress("Quoter"));
   }
 
   function uniswapV2LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
