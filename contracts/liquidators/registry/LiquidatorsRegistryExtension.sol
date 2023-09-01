@@ -607,6 +607,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     view
     returns (bytes memory strategyData)
   {
+    // TODO
     uint24 fee;
     address router = getUniswapV3Router(inputToken, outputToken);
     strategyData = abi.encode(inputToken, outputToken, fee, router, ap.getAddress("Quoter"));
