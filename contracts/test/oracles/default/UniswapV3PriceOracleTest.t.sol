@@ -29,6 +29,35 @@ contract UniswapV3PriceOracleTest is BaseTest {
     oracle.initialize(wtoken, asArray(stable));
   }
 
+  function testPolygonRetroAlmAssets() public fork(POLYGON_MAINNET) {
+    address[] memory underlyings = new address[](1);
+    ConcentratedLiquidityBasePriceOracle.AssetConfig[]
+      memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](1);
+
+    underlyings[0] = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175; // CASH (18 decimals)
+
+    // USDC-CASH
+    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0x619259F699839dD1498FFC22297044462483bD27,
+      10 minutes,
+      stable
+    );
+    uint256[] memory prices = getPriceFeed(underlyings, configs);
+    for (uint256 i = 0; i < prices.length; i++) {
+      assertTrue(prices[i] > 0, "!Price Error");
+    }
+    uint256[] memory expPrices = new uint256[](7);
+    expPrices[0] = mpo.price(stable);
+
+    // CASH should be priced like USDC
+    assertApproxEqRel(prices[0], expPrices[0], 1e15);
+
+    bool[] memory cardinalityChecks = getCardinality(configs);
+    for (uint256 i = 0; i < cardinalityChecks.length; i++) {
+      assertEq(cardinalityChecks[i], true, "!Cardinality Error");
+    }
+  }
+
   function testPolygonAssets() public fork(POLYGON_MAINNET) {
     address[] memory underlyings = new address[](1);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
