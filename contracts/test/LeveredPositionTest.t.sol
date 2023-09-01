@@ -175,8 +175,8 @@ abstract contract LeveredPositionTest is MarketsTest {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
       }
       vm.stopPrank();
     }
@@ -433,6 +433,24 @@ contract WMaticStMaticLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(stmaticMarket), stmaticWhale);
 
+    //    // call amountOutAndSlippageOfSwap to cache the slippage
+    //    {
+    //      IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
+    //      IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
+    //
+    //      vm.startPrank(wmaticWhale);
+    //      collateralToken.approve(address(registry), 1e36);
+    //      registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
+    //      vm.stopPrank();
+    //      vm.startPrank(stmaticWhale);
+    //      stableToken.approve(address(registry), 1e36);
+    //      registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
+    //      vm.stopPrank();
+    //
+    //      emit log_named_uint("slippage coll->stable", registry.getSlippage(collateralToken, stableToken));
+    //      emit log_named_uint("slippage stable->coll", registry.getSlippage(stableToken, collateralToken));
+    //    }
+
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
@@ -472,10 +490,10 @@ contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 200e18;
+    uint256 depositAmount = 500e18;
 
-    address wmaticMarket = 0x9871E541C19258Cc05769181bBE1dA814958F5A8;
-    address maticxMarket = 0x0db51E5255E44751b376738d8979D969AD70bff6;
+    address wmaticMarket = 0xCb8D7c2690536d3444Da3d207f62A939483c8A93;
+    address maticxMarket = 0x6ebdbEe1a509247B4A3ac3b73a43bd434C52C7c2;
     address wmaticWhale = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
     address maticxWhale = 0x72f0275444F2aF8dBf13F78D54A8D3aD7b6E68db;
 
