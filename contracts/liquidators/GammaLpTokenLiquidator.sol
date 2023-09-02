@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 import "./IRedemptionStrategy.sol";
 import { IHypervisor } from "../external/gamma/IHypervisor.sol";
 import { IUniProxy } from "../external/gamma/IUniProxy.sol";
+import { IUniswapV3Pool } from "../external/uniswap/IUniswapV3Pool.sol";
 import { ISwapRouter } from "../external/algebra/ISwapRouter.sol";
 import { IAlgebraPool } from "../external/algebra/IAlgebraPool.sol";
 
@@ -74,7 +75,9 @@ contract GammaLpTokenLiquidator is IRedemptionStrategy {
   }
 }
 
-contract GammaLpTokenWrapper is IRedemptionStrategy {
+abstract contract GammaLpTokenWrapperBase is IRedemptionStrategy {
+  function getSqrtX96Price(address pool) public view virtual returns (uint160 sqrtPriceX96);
+
   function redeem(
     IERC20Upgradeable inputToken,
     uint256 inputAmount,
@@ -98,7 +101,7 @@ contract GammaLpTokenWrapper is IRedemptionStrategy {
           {
             uint256 decimalsDiff = (1e18 * token0Decimals) / token1Decimals;
             uint256 decimalsDenominator = decimalsDiff > 1e12 ? 1e6 : 1;
-            (uint256 sqrtPriceX96, , , , , , ) = IAlgebraPool(vault.pool()).globalState();
+            uint256 sqrtPriceX96 = getSqrtX96Price(vault.pool());
             price = ((sqrtPriceX96**2 * (decimalsDiff / decimalsDenominator)) / (2**192)) * decimalsDenominator;
           }
           (uint256 amountStart, uint256 amountEnd) = proxy.getDepositAmount(address(vault), token0, token0Decimals);
@@ -144,8 +147,24 @@ contract GammaLpTokenWrapper is IRedemptionStrategy {
 
     outputToken = IERC20Upgradeable(address(vault));
   }
+}
+
+contract GammaAlgebraLpTokenWrapper is GammaLpTokenWrapperBase {
+  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
+    (sqrtPriceX96, , , , , , ) = IAlgebraPool(pool).globalState();
+  }
 
   function name() public pure returns (string memory) {
-    return "GammaLpTokenWrapper";
+    return "GammaAlgebraLpTokenWrapper";
+  }
+}
+
+contract GammaUnisapwV3LpTokenWrapper is GammaLpTokenWrapperBase {
+  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
+    (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
+  }
+
+  function name() public pure returns (string memory) {
+    return "GammaUnisapwV3LpTokenWrapper";
   }
 }
