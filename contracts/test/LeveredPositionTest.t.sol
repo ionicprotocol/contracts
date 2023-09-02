@@ -350,6 +350,7 @@ abstract contract LeveredPositionTest is MarketsTest {
   function testMinMaxLeverageRatio() public whenForking {
     assertGt(maxLevRatio, minLevRatio, "max ratio <= min ratio");
 
+    position.adjustLeverageRatio(maxLevRatio);
     // attempting to adjust to minLevRatio - 0.01 should fail
     vm.expectRevert(abi.encodeWithSelector(LeveredPosition.BorrowStableFailed.selector, 0x3fa));
     position.adjustLeverageRatio((minLevRatio + 1e18) / 2);
@@ -687,7 +688,8 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
       ratioOnCreation
     );
 
-    uint256 currentRatio = position.getCurrentLeverageRatio();
+    maxLevRatio = position.getMaxLeverageRatio();
+    minLevRatio = position.getMinLeverageRatio();
 
     vm.label(address(position), "Levered Position");
   }
@@ -838,6 +840,29 @@ contract PearlUsdrWbtcUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0xffc8c8d747E52fAfbf973c64Bab10d38A6902c46;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x39976f6328ebA2a3C860b7DE5cF2c1bB41581FB8; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrWethUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 0.004081e18;
+
+    // LP token underlying 0x343D9a8D2Bc6A62390aEc764bb5b900C4B039127
+    address lpTokenMarket = 0x343D9a8D2Bc6A62390aEc764bb5b900C4B039127;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x7D02A8b758791A03319102f81bF61E220F73e43D; // Thena Gauge
     address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
 
     _configurePair(lpTokenMarket, usdrMarket);
