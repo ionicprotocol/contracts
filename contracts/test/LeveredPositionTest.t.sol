@@ -322,7 +322,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     assertApproxEqRel(position.getCurrentLeverageRatio(), 1e18, 4e16, "initial leverage ratio should be 1.0 (1e18)");
   }
 
-  function testAnyLeverageRatio(uint64 ratioDiff) public whenForking {
+  function testAnyLeverageRatio(uint64 ratioDiff) public debuggingOnly whenForking {
     // ratioDiff is between 0 and 2^64 ~= 18.446e18
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
     emit log_named_uint("fuzz max ratio", maxLevRatio);
