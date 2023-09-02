@@ -350,10 +350,11 @@ abstract contract LeveredPositionTest is MarketsTest {
   function testMinMaxLeverageRatio() public whenForking {
     assertGt(maxLevRatio, minLevRatio, "max ratio <= min ratio");
 
-    position.adjustLeverageRatio(maxLevRatio);
     // attempting to adjust to minLevRatio - 0.01 should fail
     vm.expectRevert(abi.encodeWithSelector(LeveredPosition.BorrowStableFailed.selector, 0x3fa));
     position.adjustLeverageRatio((minLevRatio + 1e18) / 2);
+    // just testing
+    position.adjustLeverageRatio(maxLevRatio);
     // but adjusting to the minLevRatio + 0.01 should succeed
     position.adjustLeverageRatio(minLevRatio + 0.01e18);
   }
@@ -695,41 +696,22 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
+contract PearlWUsdrWUsdrUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 250e9;
-    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
-    address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
-    address daiUsdrLpWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279;
+    uint256 depositAmount = 0.3e18;
 
-    _configurePair(usdrMarket, daiUsdrLpMarket);
-    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
-    _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-  }
-}
-
-contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(POLYGON_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 1000e9;
+    address lpTokenMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
     address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
-    address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
+    address lpTokenWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
     address wUsdrWhale = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
-    address wUsdrUsdrLpWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
 
-    _configurePair(wusdrMarket, wUsdrUsdrLpMarket);
+    _configurePair(lpTokenMarket, wusdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
     _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
-    _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
