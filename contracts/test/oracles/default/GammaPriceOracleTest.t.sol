@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import { BaseTest } from "../../config/BaseTest.t.sol";
-import { GammaPoolPriceOracle } from "../../../oracles/default/GammaPoolPriceOracle.sol";
+import { GammaPoolAlgebraPriceOracle } from "../../../oracles/default/GammaPoolPriceOracle.sol";
 import { MasterPriceOracle } from "../../../oracles/MasterPriceOracle.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
@@ -13,7 +13,7 @@ import { IUniswapV3Pool } from "../../../external/uniswap/IUniswapV3Pool.sol";
 import { IHypervisor } from "../../../external/gamma/IHypervisor.sol";
 
 contract GammaPoolPriceOracleTest is BaseTest {
-  GammaPoolPriceOracle private oracle;
+  GammaPoolAlgebraPriceOracle private oracle;
   MasterPriceOracle mpo;
   address wtoken;
   address stable;
@@ -22,7 +22,7 @@ contract GammaPoolPriceOracleTest is BaseTest {
     stable = ap.getAddress("stableToken");
     wtoken = ap.getAddress("wtoken"); // WETH
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
-    oracle = new GammaPoolPriceOracle();
+    oracle = new GammaPoolAlgebraPriceOracle();
     vm.prank(mpo.admin());
     oracle.initialize(wtoken);
   }
