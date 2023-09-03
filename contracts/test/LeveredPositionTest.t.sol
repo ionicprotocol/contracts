@@ -763,6 +763,29 @@ contract PearlUsdcUsdcUsdrLpLeveredPositionTest is LeveredPositionTest {
   }
 }
 
+contract PearlUsdrUsdcUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 10e9;
+
+    // LP token underlying 0xD17cb0f162f133e339C0BbFc18c36c357E681D6b
+    address lpTokenMarket = 0x83DF24fE1B1eBF38048B91ffc4a8De0bAa88b891;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x97Bd59A8202F8263C2eC39cf6cF6B438D0B45876; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
 contract PearlUsdrDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
