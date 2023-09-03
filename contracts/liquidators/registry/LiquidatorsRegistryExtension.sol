@@ -58,6 +58,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     functionSelectors[--fnsCount] = this.pairsStrategiesMatch.selector;
     functionSelectors[--fnsCount] = this.getSlippage.selector;
     functionSelectors[--fnsCount] = this._setSlippages.selector;
+    functionSelectors[--fnsCount] = this._setSlippages.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
@@ -70,6 +71,18 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     slippage = conversionSlippage[inputToken][outputToken];
     // TODO slippage == 0 should be allowed
     if (slippage == 0) return MAX_SLIPPAGE;
+  }
+
+  function _setUniswapV3Fees(
+    IERC20Upgradeable[] calldata inputTokens,
+    IERC20Upgradeable[] calldata outputTokens,
+    uint256[] calldata fees
+  ) external onlyOwner {
+    require(fees.length == inputTokens.length && inputTokens.length == outputTokens.length, "!arrays len");
+
+    for (uint256 i = 0; i < fees.length; i++) {
+      uniswapV3Fees[inputTokens[i]][outputTokens[i]] = fees[i];
+    }
   }
 
   function _setSlippages(
