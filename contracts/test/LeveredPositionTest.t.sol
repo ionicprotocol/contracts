@@ -175,8 +175,8 @@ abstract contract LeveredPositionTest is MarketsTest {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
       }
       vm.stopPrank();
     }
