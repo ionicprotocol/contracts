@@ -41,7 +41,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   uint256 public constant MAX_SLIPPAGE = 900; // 9%
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 15;
+    uint8 fnsCount = 17;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.getRedemptionStrategies.selector;
     functionSelectors[--fnsCount] = this.getRedemptionStrategy.selector;
@@ -58,7 +58,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     functionSelectors[--fnsCount] = this.pairsStrategiesMatch.selector;
     functionSelectors[--fnsCount] = this.getSlippage.selector;
     functionSelectors[--fnsCount] = this._setSlippages.selector;
-    functionSelectors[--fnsCount] = this._setSlippages.selector;
+    functionSelectors[--fnsCount] = this._setUniswapV3Fees.selector;
+    functionSelectors[--fnsCount] = this._setUniswapV3Router.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
@@ -529,16 +530,18 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     return tokens[0];
   }
 
-  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) internal view returns (address) {
-    address CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
-    address USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+  function _setUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken, address router) external onlyOwner {
+    customUniV3Router[inputToken][outputToken] = router;
+  }
 
-    if (
-      (address(inputToken) == USDC && address(outputToken) == CASH)
-    ||
-      (address(inputToken) == CASH && address(outputToken) == USDC)
-    ) {
-      return ap.getAddress("CASH_UNISWAP_V3_ROUTER");
+  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) internal view returns (address) {
+    address customRouter = customUniV3Router[inputToken][outputToken];
+    if (customRouter == address(0)) {
+      customRouter = customUniV3Router[outputToken][inputToken];
+    }
+
+    if (customRouter != address(0)) {
+      return customRouter;
     } else {
       // get asset specific router or default
       return ap.getAddress("UNISWAP_V3_ROUTER");
