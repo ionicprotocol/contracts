@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import { BaseTest } from "../config/BaseTest.t.sol";
 import { GammaAlgebraLpTokenLiquidator, GammaAlgebraLpTokenWrapper } from "../../liquidators/gamma/GammaAlgebraLpTokenLiquidator.sol";
-import { GammaUniswapV3LpTokenLiquidator, GammaUnisapwV3LpTokenWrapper } from "../../liquidators/gamma/GammaUniswapV3LpTokenLiquidator.sol";
+import { GammaUniswapV3LpTokenLiquidator, GammaUniswapV3LpTokenWrapper } from "../../liquidators/gamma/GammaUniswapV3LpTokenLiquidator.sol";
 import { IHypervisor } from "../../external/gamma/IHypervisor.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
@@ -12,7 +12,7 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
   GammaAlgebraLpTokenLiquidator public aLiquidator;
   GammaUniswapV3LpTokenLiquidator public uLiquidator;
   GammaAlgebraLpTokenWrapper aWrapper;
-  GammaUnisapwV3LpTokenWrapper uWrapper;
+  GammaUniswapV3LpTokenWrapper uWrapper;
 
   address uniV3SwapRouter;
   address algebraSwapRouter;
@@ -24,7 +24,7 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
     aLiquidator = new GammaAlgebraLpTokenLiquidator();
     uLiquidator = new GammaUniswapV3LpTokenLiquidator();
     aWrapper = new GammaAlgebraLpTokenWrapper();
-    uWrapper = new GammaUnisapwV3LpTokenWrapper();
+    uWrapper = new GammaUniswapV3LpTokenWrapper();
     wtoken = ap.getAddress("wtoken");
     if (block.chainid == POLYGON_MAINNET) {
       uniProxyAlgebra = 0xA42d55074869491D60Ac05490376B74cF19B00e6;

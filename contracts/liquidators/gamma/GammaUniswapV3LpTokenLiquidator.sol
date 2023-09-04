@@ -33,7 +33,7 @@ contract GammaUniswapV3LpTokenLiquidator is
   }
 }
 
-contract GammaUnisapwV3LpTokenWrapper is
+contract GammaUniswapV3LpTokenWrapper is
   GammaLpTokenWrapperBase,
   GammaUniswapV3LpTokenLiquidatorBase,
   IRedemptionStrategy
@@ -47,6 +47,6 @@ contract GammaUnisapwV3LpTokenWrapper is
   }
 
   function name() public pure returns (string memory) {
-    return "GammaUnisapwV3LpTokenWrapper";
+    return "GammaUniswapV3LpTokenWrapper";
   }
 }
