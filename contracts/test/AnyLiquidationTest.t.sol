@@ -222,22 +222,21 @@ contract AnyLiquidationTest is BaseTest {
 
     (, PoolDirectory.Pool[] memory pools) = PoolDirectory(ap.getAddress("PoolDirectory")).getActivePools();
 
-    while (true) {
+    uint256 initRandom = random;
+    while (random - initRandom < 100) {
       // get a random pool and a random borrower from it
       (vars.comptroller, vars.borrower) = getPoolAndBorrower(random, pools);
 
       if (address(vars.comptroller) != address(0) && vars.borrower != address(0)) {
-        if (address(vars.comptroller) != 0xD265ff7e5487E9DD556a4BB900ccA6D087Eb3AD2) {
-          // find a market in which the borrower has debt and reduce his collateral price
-          vars.markets = vars.comptroller.getAllMarkets();
-          (vars.debtMarket, vars.collateralMarket, vars.repayAmount) = setUpDebtAndCollateralMarkets(random, vars);
+        // find a market in which the borrower has debt and reduce his collateral price
+        vars.markets = vars.comptroller.getAllMarkets();
+        (vars.debtMarket, vars.collateralMarket, vars.repayAmount) = setUpDebtAndCollateralMarkets(random, vars);
 
-          if (address(vars.debtMarket) != address(0) && address(vars.collateralMarket) != address(0)) {
-            if (vars.debtMarket.underlying() != ap.getAddress("wtoken")) {
-              emit log("found testable markets at random number");
-              emit log_uint(random);
-              break;
-            }
+        if (address(vars.debtMarket) != address(0) && address(vars.collateralMarket) != address(0)) {
+          if (vars.debtMarket.underlying() != ap.getAddress("wtoken")) {
+            emit log("found testable markets at random number");
+            emit log_uint(random);
+            break;
           }
         }
       }
