@@ -1,21 +1,96 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0;
 
-import "./IRedemptionStrategy.sol";
-import { IHypervisor } from "../external/gamma/IHypervisor.sol";
-import { IUniProxy } from "../external/gamma/IUniProxy.sol";
-import { IUniswapV3Pool } from "../external/uniswap/IUniswapV3Pool.sol";
-import { ISwapRouter } from "../external/algebra/ISwapRouter.sol";
-import { IAlgebraPool } from "../external/algebra/IAlgebraPool.sol";
+import "../IRedemptionStrategy.sol";
+import { IHypervisor } from "../../external/gamma/IHypervisor.sol";
+import { IUniProxy } from "../../external/gamma/IUniProxy.sol";
+import { IUniswapV3Pool } from "../../external/uniswap/IUniswapV3Pool.sol";
+import { ISwapRouter as IAlgebraSwapRouter } from "../../external/algebra/ISwapRouter.sol";
+import { ISwapRouter as IUniswapSwapRouter } from "../../external/uniswap/ISwapRouter.sol";
+import { IAlgebraPool } from "../../external/algebra/IAlgebraPool.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
+abstract contract GammaTokenLiquidatorAbstractBase {
+  function getSqrtX96Price(address pool) public view virtual returns (uint160 sqrtPriceX96);
+
+  function exactInputSingle(
+    address swapRouter,
+    address inputToken,
+    address outputToken,
+    IHypervisor vault,
+    uint256 swapAmount
+  ) public payable virtual returns (uint256);
+}
+
+contract GammaAlgebraLpTokenLiquidatorBase is GammaTokenLiquidatorAbstractBase {
+  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
+    (sqrtPriceX96, , , , , , ) = IAlgebraPool(pool).globalState();
+  }
+
+  function exactInputSingle(
+    address swapRouter,
+    address inputToken,
+    address outputToken,
+    IHypervisor vault,
+    uint256 swapAmount
+  ) public payable override returns (uint256) {
+    if (outputToken == address(0)) {
+      outputToken = inputToken == vault.token0() ? vault.token1() : vault.token0();
+    }
+    return
+      IAlgebraSwapRouter(swapRouter).exactInputSingle(
+        IAlgebraSwapRouter.ExactInputSingleParams(
+          inputToken,
+          outputToken,
+          address(this),
+          block.timestamp,
+          swapAmount,
+          0, // amount out min
+          0 // limitSqrtPrice
+        )
+      );
+  }
+}
+
+contract GammaUniswapV3LpTokenLiquidatorBase is GammaTokenLiquidatorAbstractBase {
+  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
+    (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
+  }
+
+  function exactInputSingle(
+    address swapRouter,
+    address inputToken,
+    address outputToken,
+    IHypervisor vault,
+    uint256 swapAmount
+  ) public payable override returns (uint256) {
+    IUniswapV3Pool pool = IUniswapV3Pool(vault.pool());
+    if (outputToken == address(0)) {
+      outputToken = inputToken == vault.token0() ? vault.token1() : vault.token0();
+    }
+    return
+      IUniswapSwapRouter(swapRouter).exactInputSingle(
+        IUniswapSwapRouter.ExactInputSingleParams(
+          inputToken,
+          outputToken,
+          pool.fee(),
+          address(this),
+          block.timestamp,
+          swapAmount,
+          0, // amount out min
+          0 // limitSqrtPrice
+        )
+      );
+  }
+}
+
 /**
- * @title GammaLpTokenLiquidator
+ * @title GammaLpTokenLiquidatorBase
  * @notice Exchanges seized Gamma LP token collateral for underlying tokens via an Algebra pool for use as a step in a liquidation.
  * @author Veliko Minkov <veliko@midascapital.xyz> (https://github.com/vminkov)
  */
-contract GammaLpTokenLiquidator is IRedemptionStrategy {
+abstract contract GammaLpTokenLiquidatorBase is GammaTokenLiquidatorAbstractBase {
   /**
    * @notice Redeems custom collateral `token` for an underlying token.
    * @param inputToken The input wrapped token to be redeemed for an underlying token.
@@ -24,11 +99,12 @@ contract GammaLpTokenLiquidator is IRedemptionStrategy {
    * @return outputToken The underlying ERC20 token outputted.
    * @return outputAmount The quantity of underlying tokens outputted.
    */
-  function redeem(
+
+  function _redeem(
     IERC20Upgradeable inputToken,
     uint256 inputAmount,
     bytes memory strategyData
-  ) external returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
+  ) internal returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
     // Get Gamma pool and underlying tokens
     IHypervisor vault = IHypervisor(address(inputToken));
 
@@ -40,7 +116,7 @@ contract GammaLpTokenLiquidator is IRedemptionStrategy {
     IERC20Upgradeable token0 = IERC20Upgradeable(vault.token0());
     IERC20Upgradeable token1 = IERC20Upgradeable(vault.token1());
 
-    (address _outputToken, ISwapRouter swapRouter) = abi.decode(strategyData, (address, ISwapRouter));
+    (address _outputToken, address swapRouter) = abi.decode(strategyData, (address, address));
 
     uint256 swapAmount;
     IERC20Upgradeable tokenToSwap;
@@ -54,38 +130,22 @@ contract GammaLpTokenLiquidator is IRedemptionStrategy {
 
     tokenToSwap.approve(address(swapRouter), swapAmount);
 
-    swapRouter.exactInputSingle(
-      ISwapRouter.ExactInputSingleParams(
-        address(tokenToSwap),
-        _outputToken,
-        address(this),
-        block.timestamp,
-        swapAmount,
-        0, // amountOutMinimum
-        0 // limitSqrtPrice
-      )
-    );
+    exactInputSingle(swapRouter, address(tokenToSwap), _outputToken, vault, swapAmount);
 
     outputToken = IERC20Upgradeable(_outputToken);
     outputAmount = outputToken.balanceOf(address(this));
   }
-
-  function name() public pure returns (string memory) {
-    return "GammaLpTokenLiquidator";
-  }
 }
 
-abstract contract GammaLpTokenWrapperBase is IRedemptionStrategy {
-  function getSqrtX96Price(address pool) public view virtual returns (uint160 sqrtPriceX96);
-
-  function redeem(
+abstract contract GammaLpTokenWrapperBase is GammaTokenLiquidatorAbstractBase {
+  function _redeem(
     IERC20Upgradeable inputToken,
     uint256 inputAmount,
     bytes memory strategyData
-  ) external returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
-    (ISwapRouter swapRouter, IUniProxy proxy, IHypervisor vault) = abi.decode(
+  ) internal returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
+    (address swapRouter, IUniProxy proxy, IHypervisor vault) = abi.decode(
       strategyData,
-      (ISwapRouter, IUniProxy, IHypervisor)
+      (address, IUniProxy, IHypervisor)
     );
 
     address token0 = vault.token0();
@@ -113,18 +173,8 @@ abstract contract GammaLpTokenWrapperBase is IRedemptionStrategy {
         swapAmount = address(inputToken) == token0 ? inputAmount - swap0 : swap0;
       }
 
-      inputToken.approve(address(swapRouter), inputAmount);
-      swapRouter.exactInputSingle(
-        ISwapRouter.ExactInputSingleParams(
-          address(inputToken),
-          address(inputToken) == token0 ? token1 : token0,
-          address(this),
-          block.timestamp,
-          swapAmount,
-          0, // amount out min
-          0 // limitSqrtPrice
-        )
-      );
+      inputToken.approve(swapRouter, inputAmount);
+      exactInputSingle(swapRouter, address(inputToken), address(0), vault, swapAmount);
     }
 
     uint256 deposit0;
@@ -146,25 +196,5 @@ abstract contract GammaLpTokenWrapperBase is IRedemptionStrategy {
     );
 
     outputToken = IERC20Upgradeable(address(vault));
-  }
-}
-
-contract GammaAlgebraLpTokenWrapper is GammaLpTokenWrapperBase {
-  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
-    (sqrtPriceX96, , , , , , ) = IAlgebraPool(pool).globalState();
-  }
-
-  function name() public pure returns (string memory) {
-    return "GammaAlgebraLpTokenWrapper";
-  }
-}
-
-contract GammaUnisapwV3LpTokenWrapper is GammaLpTokenWrapperBase {
-  function getSqrtX96Price(address pool) public view override returns (uint160 sqrtPriceX96) {
-    (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
-  }
-
-  function name() public pure returns (string memory) {
-    return "GammaUnisapwV3LpTokenWrapper";
   }
 }

@@ -2,13 +2,15 @@
 pragma solidity >=0.8.0;
 
 import { BaseTest } from "../config/BaseTest.t.sol";
-import { GammaLpTokenLiquidator, GammaAlgebraLpTokenWrapper, GammaUnisapwV3LpTokenWrapper } from "../../liquidators/GammaLpTokenLiquidator.sol";
+import { GammaAlgebraLpTokenLiquidator, GammaAlgebraLpTokenWrapper } from "../../liquidators/gamma/GammaAlgebraLpTokenLiquidator.sol";
+import { GammaUniswapV3LpTokenLiquidator, GammaUnisapwV3LpTokenWrapper } from "../../liquidators/gamma/GammaUniswapV3LpTokenLiquidator.sol";
 import { IHypervisor } from "../../external/gamma/IHypervisor.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 
 contract GammaLpTokenLiquidatorTest is BaseTest {
-  GammaLpTokenLiquidator public liquidator;
+  GammaAlgebraLpTokenLiquidator public aLiquidator;
+  GammaUniswapV3LpTokenLiquidator public uLiquidator;
   GammaAlgebraLpTokenWrapper aWrapper;
   GammaUnisapwV3LpTokenWrapper uWrapper;
 
@@ -19,7 +21,8 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
   address wtoken;
 
   function afterForkSetUp() internal override {
-    liquidator = new GammaLpTokenLiquidator();
+    aLiquidator = new GammaAlgebraLpTokenLiquidator();
+    uLiquidator = new GammaUniswapV3LpTokenLiquidator();
     aWrapper = new GammaAlgebraLpTokenWrapper();
     uWrapper = new GammaUnisapwV3LpTokenWrapper();
     wtoken = ap.getAddress("wtoken");
@@ -31,24 +34,42 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
     }
   }
 
+  function testGammaUniswapV3LpTokenLiquidator() public fork(POLYGON_MAINNET) {
+    uint256 withdrawAmount = 1e18;
+
+    address WMATIC_WETH_RETRO_GAMMA_VAULT = 0xe7806B5ba13d4B2Ab3EaB3061cB31d4a4F3390Aa;
+    address WMATIC_WETH_RETRO_WHALE = 0xcb7c356b9287DeC7d36923238F53e6C955bfE778;
+
+    IHypervisor vault = IHypervisor(WMATIC_WETH_RETRO_GAMMA_VAULT);
+    vm.prank(WMATIC_WETH_RETRO_WHALE);
+    vault.transfer(address(uLiquidator), withdrawAmount);
+
+    address outputTokenAddress = ap.getAddress("wtoken"); // WMATIC
+    bytes memory strategyData = abi.encode(outputTokenAddress, uniV3SwapRouter);
+    (, uint256 outputAmount) = uLiquidator.redeem(vault, withdrawAmount, strategyData);
+
+    emit log_named_uint("wmatic redeemed", outputAmount);
+    assertGt(outputAmount, 0, "!failed to withdraw and swap");
+  }
+
   function testGammaAlgebraLpTokenLiquidator() public fork(POLYGON_MAINNET) {
     uint256 withdrawAmount = 1e18;
-    address DAI_GNS_QS_GAMMA_VAULT = 0x7aE7FB44c92B4d41abB6E28494f46a2EB3c2a690; // Wide
-    address DAI_GNS_QS_WHALE = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D; // thena gauge for aUSDT-WBNB
+    address DAI_GNS_QS_GAMMA_VAULT = 0x7aE7FB44c92B4d41abB6E28494f46a2EB3c2a690;
+    address DAI_GNS_QS_WHALE = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D;
 
     IHypervisor vault = IHypervisor(DAI_GNS_QS_GAMMA_VAULT);
     vm.prank(DAI_GNS_QS_WHALE);
-    vault.transfer(address(liquidator), withdrawAmount);
+    vault.transfer(address(aLiquidator), withdrawAmount);
 
-    address outputTokenAddress = ap.getAddress("wtoken"); // WBNB
+    address outputTokenAddress = ap.getAddress("wtoken"); // WMATIC
     bytes memory strategyData = abi.encode(outputTokenAddress, algebraSwapRouter);
-    (, uint256 outputAmount) = liquidator.redeem(vault, withdrawAmount, strategyData);
+    (, uint256 outputAmount) = aLiquidator.redeem(vault, withdrawAmount, strategyData);
 
     emit log_named_uint("wbnb redeemed", outputAmount);
     assertGt(outputAmount, 0, "!failed to withdraw and swap");
   }
 
-  function testGammaLpTokenWrapperWbnb() public fork(POLYGON_MAINNET) {
+  function testGammaLpTokenWrapperWmatic() public fork(POLYGON_MAINNET) {
     address WMATIC_WETH_QS_GAMMA_VAULT = 0x02203f2351E7aC6aB5051205172D3f772db7D814;
     IHypervisor vault = IHypervisor(WMATIC_WETH_QS_GAMMA_VAULT);
     address wtokenWhale = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
@@ -91,5 +112,28 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
     assertGt(outputToken.balanceOf(address(aWrapper)), 0, "!wrapped");
     assertEq(IERC20Upgradeable(wtoken).balanceOf(address(aWrapper)), 0, "!unused wtoken");
     assertEq(usdt.balanceOf(address(aWrapper)), 0, "!unused usdt");
+  }
+
+  function testGammaUniV3LpTokenWrapper() public fork(POLYGON_MAINNET) {
+    address USDC_CASH_GAMMA_VAULT = 0x64e14623CA543b540d0bA80477977f7c2c00a7Ea;
+    IHypervisor vault = IHypervisor(USDC_CASH_GAMMA_VAULT);
+    address usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    address usdcWhale = 0xe7804c37c13166fF0b37F5aE0BB07A3aEbb6e245;
+    IERC20Upgradeable usdc = IERC20Upgradeable(usdcAddress);
+
+    vm.prank(usdcWhale);
+    usdc.transfer(address(uWrapper), 1e6);
+
+    (IERC20Upgradeable outputToken, uint256 outputAmount) = uWrapper.redeem(
+      usdc,
+      1e6,
+      abi.encode(uniV3SwapRouter, uniProxyUni, vault)
+    );
+
+    emit log_named_uint("lp tokens minted", outputAmount);
+
+    assertGt(outputToken.balanceOf(address(uWrapper)), 0, "!wrapped");
+    assertEq(IERC20Upgradeable(wtoken).balanceOf(address(uWrapper)), 0, "!unused wtoken");
+    assertEq(usdc.balanceOf(address(uWrapper)), 0, "!unused usdc");
   }
 }
