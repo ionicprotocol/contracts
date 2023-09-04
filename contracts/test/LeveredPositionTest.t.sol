@@ -10,6 +10,7 @@ import { JarvisLiquidatorFunder } from "../liquidators/JarvisLiquidatorFunder.so
 import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.sol";
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
 import { SolidlyLpTokenLiquidator, SolidlyLpTokenWrapper } from "../liquidators/SolidlyLpTokenLiquidator.sol";
+import { SolidlySwapLiquidator } from "../liquidators/SolidlySwapLiquidator.sol";
 
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
 import { LeveredPositionFactoryFirstExtension } from "../ionic/levered/LeveredPositionFactoryFirstExtension.sol";
@@ -175,13 +176,21 @@ abstract contract LeveredPositionTest is MarketsTest {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
       }
       vm.stopPrank();
     }
 
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
+  }
+
+  function upgradeRegistry() internal {
+    DiamondBase asBase = DiamondBase(address(registry));
+    address[] memory exts = asBase._listExtensions();
+    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
+    vm.prank(SafeOwnable(address(registry)).owner());
+    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
   }
 
   function upgradePoolAndMarkets() internal {
@@ -313,7 +322,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     assertApproxEqRel(position.getCurrentLeverageRatio(), 1e18, 4e16, "initial leverage ratio should be 1.0 (1e18)");
   }
 
-  function testAnyLeverageRatio(uint64 ratioDiff) public whenForking {
+  function testAnyLeverageRatio(uint64 ratioDiff) public debuggingOnly whenForking {
     // ratioDiff is between 0 and 2^64 ~= 18.446e18
     uint256 targetLeverageRatio = 1e18 + uint256(ratioDiff);
     emit log_named_uint("fuzz max ratio", maxLevRatio);
@@ -344,6 +353,8 @@ abstract contract LeveredPositionTest is MarketsTest {
     // attempting to adjust to minLevRatio - 0.01 should fail
     vm.expectRevert(abi.encodeWithSelector(LeveredPosition.BorrowStableFailed.selector, 0x3fa));
     position.adjustLeverageRatio((minLevRatio + 1e18) / 2);
+    // just testing
+    position.adjustLeverageRatio(maxLevRatio);
     // but adjusting to the minLevRatio + 0.01 should succeed
     position.adjustLeverageRatio(minLevRatio + 0.01e18);
   }
@@ -472,16 +483,36 @@ contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 200e18;
+    upgradeRegistry();
 
-    address wmaticMarket = 0x9871E541C19258Cc05769181bBE1dA814958F5A8;
-    address maticxMarket = 0x0db51E5255E44751b376738d8979D969AD70bff6;
+    uint256 depositAmount = 500e18;
+
+    address wmaticMarket = 0xCb8D7c2690536d3444Da3d207f62A939483c8A93;
+    address maticxMarket = 0x6ebdbEe1a509247B4A3ac3b73a43bd434C52C7c2;
     address wmaticWhale = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
     address maticxWhale = 0x72f0275444F2aF8dBf13F78D54A8D3aD7b6E68db;
 
     _configurePair(wmaticMarket, maticxMarket);
     _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
     _fundMarketAndSelf(ICErc20(maticxMarket), maticxWhale);
+
+    // call amountOutAndSlippageOfSwap to cache the slippage
+    {
+      IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
+      IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
+
+      vm.startPrank(wmaticWhale);
+      collateralToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(collateralToken, 100e18, stableToken);
+      vm.stopPrank();
+      vm.startPrank(maticxWhale);
+      stableToken.approve(address(registry), 1e36);
+      registry.amountOutAndSlippageOfSwap(stableToken, 100e18, collateralToken);
+      vm.stopPrank();
+
+      emit log_named_uint("slippage coll->stable", registry.getSlippage(collateralToken, stableToken));
+      emit log_named_uint("slippage stable->coll", registry.getSlippage(stableToken, collateralToken));
+    }
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
@@ -613,14 +644,6 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
 
   function setUp() public fork(BSC_CHAPEL) {}
 
-  function upgradeRegistry() internal {
-    DiamondBase asBase = DiamondBase(address(registry));
-    address[] memory exts = asBase._listExtensions();
-    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
-    vm.prank(SafeOwnable(address(registry)).owner());
-    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
-  }
-
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
@@ -666,47 +689,234 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
       ratioOnCreation
     );
 
-    uint256 currentRatio = position.getCurrentLeverageRatio();
+    maxLevRatio = position.getMaxLeverageRatio();
+    minLevRatio = position.getMinLeverageRatio();
 
     vm.label(address(position), "Levered Position");
   }
 }
 
-contract PearlDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
+contract PearlWUsdrWUsdrUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 150e9;
-    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
-    address daiUsdrLpMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // WUSDR
-    address daiUsdrLpWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279;
+    uint256 depositAmount = 0.000002e18;
 
-    _configurePair(usdrMarket, daiUsdrLpMarket);
-    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
-    _fundMarketAndSelf(ICErc20(daiUsdrLpMarket), daiUsdrLpWhale);
+    address lpTokenMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
+    address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
+    address lpTokenWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
+    address wUsdrWhale = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
+
+    _configurePair(lpTokenMarket, wusdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
-contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
+contract PearlUsdrWUsdrUsdrLpLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 1000e9;
-    address wusdrMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
-    address wUsdrUsdrLpMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
-    address wUsdrWhale = 0x8711a1a52c34EDe8E61eF40496ab2618a8F6EA4B;
-    address wUsdrUsdrLpWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
+    uint256 depositAmount = 0.000002e18;
 
-    _configurePair(wusdrMarket, wUsdrUsdrLpMarket);
-    _fundMarketAndSelf(ICErc20(wusdrMarket), wUsdrWhale);
-    _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
+    address lpTokenMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdcUsdrLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 800e9;
+
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address usdcMarket = 0x71A7037a42D0fB9F905a76B7D16846b2EACC59Aa;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    IRedemptionStrategy liquidator = new SolidlySwapLiquidator();
+    _configurePairAndLiquidator(usdrMarket, usdcMarket, liquidator);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdcUsdcUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 10e9;
+
+    // LP token underlying 0xD17cb0f162f133e339C0BbFc18c36c357E681D6b
+    address lpTokenMarket = 0x83DF24fE1B1eBF38048B91ffc4a8De0bAa88b891;
+    address usdcMarket = 0x71A7037a42D0fB9F905a76B7D16846b2EACC59Aa;
+    address lpTokenWhale = 0x97Bd59A8202F8263C2eC39cf6cF6B438D0B45876; // Thena Gauge
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    _configurePair(lpTokenMarket, usdcMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrUsdcUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 10e9;
+
+    // LP token underlying 0xD17cb0f162f133e339C0BbFc18c36c357E681D6b
+    address lpTokenMarket = 0x83DF24fE1B1eBF38048B91ffc4a8De0bAa88b891;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x97Bd59A8202F8263C2eC39cf6cF6B438D0B45876; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 2e18;
+
+    // LP token underlying 0xBD02973b441Aa83c8EecEA158b98B5984bb1036E
+    address lpTokenMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrTngblUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 0.02e18;
+
+    // LP token underlying 0x0Edc235693C20943780b76D79DD763236E94C751
+    address lpTokenMarket = 0x2E870Aeee3D9d1eA29Ec93d2c0A99A4e0D5EB697;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0xdaeF32cA8D699015fcFB2884F6902fFCebE51c5b; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrWbtcUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 0.000000071325342755e18;
+
+    // LP token underlying 0xb95E1C22dd965FafE926b2A793e9D6757b6613F4
+    address lpTokenMarket = 0xffc8c8d747E52fAfbf973c64Bab10d38A6902c46;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x39976f6328ebA2a3C860b7DE5cF2c1bB41581FB8; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrWethUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 0.004081e18;
+
+    // LP token underlying 0x343D9a8D2Bc6A62390aEc764bb5b900C4B039127
+    address lpTokenMarket = 0x343D9a8D2Bc6A62390aEc764bb5b900C4B039127;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0x7D02A8b758791A03319102f81bF61E220F73e43D; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract PearlUsdrMaticUsdrLpLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 0.05e18;
+
+    // LP token underlying vAMM-WMATIC/USDR
+    address lpTokenMarket = 0xfacEdA4f9731797102f040380aD5e234c92d1942;
+    address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
+    address lpTokenWhale = 0xdA0AfBeEEBef6dA2F060237D35cab759b99B13B6; // Thena Gauge
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+
+    _configurePair(lpTokenMarket, usdrMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }

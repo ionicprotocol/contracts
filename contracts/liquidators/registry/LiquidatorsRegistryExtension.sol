@@ -106,10 +106,11 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     uint256 outputTokensValue = outputAmount * toScaledPrice(outputTokenPrice, outputToken);
 
     if (outputTokensValue < inputTokensValue) {
-      slippage = ((inputTokensValue - outputTokensValue) * 1e18) / inputTokensValue;
-      // min slippage should be non-zero
-      if (slippage == 0) slippage = 1;
+      slippage = ((inputTokensValue - outputTokensValue) * 10000) / inputTokensValue;
     }
+    // min slippage should be non-zero
+    // just in case of rounding errors
+    slippage += 1;
 
     // cache the slippage
     uint256 prevValue = conversionSlippage[inputToken][outputToken];
@@ -479,6 +480,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       strategyData = balancerLpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "AaveTokenLiquidator")) {
       strategyData = aaveLiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "GammaLpTokenWrapper")) {
+      strategyData = gammaLpTokenWrapperData(inputToken, outputToken);
     } else if (isStrategy(strategy, "SolidlyLpTokenWrapper")) {
       strategyData = solidlyLpTokenWrapperData(inputToken, outputToken);
       //} else if (isStrategy(strategy, "ERC4626Liquidator")) {
@@ -573,6 +576,18 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     returns (bytes memory strategyData)
   {
     strategyData = abi.encode(outputToken);
+  }
+
+  function gammaLpTokenWrapperData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    address swapRouter = ap.getAddress("ALGEBRA_SWAP_ROUTER");
+    address proxy = ap.getAddress("ALGEBRA_UNI_PROXY"); // IUniProxy
+    address vault = address(outputToken); // IHypervisor
+
+    strategyData = abi.encode(swapRouter, proxy, vault);
   }
 
   function balancerLpTokenLiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)

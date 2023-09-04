@@ -3,7 +3,6 @@ pragma solidity >=0.8.0;
 
 import { BasePriceOracle } from "../oracles/BasePriceOracle.sol";
 import { ICErc20 } from "./CTokenInterfaces.sol";
-import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { ComptrollerV3Storage } from "../compound/ComptrollerStorage.sol";
 
 interface ComptrollerInterface {
