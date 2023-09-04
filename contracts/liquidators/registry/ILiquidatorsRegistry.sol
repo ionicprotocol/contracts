@@ -90,7 +90,7 @@ interface ILiquidatorsRegistryExtension {
   function _setUniswapV3Fees(
     IERC20Upgradeable[] calldata inputTokens,
     IERC20Upgradeable[] calldata outputTokens,
-    uint256[] calldata fees
+    uint24[] calldata fees
   ) external;
 
   function _setUniswapV3Router(

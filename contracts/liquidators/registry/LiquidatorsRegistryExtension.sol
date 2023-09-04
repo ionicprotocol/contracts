@@ -77,7 +77,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   function _setUniswapV3Fees(
     IERC20Upgradeable[] calldata inputTokens,
     IERC20Upgradeable[] calldata outputTokens,
-    uint256[] calldata fees
+    uint24[] calldata fees
   ) external onlyOwner {
     require(fees.length == inputTokens.length && inputTokens.length == outputTokens.length, "!arrays len");
 
@@ -638,8 +638,9 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     view
     returns (bytes memory strategyData)
   {
-    // TODO
-    uint24 fee;
+    uint24 fee = uniswapV3Fees[inputToken][outputToken];
+    if (fee == 0) fee = uniswapV3Fees[outputToken][inputToken];
+
     address router = getUniswapV3Router(inputToken, outputToken);
     strategyData = abi.encode(inputToken, outputToken, fee, router, ap.getAddress("Quoter"));
   }
