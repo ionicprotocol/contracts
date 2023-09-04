@@ -93,6 +93,12 @@ interface ILiquidatorsRegistryExtension {
     uint256[] calldata fees
   ) external;
 
+  function _setUniswapV3Router(
+    IERC20Upgradeable inputToken,
+    IERC20Upgradeable outputToken,
+    address router
+  ) external;
+
   function _setSlippages(
     IERC20Upgradeable[] calldata inputTokens,
     IERC20Upgradeable[] calldata outputTokens,
