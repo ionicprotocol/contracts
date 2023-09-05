@@ -536,11 +536,19 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     return tokens[0];
   }
 
-  function _setUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken, address router) external onlyOwner {
+  function _setUniswapV3Router(
+    IERC20Upgradeable inputToken,
+    IERC20Upgradeable outputToken,
+    address router
+  ) external onlyOwner {
     customUniV3Router[inputToken][outputToken] = router;
   }
 
-  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) internal view returns (address) {
+  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (address)
+  {
     address customRouter = customUniV3Router[inputToken][outputToken];
     if (customRouter == address(0)) {
       customRouter = customUniV3Router[outputToken][inputToken];
@@ -649,7 +657,6 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   {
     strategyData = abi.encode(outputToken);
   }
-
 
   function uniswapV3LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     internal
