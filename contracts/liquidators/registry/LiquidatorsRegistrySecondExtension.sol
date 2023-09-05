@@ -14,14 +14,15 @@ contract LiquidatorsRegistrySecondExtension is
   using EnumerableSet for EnumerableSet.AddressSet;
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 11;
+    uint8 fnsCount = 12;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.getAllPairsStrategies.selector;
     functionSelectors[--fnsCount] = this.pairsStrategiesMatch.selector;
     functionSelectors[--fnsCount] = this.uniswapPairsFeesMatch.selector;
+    functionSelectors[--fnsCount] = this.uniswapPairsRoutersMatch.selector;
     functionSelectors[--fnsCount] = this._setSlippages.selector;
     functionSelectors[--fnsCount] = this._setUniswapV3Fees.selector;
-    functionSelectors[--fnsCount] = this._setUniswapV3Router.selector;
+    functionSelectors[--fnsCount] = this._setUniswapV3Routers.selector;
     functionSelectors[--fnsCount] = this._setDefaultOutputToken.selector;
     functionSelectors[--fnsCount] = this._setRedemptionStrategy.selector;
     functionSelectors[--fnsCount] = this._setRedemptionStrategies.selector;
@@ -55,12 +56,16 @@ contract LiquidatorsRegistrySecondExtension is
     }
   }
 
-  function _setUniswapV3Router(
-    IERC20Upgradeable inputToken,
-    IERC20Upgradeable outputToken,
-    address router
+  function _setUniswapV3Routers(
+    IERC20Upgradeable[] calldata inputTokens,
+    IERC20Upgradeable[] calldata outputTokens,
+    address[] calldata routers
   ) external onlyOwner {
-    customUniV3Router[inputToken][outputToken] = router;
+    require(routers.length == inputTokens.length && inputTokens.length == outputTokens.length, "!arrays len");
+
+    for (uint256 i = 0; i < routers.length; i++) {
+      customUniV3Router[inputTokens[i]][outputTokens[i]] = routers[i];
+    }
   }
 
   function _setDefaultOutputToken(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) external onlyOwner {
@@ -171,6 +176,19 @@ contract LiquidatorsRegistrySecondExtension is
     // find a match for each config fee
     for (uint256 i = 0; i < configFees.length; i++) {
       if (uniswapV3Fees[configInputTokens[i]][configOutputTokens[i]] != configFees[i]) return false;
+    }
+
+    return true;
+  }
+
+  function uniswapPairsRoutersMatch(
+    IERC20Upgradeable[] calldata configInputTokens,
+    IERC20Upgradeable[] calldata configOutputTokens,
+    address[] calldata configRouters
+  ) external view returns (bool) {
+    // find a match for each config router
+    for (uint256 i = 0; i < configRouters.length; i++) {
+      if (customUniV3Router[configInputTokens[i]][configOutputTokens[i]] != configRouters[i]) return false;
     }
 
     return true;
