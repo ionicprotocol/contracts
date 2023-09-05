@@ -53,13 +53,13 @@ interface ILiquidatorsRegistryExtension {
 
 interface ILiquidatorsRegistrySecondExtension {
   function getAllPairsStrategies()
-  external
-  view
-  returns (
-    IRedemptionStrategy[] memory strategies,
-    IERC20Upgradeable[] memory inputTokens,
-    IERC20Upgradeable[] memory outputTokens
-  );
+    external
+    view
+    returns (
+      IRedemptionStrategy[] memory strategies,
+      IERC20Upgradeable[] memory inputTokens,
+      IERC20Upgradeable[] memory outputTokens
+    );
 
   function pairsStrategiesMatch(
     IRedemptionStrategy[] calldata configStrategies,
@@ -108,4 +108,8 @@ interface ILiquidatorsRegistrySecondExtension {
   ) external;
 }
 
-interface ILiquidatorsRegistry is ILiquidatorsRegistryExtension, ILiquidatorsRegistrySecondExtension, ILiquidatorsRegistryStorage {}
+interface ILiquidatorsRegistry is
+  ILiquidatorsRegistryExtension,
+  ILiquidatorsRegistrySecondExtension,
+  ILiquidatorsRegistryStorage
+{}

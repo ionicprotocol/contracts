@@ -6,7 +6,11 @@ import "./LiquidatorsRegistryStorage.sol";
 
 import "../../ionic/DiamondExtension.sol";
 
-contract LiquidatorsRegistrySecondExtension is LiquidatorsRegistryStorage, DiamondExtension, ILiquidatorsRegistrySecondExtension {
+contract LiquidatorsRegistrySecondExtension is
+  LiquidatorsRegistryStorage,
+  DiamondExtension,
+  ILiquidatorsRegistrySecondExtension
+{
   using EnumerableSet for EnumerableSet.AddressSet;
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
@@ -164,9 +168,9 @@ contract LiquidatorsRegistrySecondExtension is LiquidatorsRegistryStorage, Diamo
     IERC20Upgradeable[] calldata configOutputTokens
   ) external view returns (bool) {
     (
-    IRedemptionStrategy[] memory onChainStrategies,
-    IERC20Upgradeable[] memory onChainInputTokens,
-    IERC20Upgradeable[] memory onChainOutputTokens
+      IRedemptionStrategy[] memory onChainStrategies,
+      IERC20Upgradeable[] memory onChainInputTokens,
+      IERC20Upgradeable[] memory onChainOutputTokens
     ) = getAllPairsStrategies();
     // find a match for each config strategy
     for (uint256 i = 0; i < configStrategies.length; i++) {
@@ -204,13 +208,13 @@ contract LiquidatorsRegistrySecondExtension is LiquidatorsRegistryStorage, Diamo
   }
 
   function getAllPairsStrategies()
-  public
-  view
-  returns (
-    IRedemptionStrategy[] memory strategies,
-    IERC20Upgradeable[] memory inputTokens,
-    IERC20Upgradeable[] memory outputTokens
-  )
+    public
+    view
+    returns (
+      IRedemptionStrategy[] memory strategies,
+      IERC20Upgradeable[] memory inputTokens,
+      IERC20Upgradeable[] memory outputTokens
+    )
   {
     address[] memory _outputTokens = outputTokensSet.values();
     uint256 pairsCounter = 0;
