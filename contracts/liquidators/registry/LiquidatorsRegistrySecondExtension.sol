@@ -182,9 +182,9 @@ contract LiquidatorsRegistrySecondExtension is
     IERC20Upgradeable[] calldata configOutputTokens
   ) external view returns (bool) {
     (
-    IRedemptionStrategy[] memory onChainStrategies,
-    IERC20Upgradeable[] memory onChainInputTokens,
-    IERC20Upgradeable[] memory onChainOutputTokens
+      IRedemptionStrategy[] memory onChainStrategies,
+      IERC20Upgradeable[] memory onChainInputTokens,
+      IERC20Upgradeable[] memory onChainOutputTokens
     ) = getAllPairsStrategies();
     // find a match for each config strategy
     for (uint256 i = 0; i < configStrategies.length; i++) {

@@ -17,10 +17,7 @@ interface ILiquidatorsRegistryStorage {
 
   function owner() external view returns (address);
 
-  function uniswapV3Fees(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
-    external
-    view
-    returns (uint24);
+  function uniswapV3Fees(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken) external view returns (uint24);
 
   function customUniV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     external
