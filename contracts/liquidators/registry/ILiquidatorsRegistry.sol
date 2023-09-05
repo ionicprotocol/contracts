@@ -80,6 +80,12 @@ interface ILiquidatorsRegistrySecondExtension {
     uint256[] calldata configFees
   ) external view returns (bool);
 
+  function uniswapPairsRoutersMatch(
+    IERC20Upgradeable[] calldata configInputTokens,
+    IERC20Upgradeable[] calldata configOutputTokens,
+    address[] calldata configRouters
+  ) external view returns (bool);
+
   function _setRedemptionStrategy(
     IRedemptionStrategy strategy,
     IERC20Upgradeable inputToken,
