@@ -14,10 +14,11 @@ contract LiquidatorsRegistrySecondExtension is
   using EnumerableSet for EnumerableSet.AddressSet;
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 10;
+    uint8 fnsCount = 11;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.getAllPairsStrategies.selector;
     functionSelectors[--fnsCount] = this.pairsStrategiesMatch.selector;
+    functionSelectors[--fnsCount] = this.uniswapPairsFeesMatch.selector;
     functionSelectors[--fnsCount] = this._setSlippages.selector;
     functionSelectors[--fnsCount] = this._setUniswapV3Fees.selector;
     functionSelectors[--fnsCount] = this._setUniswapV3Router.selector;
@@ -162,15 +163,28 @@ contract LiquidatorsRegistrySecondExtension is
     redemptionStrategies.remove(address(strategyToRemove));
   }
 
+  function uniswapPairsFeesMatch(
+    IERC20Upgradeable[] calldata configInputTokens,
+    IERC20Upgradeable[] calldata configOutputTokens,
+    uint256[] calldata configFees
+  ) external view returns (bool) {
+    // find a match for each config fee
+    for (uint256 i = 0; i < configFees.length; i++) {
+      if (uniswapV3Fees[configInputTokens[i]][configOutputTokens[i]] != configFees[i]) return false;
+    }
+
+    return true;
+  }
+
   function pairsStrategiesMatch(
     IRedemptionStrategy[] calldata configStrategies,
     IERC20Upgradeable[] calldata configInputTokens,
     IERC20Upgradeable[] calldata configOutputTokens
   ) external view returns (bool) {
     (
-      IRedemptionStrategy[] memory onChainStrategies,
-      IERC20Upgradeable[] memory onChainInputTokens,
-      IERC20Upgradeable[] memory onChainOutputTokens
+    IRedemptionStrategy[] memory onChainStrategies,
+    IERC20Upgradeable[] memory onChainInputTokens,
+    IERC20Upgradeable[] memory onChainOutputTokens
     ) = getAllPairsStrategies();
     // find a match for each config strategy
     for (uint256 i = 0; i < configStrategies.length; i++) {

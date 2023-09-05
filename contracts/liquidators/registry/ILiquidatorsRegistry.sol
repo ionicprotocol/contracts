@@ -16,6 +16,16 @@ interface ILiquidatorsRegistryStorage {
   function defaultOutputToken(IERC20Upgradeable inputToken) external view returns (IERC20Upgradeable);
 
   function owner() external view returns (address);
+
+  function uniswapV3Fees(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    external
+    view
+    returns (uint24);
+
+  function customUniV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    external
+    view
+    returns (address);
 }
 
 interface ILiquidatorsRegistryExtension {
@@ -65,6 +75,12 @@ interface ILiquidatorsRegistrySecondExtension {
     IRedemptionStrategy[] calldata configStrategies,
     IERC20Upgradeable[] calldata configInputTokens,
     IERC20Upgradeable[] calldata configOutputTokens
+  ) external view returns (bool);
+
+  function uniswapPairsFeesMatch(
+    IERC20Upgradeable[] calldata configInputTokens,
+    IERC20Upgradeable[] calldata configOutputTokens,
+    uint256[] calldata configFees
   ) external view returns (bool);
 
   function _setRedemptionStrategy(
