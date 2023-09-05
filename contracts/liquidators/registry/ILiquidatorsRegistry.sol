@@ -33,25 +33,10 @@ interface ILiquidatorsRegistryExtension {
 
   function getAllRedemptionStrategies() external view returns (address[] memory);
 
-  function getAllPairsStrategies()
-    external
-    view
-    returns (
-      IRedemptionStrategy[] memory strategies,
-      IERC20Upgradeable[] memory inputTokens,
-      IERC20Upgradeable[] memory outputTokens
-    );
-
   function getSlippage(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     external
     view
     returns (uint256 slippage);
-
-  function pairsStrategiesMatch(
-    IRedemptionStrategy[] calldata configStrategies,
-    IERC20Upgradeable[] calldata configInputTokens,
-    IERC20Upgradeable[] calldata configOutputTokens
-  ) external view returns (bool);
 
   function swap(
     IERC20Upgradeable inputToken,
@@ -64,6 +49,23 @@ interface ILiquidatorsRegistryExtension {
     uint256 inputAmount,
     IERC20Upgradeable outputToken
   ) external returns (uint256 outputAmount, uint256 slippage);
+}
+
+interface ILiquidatorsRegistrySecondExtension {
+  function getAllPairsStrategies()
+  external
+  view
+  returns (
+    IRedemptionStrategy[] memory strategies,
+    IERC20Upgradeable[] memory inputTokens,
+    IERC20Upgradeable[] memory outputTokens
+  );
+
+  function pairsStrategiesMatch(
+    IRedemptionStrategy[] calldata configStrategies,
+    IERC20Upgradeable[] calldata configInputTokens,
+    IERC20Upgradeable[] calldata configOutputTokens
+  ) external view returns (bool);
 
   function _setRedemptionStrategy(
     IRedemptionStrategy strategy,
@@ -106,4 +108,4 @@ interface ILiquidatorsRegistryExtension {
   ) external;
 }
 
-interface ILiquidatorsRegistry is ILiquidatorsRegistryExtension, ILiquidatorsRegistryStorage {}
+interface ILiquidatorsRegistry is ILiquidatorsRegistryExtension, ILiquidatorsRegistrySecondExtension, ILiquidatorsRegistryStorage {}
