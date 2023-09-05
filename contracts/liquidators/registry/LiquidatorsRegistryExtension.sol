@@ -41,7 +41,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   uint256 public constant MAX_SLIPPAGE = 900; // 9%
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 15;
+    uint8 fnsCount = 17;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.getRedemptionStrategies.selector;
     functionSelectors[--fnsCount] = this.getRedemptionStrategy.selector;
@@ -58,6 +58,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     functionSelectors[--fnsCount] = this.pairsStrategiesMatch.selector;
     functionSelectors[--fnsCount] = this.getSlippage.selector;
     functionSelectors[--fnsCount] = this._setSlippages.selector;
+    functionSelectors[--fnsCount] = this._setUniswapV3Fees.selector;
+    functionSelectors[--fnsCount] = this._setUniswapV3Router.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
@@ -70,6 +72,18 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     slippage = conversionSlippage[inputToken][outputToken];
     // TODO slippage == 0 should be allowed
     if (slippage == 0) return MAX_SLIPPAGE;
+  }
+
+  function _setUniswapV3Fees(
+    IERC20Upgradeable[] calldata inputTokens,
+    IERC20Upgradeable[] calldata outputTokens,
+    uint24[] calldata fees
+  ) external onlyOwner {
+    require(fees.length == inputTokens.length && inputTokens.length == outputTokens.length, "!arrays len");
+
+    for (uint256 i = 0; i < fees.length; i++) {
+      uniswapV3Fees[inputTokens[i]][outputTokens[i]] = fees[i];
+    }
   }
 
   function _setSlippages(
@@ -458,8 +472,14 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       strategyData = solidlyLpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "UniswapV2LiquidatorFunder")) {
       strategyData = uniswapV2LiquidatorData(inputToken, outputToken);
-    } else if (isStrategy(strategy, "AlgebraSwapLiquidator") || isStrategy(strategy, "GammaLpTokenLiquidator")) {
+    } else if (isStrategy(strategy, "UniswapV3Liquidator")) {
+      strategyData = uniswapV3LiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "AlgebraSwapLiquidator")) {
       strategyData = algebraSwapLiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "GammaAlgebraLpTokenLiquidator")) {
+      strategyData = gammaAlgebraLpTokenLiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "GammaUniswapV3LpTokenLiquidator")) {
+      strategyData = gammaUniswapV3LpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "BalancerSwapLiquidator")) {
       strategyData = balancerSwapLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "UniswapLpTokenLiquidator") || isStrategy(strategy, "GelatoGUniLiquidator")) {
@@ -480,8 +500,10 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       strategyData = balancerLpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "AaveTokenLiquidator")) {
       strategyData = aaveLiquidatorData(inputToken, outputToken);
-    } else if (isStrategy(strategy, "GammaLpTokenWrapper")) {
-      strategyData = gammaLpTokenWrapperData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "GammaAlgebraLpTokenWrapper")) {
+      strategyData = gammaAlgebraLpTokenWrapperData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "GammaUniswapV3LpTokenWrapper")) {
+      strategyData = gammaUniswapV3LpTokenWrapperData(inputToken, outputToken);
     } else if (isStrategy(strategy, "SolidlyLpTokenWrapper")) {
       strategyData = solidlyLpTokenWrapperData(inputToken, outputToken);
       //} else if (isStrategy(strategy, "ERC4626Liquidator")) {
@@ -512,6 +534,32 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       if (tokens[i] == wbtc) return wbtc;
     }
     return tokens[0];
+  }
+
+  function _setUniswapV3Router(
+    IERC20Upgradeable inputToken,
+    IERC20Upgradeable outputToken,
+    address router
+  ) external onlyOwner {
+    customUniV3Router[inputToken][outputToken] = router;
+  }
+
+  function getUniswapV3Router(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (address)
+  {
+    address customRouter = customUniV3Router[inputToken][outputToken];
+    if (customRouter == address(0)) {
+      customRouter = customUniV3Router[outputToken][inputToken];
+    }
+
+    if (customRouter != address(0)) {
+      return customRouter;
+    } else {
+      // get asset specific router or default
+      return ap.getAddress("UNISWAP_V3_ROUTER");
+    }
   }
 
   function getUniswapV2Router(IERC20Upgradeable inputToken) internal view returns (address) {
@@ -578,13 +626,25 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     strategyData = abi.encode(outputToken);
   }
 
-  function gammaLpTokenWrapperData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+  function gammaAlgebraLpTokenWrapperData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     internal
     view
     returns (bytes memory strategyData)
   {
-    address swapRouter = ap.getAddress("ALGEBRA_SWAP_ROUTER");
-    address proxy = ap.getAddress("ALGEBRA_UNI_PROXY"); // IUniProxy
+    address swapRouter = ap.getAddress("GAMMA_ALGEBRA_SWAP_ROUTER");
+    address proxy = ap.getAddress("GAMMA_ALGEBRA_UNI_PROXY"); // IUniProxy
+    address vault = address(outputToken); // IHypervisor
+
+    strategyData = abi.encode(swapRouter, proxy, vault);
+  }
+
+  function gammaUniswapV3LpTokenWrapperData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    address swapRouter = ap.getAddress("GAMMA_UNISWAP_V3_SWAP_ROUTER");
+    address proxy = ap.getAddress("GAMMA_UNISWAP_V3_UNI_PROXY"); // IUniProxy
     address vault = address(outputToken); // IHypervisor
 
     strategyData = abi.encode(swapRouter, proxy, vault);
@@ -596,6 +656,18 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     returns (bytes memory strategyData)
   {
     strategyData = abi.encode(outputToken);
+  }
+
+  function uniswapV3LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    uint24 fee = uniswapV3Fees[inputToken][outputToken];
+    if (fee == 0) fee = uniswapV3Fees[outputToken][inputToken];
+
+    address router = getUniswapV3Router(inputToken, outputToken);
+    strategyData = abi.encode(inputToken, outputToken, fee, router, ap.getAddress("Quoter"));
   }
 
   function uniswapV2LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
@@ -615,6 +687,22 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     returns (bytes memory strategyData)
   {
     strategyData = abi.encode(outputToken, ap.getAddress("ALGEBRA_SWAP_ROUTER"));
+  }
+
+  function gammaAlgebraLpTokenLiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    strategyData = abi.encode(outputToken, ap.getAddress("GAMMA_ALGEBRA_SWAP_ROUTER"));
+  }
+
+  function gammaUniswapV3LpTokenLiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+    internal
+    view
+    returns (bytes memory strategyData)
+  {
+    strategyData = abi.encode(outputToken, ap.getAddress("GAMMA_UNISWAP_V3_SWAP_ROUTER"));
   }
 
   function uniswapLpTokenLiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
