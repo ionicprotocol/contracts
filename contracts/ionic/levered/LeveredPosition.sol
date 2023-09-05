@@ -442,8 +442,10 @@ contract LeveredPosition is LeveredPositionStorage, IFlashLoanReceiver {
     if (stableLeftovers > 0) {
       uint256 borrowBalance = stableMarket.borrowBalanceCurrent(address(this));
       if (borrowBalance > 0) {
-        stableAsset.approve(address(stableMarket), stableLeftovers);
-        stableMarket.repayBorrow(stableLeftovers);
+        // whatever is smaller
+        uint256 amountToRepay = borrowBalance > stableLeftovers ? stableLeftovers : borrowBalance;
+        stableAsset.approve(address(stableMarket), amountToRepay);
+        stableMarket.repayBorrow(amountToRepay);
       }
     }
   }
