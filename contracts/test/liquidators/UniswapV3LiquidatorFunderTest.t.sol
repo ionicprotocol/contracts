@@ -64,7 +64,13 @@ contract UniswapV3LiquidatorFunderTest is BaseTest {
     IERC20Upgradeable usdc = IERC20Upgradeable(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
     address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
 
-    bytes memory data = abi.encode(cash, usdc, 100, 0x1891783cb3497Fdad1F25C933225243c2c7c4102, 0xB758A3BFec4451f21c79b4A281CBa8cD83e70d00);
+    bytes memory data = abi.encode(
+      cash,
+      usdc,
+      100,
+      0x1891783cb3497Fdad1F25C933225243c2c7c4102,
+      0xB758A3BFec4451f21c79b4A281CBa8cD83e70d00
+    );
     //hex"
     //    0000000000000000000000005d066d022ede10efa2717ed3d79f22f949f8c175
     //    0000000000000000000000002791bca1f2de4661ed88a30c99a7a9449aa84174
@@ -77,10 +83,6 @@ contract UniswapV3LiquidatorFunderTest is BaseTest {
     vm.prank(cashWhale);
     cash.transfer(address(uniswapv3Liquidator), amount);
 
-    uniswapv3Liquidator.redeem(
-      cash,
-      amount,
-      data
-    );
+    uniswapv3Liquidator.redeem(cash, amount, data);
   }
 }
