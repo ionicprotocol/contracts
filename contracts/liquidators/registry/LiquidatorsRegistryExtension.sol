@@ -50,12 +50,9 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     functionSelectors[--fnsCount] = this.getAllRedemptionStrategies.selector;
     functionSelectors[--fnsCount] = this.amountOutAndSlippageOfSwap.selector;
     functionSelectors[--fnsCount] = this.getSlippage.selector;
-    functionSelectors[--fnsCount] = this.log.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
-
-  function log(string memory, address) public pure {}
 
   function getSlippage(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     external
