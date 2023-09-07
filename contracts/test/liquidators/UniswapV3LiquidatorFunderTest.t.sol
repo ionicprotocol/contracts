@@ -58,31 +58,4 @@ contract UniswapV3LiquidatorFunderTest is BaseTest {
     assertEq(address(outputToken), address(usdcToken), "!out tok");
     assertApproxEqRel(inputValue, outputValue, 1e16, "!out amount");
   }
-
-  function testUsdcCashSwap() public debuggingOnly fork(POLYGON_MAINNET) {
-    IERC20Upgradeable cash = IERC20Upgradeable(0x5D066D022EDE10eFa2717eD3D79f22F949F8C175);
-    IERC20Upgradeable usdc = IERC20Upgradeable(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
-    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
-
-    bytes memory data = abi.encode(
-      cash,
-      usdc,
-      100,
-      0x1891783cb3497Fdad1F25C933225243c2c7c4102,
-      0xB758A3BFec4451f21c79b4A281CBa8cD83e70d00
-    );
-    //hex"
-    //    0000000000000000000000005d066d022ede10efa2717ed3d79f22f949f8c175
-    //    0000000000000000000000002791bca1f2de4661ed88a30c99a7a9449aa84174
-    //    0000000000000000000000000000000000000000000000000000000000000064
-    //    000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564
-    //    000000000000000000000000b758a3bfec4451f21c79b4a281cba8cd83e70d00
-    //    ";
-    uint256 amount = 9602257711282767805156;
-
-    vm.prank(cashWhale);
-    cash.transfer(address(uniswapv3Liquidator), amount);
-
-    uniswapv3Liquidator.redeem(cash, amount, data);
-  }
 }

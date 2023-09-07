@@ -950,7 +950,6 @@ contract RetroUsdcAUsdcCashLeveredPositionTest is LeveredPositionTest {
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
-    upgradeRegistry();
 
     uint256 depositAmount = 700e18;
 
@@ -973,7 +972,6 @@ contract RetroUsdcAUsdcWethLeveredPositionTest is LeveredPositionTest {
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
-    upgradeRegistry();
 
     uint256 depositAmount = 8e18;
 
@@ -996,12 +994,33 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
 
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
-    upgradeRegistry();
 
     uint256 depositAmount = 8e18;
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
+    address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
+
+    _configurePair(lpTokenMarket, cashMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroCashAWbtcWethLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 5e18;
+
+    // LP token underlying xWBTC-WETH05
+    address lpTokenMarket = 0xCB1a06eff3459078c26516ae3a1dB44A61D2DbCA;
     address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
     address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
     address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
