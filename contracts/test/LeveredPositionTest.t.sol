@@ -220,15 +220,15 @@ abstract contract LeveredPositionTest is MarketsTest {
   function _configurePair(address _collat, address _stable) internal {
     collateralMarket = ICErc20(_collat);
     stableMarket = ICErc20(_stable);
+
     //upgradePoolAndMarkets();
-    _unpauseMarkets(_collat, _stable);
+    //_unpauseMarkets(_collat, _stable);
     vm.prank(factory.owner());
     factory._setPairWhitelisted(collateralMarket, stableMarket, true);
   }
 
   function _whitelistTestUser(address user) internal {
     address pool = address(collateralMarket.comptroller());
-    ffd.authoritiesRegistry().leveredPositionsFactory();
     PoolRolesAuthority pra = ffd.authoritiesRegistry().poolsAuthorities(pool);
 
     vm.startPrank(pra.owner());
@@ -917,6 +917,107 @@ contract PearlUsdrMaticUsdrLpLeveredPositionTest is LeveredPositionTest {
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
     _fundMarketAndSelf(ICErc20(usdrMarket), usdrWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroCashAUsdcCashLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 700e18;
+
+    // LP token underlying xCASH-USDC
+    address lpTokenMarket = 0x1D2A7078a404ab970f951d5A6dbECD9e24838FB6;
+    address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
+
+    _configurePair(lpTokenMarket, cashMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroUsdcAUsdcCashLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 700e18;
+
+    // LP token underlying xCASH-USDC
+    address lpTokenMarket = 0x1D2A7078a404ab970f951d5A6dbECD9e24838FB6;
+    address usdcMarket = 0x38EbA94210bCEf3F9231E1764EE230abC14D1cbc;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    _configurePair(lpTokenMarket, usdcMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroUsdcAUsdcWethLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 8e18;
+
+    // LP token underlying xUSDC-WETH05
+    address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
+    address usdcMarket = 0x38EbA94210bCEf3F9231E1764EE230abC14D1cbc;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    _configurePair(lpTokenMarket, usdcMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+    upgradeRegistry();
+
+    uint256 depositAmount = 8e18;
+
+    // LP token underlying xUSDC-WETH05
+    address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
+    address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
+
+    ILiquidatorsRegistry reg = factory.liquidatorsRegistry();
+    IERC20Upgradeable collatAsset = IERC20Upgradeable(ICErc20(lpTokenMarket).underlying());
+    IERC20Upgradeable borrowedAsset = IERC20Upgradeable(ICErc20(cashMarket).underlying());
+    reg.redemptionStrategiesByTokens(collatAsset, borrowedAsset);
+    reg.redemptionStrategiesByTokens(borrowedAsset, collatAsset);
+    reg.defaultOutputToken(borrowedAsset);
+    reg.defaultOutputToken(collatAsset);
+    revert("");
+
+    _configurePair(lpTokenMarket, cashMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }

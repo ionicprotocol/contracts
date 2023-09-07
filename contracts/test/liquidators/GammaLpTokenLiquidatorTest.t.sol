@@ -136,4 +136,26 @@ contract GammaLpTokenLiquidatorTest is BaseTest {
     assertEq(IERC20Upgradeable(wtoken).balanceOf(address(uWrapper)), 0, "!unused wtoken");
     assertEq(usdc.balanceOf(address(uWrapper)), 0, "!unused usdc");
   }
+
+  function testUsdcWethGammaUniV3LpTokenWrapper() public debuggingOnly fork(POLYGON_MAINNET) {
+    address USDC_WETH_RETRO_GAMMA_VAULT = 0xe058e1FfFF9B13d3FCd4803FDb55d1Cc2fe07DDC;
+    address usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    address usdcWhale = 0xe7804c37c13166fF0b37F5aE0BB07A3aEbb6e245;
+    IERC20Upgradeable usdc = IERC20Upgradeable(usdcAddress);
+
+    vm.prank(usdcWhale);
+    usdc.transfer(address(uWrapper), 9601.830212e6);
+
+    (IERC20Upgradeable outputToken, uint256 outputAmount) = uWrapper.redeem(
+      usdc,
+      9601.830212e6,
+      abi.encode(uniV3SwapRouter, uniProxyUni, USDC_WETH_RETRO_GAMMA_VAULT)
+    );
+
+    emit log_named_uint("lp tokens minted", outputAmount);
+
+    assertGt(outputToken.balanceOf(address(uWrapper)), 0, "!wrapped");
+    assertEq(IERC20Upgradeable(wtoken).balanceOf(address(uWrapper)), 0, "!unused wtoken");
+    assertEq(usdc.balanceOf(address(uWrapper)), 0, "!unused usdc");
+  }
 }

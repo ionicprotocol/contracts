@@ -41,7 +41,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   uint256 public constant MAX_SLIPPAGE = 900; // 9%
 
   function _getExtensionFunctions() external pure override returns (bytes4[] memory) {
-    uint8 fnsCount = 7;
+    uint8 fnsCount = 8;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.getRedemptionStrategies.selector;
     functionSelectors[--fnsCount] = this.getRedemptionStrategy.selector;
@@ -50,6 +50,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     functionSelectors[--fnsCount] = this.getAllRedemptionStrategies.selector;
     functionSelectors[--fnsCount] = this.amountOutAndSlippageOfSwap.selector;
     functionSelectors[--fnsCount] = this.getSlippage.selector;
+    functionSelectors[--fnsCount] = this.log.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
@@ -256,6 +257,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     } else if (isStrategy(strategy, "UniswapV2LiquidatorFunder")) {
       strategyData = uniswapV2LiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "UniswapV3Liquidator")) {
+      strategyData = uniswapV3LiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "UniswapV3LiquidatorFunder")) {
       strategyData = uniswapV3LiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "AlgebraSwapLiquidator")) {
       strategyData = algebraSwapLiquidatorData(inputToken, outputToken);

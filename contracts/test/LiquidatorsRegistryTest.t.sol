@@ -240,4 +240,17 @@ contract LiquidatorsRegistryTest is BaseTest {
 
     _swap(tusdWhale, inputToken, inputAmount, outputToken, 5e16);
   }
+
+  function testRedemptionPathCashAUsdcWeth() public debuggingOnly fork(POLYGON_MAINNET) {
+    IERC20Upgradeable cash = IERC20Upgradeable(0x5D066D022EDE10eFa2717eD3D79f22F949F8C175);
+    IERC20Upgradeable usdc = IERC20Upgradeable(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
+    IERC20Upgradeable aUsdcWeth = IERC20Upgradeable(0xe058e1FfFF9B13d3FCd4803FDb55d1Cc2fe07DDC);
+
+    upgradeRegistry();
+
+    registry.redemptionStrategiesByTokens(cash, aUsdcWeth);
+    registry.redemptionStrategiesByTokens(aUsdcWeth, cash);
+    registry.redemptionStrategiesByTokens(cash, usdc);
+    registry.redemptionStrategiesByTokens(usdc, cash);
+  }
 }
