@@ -1006,15 +1006,6 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
     address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
     address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
 
-    ILiquidatorsRegistry reg = factory.liquidatorsRegistry();
-    IERC20Upgradeable collatAsset = IERC20Upgradeable(ICErc20(lpTokenMarket).underlying());
-    IERC20Upgradeable borrowedAsset = IERC20Upgradeable(ICErc20(cashMarket).underlying());
-    reg.redemptionStrategiesByTokens(collatAsset, borrowedAsset);
-    reg.redemptionStrategiesByTokens(borrowedAsset, collatAsset);
-    reg.defaultOutputToken(borrowedAsset);
-    reg.defaultOutputToken(collatAsset);
-    revert("");
-
     _configurePair(lpTokenMarket, cashMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
     _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);

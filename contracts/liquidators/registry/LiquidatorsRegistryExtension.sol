@@ -55,6 +55,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     return functionSelectors;
   }
 
+  function log(string memory, address) public pure {}
+
   function getSlippage(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     external
     view
