@@ -19,6 +19,7 @@ import { ILeveredPositionFactory } from "../ionic/levered/ILeveredPositionFactor
 import { LeveredPositionsLens } from "../ionic/levered/LeveredPositionsLens.sol";
 import { LiquidatorsRegistry } from "../liquidators/registry/LiquidatorsRegistry.sol";
 import { LiquidatorsRegistryExtension } from "../liquidators/registry/LiquidatorsRegistryExtension.sol";
+import { LiquidatorsRegistrySecondExtension } from "../liquidators/registry/LiquidatorsRegistrySecondExtension.sol";
 import { ILiquidatorsRegistry } from "../liquidators/registry/ILiquidatorsRegistry.sol";
 import { IRedemptionStrategy } from "../liquidators/IRedemptionStrategy.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
@@ -91,8 +92,7 @@ contract LeveredPositionFactoryTest is BaseTest {
 
   function afterForkSetUp() internal override {
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
-    lens = new LeveredPositionsLens();
-    lens.initialize(factory);
+    lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
   }
 
   function testChapelNetApy() public debuggingOnly fork(BSC_CHAPEL) {
@@ -157,13 +157,8 @@ abstract contract LeveredPositionTest is MarketsTest {
   function afterForkSetUp() internal virtual override {
     super.afterForkSetUp();
 
-    if (block.chainid == BSC_MAINNET) {
-      vm.prank(ap.owner());
-      ap.setAddress("ALGEBRA_SWAP_ROUTER", 0x327Dd3208f0bCF590A66110aCB6e5e6941A4EfA0);
-    }
-
-    registry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
+    registry = factory.liquidatorsRegistry();
     {
       // upgrade the factory
       LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
@@ -172,12 +167,14 @@ abstract contract LeveredPositionTest is MarketsTest {
       vm.startPrank(factory.owner());
       DiamondBase asBase = DiamondBase(address(factory));
       address[] memory oldExts = asBase._listExtensions();
+
+      emit log_named_array("old exts", oldExts);
       if (oldExts.length == 1) {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
       }
       vm.stopPrank();
     }
@@ -188,9 +185,11 @@ abstract contract LeveredPositionTest is MarketsTest {
   function upgradeRegistry() internal {
     DiamondBase asBase = DiamondBase(address(registry));
     address[] memory exts = asBase._listExtensions();
-    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
+    LiquidatorsRegistryExtension newExt1 = new LiquidatorsRegistryExtension();
+    LiquidatorsRegistrySecondExtension newExt2 = new LiquidatorsRegistrySecondExtension();
     vm.prank(SafeOwnable(address(registry)).owner());
-    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
+    asBase._registerExtension(newExt1, DiamondExtension(exts[0]));
+    asBase._registerExtension(newExt2, DiamondExtension(exts[1]));
   }
 
   function upgradePoolAndMarkets() internal {
