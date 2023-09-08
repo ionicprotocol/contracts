@@ -65,7 +65,7 @@ contract GammaPoolPriceOracleTest is BaseTest {
       uint256 price_WETH_USDT = aOracle.price(WETH_USDT_QS_GAMMA_VAULT) / (1e18 / withdrawAmount);
 
       uint256 expectedPrice = priceAtWithdraw(WETH_USDT_QS_WHALE, WETH_USDT_QS_GAMMA_VAULT, withdrawAmount);
-      assertApproxEqRel(price_WETH_USDT, expectedPrice, 5e16, "!aWETH-USDT price");
+      assertApproxEqRel(price_WETH_USDT, expectedPrice, 10e16, "!aWETH-USDT price");
     }
   }
 

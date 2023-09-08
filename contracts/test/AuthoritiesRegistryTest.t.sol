@@ -48,6 +48,7 @@ contract AuthoritiesRegistryTest is WithPool {
     vm.expectRevert("not owner or pool");
     registry.reconfigureAuthority(address(comptroller));
 
+    vm.prank(registry.owner());
     registry.reconfigureAuthority(address(comptroller));
   }
 
