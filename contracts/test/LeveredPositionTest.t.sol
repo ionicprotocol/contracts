@@ -159,25 +159,24 @@ abstract contract LeveredPositionTest is MarketsTest {
 
     factory = ILeveredPositionFactory(ap.getAddress("LeveredPositionFactory"));
     registry = factory.liquidatorsRegistry();
-    {
-      // upgrade the factory
-      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
-      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
-
-      vm.startPrank(factory.owner());
-      DiamondBase asBase = DiamondBase(address(factory));
-      address[] memory oldExts = asBase._listExtensions();
-
-      emit log_named_array("old exts", oldExts);
-      if (oldExts.length == 1) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
-      } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
-      }
-      vm.stopPrank();
-    }
+    //    {
+    //      // upgrade the factory
+    //      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
+    //      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
+    //
+    //      vm.startPrank(factory.owner());
+    //      DiamondBase asBase = DiamondBase(address(factory));
+    //      address[] memory oldExts = asBase._listExtensions();
+    //
+    //      if (oldExts.length == 1) {
+    //        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+    //        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
+    //      } else if (oldExts.length == 2) {
+    //        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+    //        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
+    //      }
+    //      vm.stopPrank();
+    //    }
 
     lens = LeveredPositionsLens(ap.getAddress("LeveredPositionsLens"));
   }
