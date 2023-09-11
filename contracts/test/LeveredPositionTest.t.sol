@@ -188,6 +188,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     LiquidatorsRegistrySecondExtension newExt2 = new LiquidatorsRegistrySecondExtension();
     vm.prank(SafeOwnable(address(registry)).owner());
     asBase._registerExtension(newExt1, DiamondExtension(exts[0]));
+    vm.prank(SafeOwnable(address(registry)).owner());
     asBase._registerExtension(newExt2, DiamondExtension(exts[1]));
   }
 
