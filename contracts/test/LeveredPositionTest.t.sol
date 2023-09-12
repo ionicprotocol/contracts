@@ -988,6 +988,27 @@ contract RetroUsdcAUsdcWethLeveredPositionTest is LeveredPositionTest {
   }
 }
 
+contract RetroCashUsdcLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 300e18;
+
+    address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
+    address usdcMarket = 0x38EbA94210bCEf3F9231E1764EE230abC14D1cbc;
+    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    _configurePair(cashMarket, usdcMarket);
+    _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
 contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
@@ -1027,6 +1048,49 @@ contract RetroCashAWbtcWethLeveredPositionTest is LeveredPositionTest {
     _configurePair(lpTokenMarket, cashMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
     _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract RetroWethAWbtcWethLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 1e18;
+
+    // LP token underlying xWBTC-WETH05
+    address lpTokenMarket = 0xCB1a06eff3459078c26516ae3a1dB44A61D2DbCA;
+    address wethMarket = 0x2469B23354cb7cA50b798663Ec5812Bf28d15e9e;
+    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address wethWhale = 0x1eED63EfBA5f81D95bfe37d82C8E736b974F477b;
+
+    _configurePair(lpTokenMarket, wethMarket);
+    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
+    _fundMarketAndSelf(ICErc20(wethMarket), wethWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract DavosUsdcDusdLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(POLYGON_MAINNET) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 500e18;
+
+    address dusdMarket = 0xE70d09dA78900A0429ee70b35200F70A30d7d2B9;
+    address usdcMarket = 0x14787e50578d8c606C3d57bDbA53dD65Fd665449;
+    address dusdWhale = 0xE69a1876bdACfa7A7a4F6D531BE2FDE843D2165C;
+    address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+
+    _configurePair(dusdMarket, usdcMarket);
+    _fundMarketAndSelf(ICErc20(dusdMarket), dusdWhale);
+    _fundMarketAndSelf(ICErc20(usdcMarket), usdcWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
