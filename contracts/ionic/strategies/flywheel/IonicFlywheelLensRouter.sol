@@ -170,18 +170,18 @@ contract IonicFlywheelLensRouter {
     }
   }
 
-  function getUserNetValueDeltaForMarket(address user, ICErc20 market) internal returns (int256) {
+  function getUserNetValueDeltaForMarket(address user, ICErc20 market, int256 blocksPerYear) internal returns (int256) {
     IonicComptroller comptroller = market.comptroller();
     BasePriceOracle oracle = comptroller.oracle();
-    int256 netApr = getRewardsAprForMarket(market) + getUserInterestAprForMarket(user, market);
+    int256 netApr = getRewardsAprForMarket(market) + getUserInterestAprForMarket(user, market, blocksPerYear);
     return (netApr * int256(market.balanceOfUnderlying(user)) * int256(oracle.getUnderlyingPrice(market))) / 1e36;
   }
 
-  function getUserInterestAprForMarket(address user, ICErc20 market) internal returns (int256) {
-    return int256(market.supplyRatePerBlock()) - int256(market.borrowRatePerBlock());
+  function getUserInterestAprForMarket(address user, ICErc20 market, int256 blocksPerYear) internal returns (int256) {
+    return (int256(market.supplyRatePerBlock()) - int256(market.borrowRatePerBlock())) * blocksPerYear;
   }
 
-  function getUserNetApr(address user) external returns (int256) {
+  function getUserNetApr(address user, int256 blocksPerYear) external returns (int256) {
     int256 userNetAssetsValue;
     int256 userNetValueDelta;
 
@@ -190,7 +190,7 @@ contract IonicFlywheelLensRouter {
       IonicComptroller pool = IonicComptroller(pools[i].comptroller);
       ICErc20[] memory cerc20s = pool.getAllMarkets();
       for (uint256 j = 0; j < cerc20s.length; j++) {
-        userNetValueDelta += getUserNetValueDeltaForMarket(user, cerc20s[j]);
+        userNetValueDelta += getUserNetValueDeltaForMarket(user, cerc20s[j], blocksPerYear);
       }
     }
 
