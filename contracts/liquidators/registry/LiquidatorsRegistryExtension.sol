@@ -255,8 +255,8 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
       strategyData = solidlyLpTokenLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "UniswapV2LiquidatorFunder")) {
       strategyData = uniswapV2LiquidatorData(inputToken, outputToken);
-    } else if (isStrategy(strategy, "UniswapV3Liquidator")) {
-      strategyData = uniswapV3LiquidatorData(inputToken, outputToken);
+    } else if (isStrategy(strategy, "UniswapV3LiquidatorFunder")) {
+      strategyData = uniswapV3LiquidatorFunderData(inputToken, outputToken);
     } else if (isStrategy(strategy, "AlgebraSwapLiquidator")) {
       strategyData = algebraSwapLiquidatorData(inputToken, outputToken);
     } else if (isStrategy(strategy, "GammaAlgebraLpTokenLiquidator")) {
@@ -433,7 +433,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
     strategyData = abi.encode(outputToken);
   }
 
-  function uniswapV3LiquidatorData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
+  function uniswapV3LiquidatorFunderData(IERC20Upgradeable inputToken, IERC20Upgradeable outputToken)
     internal
     view
     returns (bytes memory strategyData)
