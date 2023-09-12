@@ -188,13 +188,17 @@ contract IonicFlywheelLensRouter {
     (, PoolDirectory.Pool[] memory pools) = fpd.getActivePools();
     for (uint256 i = 0; i < pools.length; i++) {
       IonicComptroller pool = IonicComptroller(pools[i].comptroller);
+      BasePriceOracle oracle = pool.oracle();
       ICErc20[] memory cerc20s = pool.getAllMarkets();
       for (uint256 j = 0; j < cerc20s.length; j++) {
+        uint256 assetPrice = oracle.getUnderlyingPrice(cerc20s[j]);
+        userNetAssetsValue += int256(cerc20s[j].balanceOfUnderlying(user) * assetPrice) / 1e18;
         userNetValueDelta += getUserNetValueDeltaForMarket(user, cerc20s[j], blocksPerYear);
       }
     }
 
-    return (userNetValueDelta * 1e18) / userNetAssetsValue;
+    if (userNetAssetsValue == 0) return 0;
+    else return (userNetValueDelta * 1e18) / userNetAssetsValue;
   }
 
   function getAllRewardTokens() public view returns (address[] memory uniqueRewardTokens) {
