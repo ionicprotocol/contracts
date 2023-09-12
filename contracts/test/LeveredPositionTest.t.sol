@@ -89,6 +89,11 @@ contract LeveredPositionLensTest is BaseTest {
     address[] memory markets = factory.getWhitelistedCollateralMarkets();
 
     emit log_named_array("markets", markets);
+
+    for (uint256 j = 0; j < markets.length; j++) {
+      address[] memory borrowable = factory.getBorrowableMarketsByCollateral(ICErc20(markets[j]));
+      emit log_named_array("borrowable", borrowable);
+    }
   }
 }
 
