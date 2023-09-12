@@ -143,6 +143,60 @@ contract IonicFlywheelLensRouter {
     return apr;
   }
 
+  function getRewardsAprForMarket(ICErc20 market) internal returns (int256 totalMarketRewardsApr) {
+    IonicComptroller comptroller = market.comptroller();
+    BasePriceOracle oracle = comptroller.oracle();
+    uint256 underlyingPrice = oracle.getUnderlyingPrice(market);
+
+    address[] memory flywheels = comptroller.getAccruingFlywheels();
+    for (uint256 j = 0; j < flywheels.length; j++) {
+      IonicFlywheelCore flywheel = IonicFlywheelCore(flywheels[j]);
+      ERC20 rewardToken = flywheel.rewardToken();
+
+      uint256 rewardSpeedPerSecondPerToken = getRewardSpeedPerSecondPerToken(
+        flywheel,
+        market,
+        uint256(rewardToken.decimals())
+      );
+
+      uint256 marketApr = getApr(
+        rewardSpeedPerSecondPerToken,
+        oracle.price(address(rewardToken)),
+        underlyingPrice,
+        market.exchangeRateCurrent()
+      );
+
+      totalMarketRewardsApr += int256(marketApr);
+    }
+  }
+
+  function getUserNetValueDeltaForMarket(address user, ICErc20 market) internal returns (int256) {
+    IonicComptroller comptroller = market.comptroller();
+    BasePriceOracle oracle = comptroller.oracle();
+    int256 netApr = getRewardsAprForMarket(market) + getUserInterestAprForMarket(user, market);
+    return (netApr * int256(market.balanceOfUnderlying(user)) * int256(oracle.getUnderlyingPrice(market))) / 1e36;
+  }
+
+  function getUserInterestAprForMarket(address user, ICErc20 market) internal returns (int256) {
+    return int256(market.supplyRatePerBlock()) - int256(market.borrowRatePerBlock());
+  }
+
+  function getUserNetApr(address user) external returns (int256) {
+    int256 userNetAssetsValue;
+    int256 userNetValueDelta;
+
+    (, PoolDirectory.Pool[] memory pools) = fpd.getActivePools();
+    for (uint256 i = 0; i < pools.length; i++) {
+      IonicComptroller pool = IonicComptroller(pools[i].comptroller);
+      ICErc20[] memory cerc20s = pool.getAllMarkets();
+      for (uint256 j = 0; j < cerc20s.length; j++) {
+        userNetValueDelta += getUserNetValueDeltaForMarket(user, cerc20s[j]);
+      }
+    }
+
+    return (userNetValueDelta * 1e18) / userNetAssetsValue;
+  }
+
   function getAllRewardTokens() public view returns (address[] memory uniqueRewardTokens) {
     (, PoolDirectory.Pool[] memory pools) = fpd.getActivePools();
 
