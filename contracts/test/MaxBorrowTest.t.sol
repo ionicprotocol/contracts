@@ -64,6 +64,11 @@ contract MaxBorrowTest is WithPool {
     vars.cTokens = new address[](1);
 
     address accountOne = address(1);
+    PoolRolesAuthority pra = ionicAdmin.authoritiesRegistry().poolsAuthorities(address(comptroller));
+
+    vm.startPrank(pra.owner());
+    pra.setUserRole(accountOne, pra.BORROWER_ROLE(), true);
+    vm.stopPrank();
 
     vm.prank(usdcWhale);
     MockERC20(address(vars.usdc)).transfer(accountOne, 10000e6);

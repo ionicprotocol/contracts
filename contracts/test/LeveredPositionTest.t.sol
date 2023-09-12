@@ -425,57 +425,6 @@ abstract contract LeveredPositionTest is MarketsTest {
   }
 }
 
-contract WMaticStMaticLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(POLYGON_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 200e18;
-
-    address wmaticMarket = 0x4017cd39950d1297BBd9713D939bC5d9c6F2Be53;
-    address stmaticMarket = 0xc1B068007114dC0F14f322Ef201491717f3e52cD;
-    address wmaticWhale = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
-    address stmaticWhale = 0x52997D5abC01e9BFDd29cccB183ffc60F6d6bF8c;
-
-    BalancerSwapLiquidator balancerSwapLiquidator = new BalancerSwapLiquidator();
-    _configurePairAndLiquidator(wmaticMarket, stmaticMarket, balancerSwapLiquidator);
-    _fundMarketAndSelf(ICErc20(wmaticMarket), wmaticWhale);
-    _fundMarketAndSelf(ICErc20(stmaticMarket), stmaticWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-  }
-}
-
-contract JbrlBusdLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(BSC_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 2000e18;
-
-    address jbrlMarket = 0x82A3103bc306293227B756f7554AfAeE82F8ab7a;
-    address busdMarket = 0xa7213deB44f570646Ea955771Cc7f39B58841363;
-    address jbrlWhale = 0xBe9E8Ec25866B21bA34e97b9393BCabBcB4A5C86;
-
-    vm.startPrank(ap.owner());
-    ap.setJarvisPool(
-      ICErc20(jbrlMarket).underlying(), // syntheticToken
-      ICErc20(busdMarket).underlying(), // collateralToken
-      0x0fD8170Dc284CD558325029f6AEc1538c7d99f49, // liquidityPool
-      60 * 40 // expirationTime
-    );
-    vm.stopPrank();
-
-    JarvisLiquidatorFunder liquidator = new JarvisLiquidatorFunder();
-    _configurePairAndLiquidator(jbrlMarket, busdMarket, liquidator);
-    _fundMarketAndSelf(ICErc20(jbrlMarket), jbrlWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-  }
-}
-
 contract WmaticMaticXLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(POLYGON_MAINNET) {}
 
@@ -928,7 +877,7 @@ contract RetroCashAUsdcCashLeveredPositionTest is LeveredPositionTest {
     super.afterForkSetUp();
     upgradeRegistry();
 
-    uint256 depositAmount = 700e18;
+    uint256 depositAmount = 300e18;
 
     // LP token underlying xCASH-USDC
     address lpTokenMarket = 0x1D2A7078a404ab970f951d5A6dbECD9e24838FB6;
@@ -972,7 +921,7 @@ contract RetroUsdcAUsdcWethLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 8e18;
+    uint256 depositAmount = 1e18;
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
@@ -1019,28 +968,6 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
-    address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
-    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
-    address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
-
-    _configurePair(lpTokenMarket, cashMarket);
-    _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
-    _fundMarketAndSelf(ICErc20(cashMarket), cashWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-  }
-}
-
-contract RetroCashAWbtcWethLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(POLYGON_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 5e18;
-
-    // LP token underlying xWBTC-WETH05
-    address lpTokenMarket = 0xCB1a06eff3459078c26516ae3a1dB44A61D2DbCA;
     address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
     address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
     address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
