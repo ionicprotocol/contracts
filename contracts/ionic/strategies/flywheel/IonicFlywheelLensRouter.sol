@@ -170,14 +170,22 @@ contract IonicFlywheelLensRouter {
     }
   }
 
-  function getUserNetValueDeltaForMarket(address user, ICErc20 market, int256 blocksPerYear) internal returns (int256) {
+  function getUserNetValueDeltaForMarket(
+    address user,
+    ICErc20 market,
+    int256 blocksPerYear
+  ) internal returns (int256) {
     IonicComptroller comptroller = market.comptroller();
     BasePriceOracle oracle = comptroller.oracle();
     int256 netApr = getRewardsAprForMarket(market) + getUserInterestAprForMarket(user, market, blocksPerYear);
     return (netApr * int256(market.balanceOfUnderlying(user)) * int256(oracle.getUnderlyingPrice(market))) / 1e36;
   }
 
-  function getUserInterestAprForMarket(address user, ICErc20 market, int256 blocksPerYear) internal returns (int256) {
+  function getUserInterestAprForMarket(
+    address user,
+    ICErc20 market,
+    int256 blocksPerYear
+  ) internal returns (int256) {
     return (int256(market.supplyRatePerBlock()) - int256(market.borrowRatePerBlock())) * blocksPerYear;
   }
 
