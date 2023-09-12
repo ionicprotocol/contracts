@@ -84,6 +84,12 @@ contract LeveredPositionLensTest is BaseTest {
       emit log("");
     }
   }
+
+  function testPrintLeveredPositions() public fork(POLYGON_MAINNET) {
+    address[] memory markets = factory.getWhitelistedCollateralMarkets();
+
+    emit log_named_array("markets", markets);
+  }
 }
 
 contract LeveredPositionFactoryTest is BaseTest {
@@ -104,24 +110,6 @@ contract LeveredPositionFactoryTest is BaseTest {
       abi.encodeWithSelector(_stableMarket.borrowRatePerBlock.selector),
       abi.encode(borrowRate / factory.blocksPerYear())
     );
-
-    {
-      // upgrade the factory
-      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
-      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
-
-      vm.startPrank(factory.owner());
-      DiamondBase asBase = DiamondBase(address(factory));
-      address[] memory oldExts = asBase._listExtensions();
-      if (oldExts.length == 1) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
-      } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
-      }
-      vm.stopPrank();
-    }
 
     uint256 _borrowRate = _stableMarket.borrowRatePerBlock() * factory.blocksPerYear();
     emit log_named_uint("_borrowRate", _borrowRate);
