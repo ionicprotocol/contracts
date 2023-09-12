@@ -90,7 +90,7 @@ contract AnyLiquidationTest is BaseTest {
   }
 
   function testSpecificRandom() public debuggingOnly {
-    testBscAnyLiquidation(1668);
+    testPolygonAnyLiquidation(14341);
     //    testPolygonAnyLiquidation(101);
   }
 
@@ -223,7 +223,7 @@ contract AnyLiquidationTest is BaseTest {
     (, PoolDirectory.Pool[] memory pools) = PoolDirectory(ap.getAddress("PoolDirectory")).getActivePools();
 
     uint256 initRandom = random;
-    while (random - initRandom < 100) {
+    while (true) {
       // get a random pool and a random borrower from it
       (vars.comptroller, vars.borrower) = getPoolAndBorrower(random, pools);
 
@@ -240,6 +240,8 @@ contract AnyLiquidationTest is BaseTest {
           }
         }
       }
+      // fail gracefully when there are no positions to liquidate
+      if (random - initRandom < 100) return;
       random++;
     }
 
