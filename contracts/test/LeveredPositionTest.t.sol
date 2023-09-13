@@ -898,7 +898,7 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 2e18;
+    uint256 depositAmount = 1e18;
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
