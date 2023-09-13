@@ -143,6 +143,103 @@ contract IonicFlywheelLensRouter {
     return apr;
   }
 
+  function getRewardsAprForMarket(ICErc20 market) internal returns (int256 totalMarketRewardsApr) {
+    IonicComptroller comptroller = market.comptroller();
+    BasePriceOracle oracle = comptroller.oracle();
+    uint256 underlyingPrice = oracle.getUnderlyingPrice(market);
+
+    address[] memory flywheels = comptroller.getAccruingFlywheels();
+    for (uint256 j = 0; j < flywheels.length; j++) {
+      IonicFlywheelCore flywheel = IonicFlywheelCore(flywheels[j]);
+      ERC20 rewardToken = flywheel.rewardToken();
+
+      uint256 rewardSpeedPerSecondPerToken = getRewardSpeedPerSecondPerToken(
+        flywheel,
+        market,
+        uint256(rewardToken.decimals())
+      );
+
+      uint256 marketApr = getApr(
+        rewardSpeedPerSecondPerToken,
+        oracle.price(address(rewardToken)),
+        underlyingPrice,
+        market.exchangeRateCurrent()
+      );
+
+      totalMarketRewardsApr += int256(marketApr);
+    }
+  }
+
+  function getUserNetValueDeltaForMarket(
+    address user,
+    ICErc20 market,
+    int256 offchainApr,
+    int256 blocksPerYear
+  ) internal returns (int256) {
+    IonicComptroller comptroller = market.comptroller();
+    BasePriceOracle oracle = comptroller.oracle();
+    int256 netApr = getRewardsAprForMarket(market) +
+      getUserInterestAprForMarket(user, market, blocksPerYear) +
+      offchainApr;
+    return (netApr * int256(market.balanceOfUnderlying(user)) * int256(oracle.getUnderlyingPrice(market))) / 1e36;
+  }
+
+  function getUserInterestAprForMarket(
+    address user,
+    ICErc20 market,
+    int256 blocksPerYear
+  ) internal returns (int256) {
+    return (int256(market.supplyRatePerBlock()) - int256(market.borrowRatePerBlock())) * blocksPerYear;
+  }
+
+  struct AdjustedUserNetAprVars {
+    int256 userNetAssetsValue;
+    int256 userNetValueDelta;
+    BasePriceOracle oracle;
+    ICErc20[] markets;
+    IonicComptroller pool;
+  }
+
+  function getAdjustedUserNetApr(
+    address user,
+    int256 blocksPerYear,
+    address[] memory offchainRewardsAprMarkets,
+    int256[] memory offchainRewardsAprs
+  ) public returns (int256) {
+    AdjustedUserNetAprVars memory vars;
+
+    (, PoolDirectory.Pool[] memory pools) = fpd.getActivePools();
+    for (uint256 i = 0; i < pools.length; i++) {
+      IonicComptroller pool = IonicComptroller(pools[i].comptroller);
+      vars.oracle = pool.oracle();
+      vars.markets = pool.getAllMarkets();
+      for (uint256 j = 0; j < vars.markets.length; j++) {
+        int256 offchainRewardsApr = 0;
+        for (uint256 k = 0; k < offchainRewardsAprMarkets.length; k++) {
+          if (offchainRewardsAprMarkets[k] == address(vars.markets[j])) offchainRewardsApr = offchainRewardsAprs[k];
+        }
+        vars.userNetAssetsValue +=
+          int256(vars.markets[j].balanceOfUnderlying(user) * vars.oracle.getUnderlyingPrice(vars.markets[j])) /
+          1e18;
+        vars.userNetValueDelta += getUserNetValueDeltaForMarket(
+          user,
+          vars.markets[j],
+          offchainRewardsApr,
+          blocksPerYear
+        );
+      }
+    }
+
+    if (vars.userNetAssetsValue == 0) return 0;
+    else return (vars.userNetValueDelta * 1e18) / vars.userNetAssetsValue;
+  }
+
+  function getUserNetApr(address user, int256 blocksPerYear) external returns (int256) {
+    address[] memory emptyAddrArray = new address[](0);
+    int256[] memory emptyIntArray = new int256[](0);
+    return getAdjustedUserNetApr(user, blocksPerYear, emptyAddrArray, emptyIntArray);
+  }
+
   function getAllRewardTokens() public view returns (address[] memory uniqueRewardTokens) {
     (, PoolDirectory.Pool[] memory pools) = fpd.getActivePools();
 

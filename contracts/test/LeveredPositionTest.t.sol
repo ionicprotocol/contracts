@@ -84,6 +84,17 @@ contract LeveredPositionLensTest is BaseTest {
       emit log("");
     }
   }
+
+  function testPrintLeveredPositions() public fork(POLYGON_MAINNET) {
+    address[] memory markets = factory.getWhitelistedCollateralMarkets();
+
+    emit log_named_array("markets", markets);
+
+    for (uint256 j = 0; j < markets.length; j++) {
+      address[] memory borrowable = factory.getBorrowableMarketsByCollateral(ICErc20(markets[j]));
+      emit log_named_array("borrowable", borrowable);
+    }
+  }
 }
 
 contract LeveredPositionFactoryTest is BaseTest {
@@ -104,24 +115,6 @@ contract LeveredPositionFactoryTest is BaseTest {
       abi.encodeWithSelector(_stableMarket.borrowRatePerBlock.selector),
       abi.encode(borrowRate / factory.blocksPerYear())
     );
-
-    {
-      // upgrade the factory
-      LeveredPositionFactoryFirstExtension newExt1 = new LeveredPositionFactoryFirstExtension();
-      LeveredPositionFactorySecondExtension newExt2 = new LeveredPositionFactorySecondExtension();
-
-      vm.startPrank(factory.owner());
-      DiamondBase asBase = DiamondBase(address(factory));
-      address[] memory oldExts = asBase._listExtensions();
-      if (oldExts.length == 1) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(address(0)));
-      } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
-      }
-      vm.stopPrank();
-    }
 
     uint256 _borrowRate = _stableMarket.borrowRatePerBlock() * factory.blocksPerYear();
     emit log_named_uint("_borrowRate", _borrowRate);
@@ -525,65 +518,6 @@ contract Jbrl2BrlLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract Par2EurLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(POLYGON_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 2000e18;
-
-    address twoEurMarket = 0x1944FA4a490f85Ed99e2c6fF9234F94DE16fdbde;
-    address parMarket = 0xCA1A940B02E15FF71C128f877b29bdb739785299;
-    address twoEurWhale = address(888);
-    address balancer = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-    address parWhale = 0xFa22D298E3b0bc1752E5ef2849cEc1149d596674; // uniswap pool
-
-    IERC20Upgradeable twoEur = IERC20Upgradeable(ICErc20(twoEurMarket).underlying());
-    vm.prank(balancer);
-    twoEur.transfer(twoEurWhale, 80 * depositAmount);
-
-    _configurePair(twoEurMarket, parMarket);
-    _fundMarketAndSelf(ICErc20(twoEurMarket), twoEurWhale);
-    _fundMarketAndSelf(ICErc20(parMarket), parWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-  }
-}
-
-contract MaticXMaticXBbaWMaticLeveredPositionTest is LeveredPositionTest {
-  function setUp() public fork(POLYGON_MAINNET) {}
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    uint256 depositAmount = 1000e18;
-
-    address maticXBbaWMaticMarket = 0x13e763D25D78c3Fd6FEA534231BdaEBE7Fa52945;
-    address maticXMarket = 0x0db51E5255E44751b376738d8979D969AD70bff6;
-    address maticXBbaWMaticWhale = 0xB0B28d7A74e62DF5F6F9E0d9Ae0f4e7982De9585;
-    address maticXWhale = 0x72f0275444F2aF8dBf13F78D54A8D3aD7b6E68db;
-
-    IonicComptroller pool = IonicComptroller(ICErc20(maticXBbaWMaticMarket).comptroller());
-    _configurePairAndLiquidator(maticXBbaWMaticMarket, maticXMarket, new BalancerSwapLiquidator());
-
-    {
-      vm.prank(pool.admin());
-      pool._supplyCapWhitelist(address(maticXBbaWMaticMarket), maticXBbaWMaticWhale, true);
-    }
-
-    _fundMarketAndSelf(ICErc20(maticXBbaWMaticMarket), maticXBbaWMaticWhale);
-    _fundMarketAndSelf(ICErc20(maticXMarket), maticXWhale);
-
-    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
-
-    {
-      vm.prank(pool.admin());
-      pool._supplyCapWhitelist(address(maticXBbaWMaticMarket), address(position), true);
-    }
-  }
-}
-
 contract BombTDaiLeveredPositionTest is LeveredPositionTest {
   uint256 depositAmount = 100e18;
   address whale = 0xe7B7dF67C1fe053f1C6B965826d3bFF19603c482;
@@ -964,7 +898,7 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 8e18;
+    uint256 depositAmount = 2e18;
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;

@@ -136,4 +136,18 @@ contract FLRTest is BaseTest {
     IonicFlywheelLensRouter router = IonicFlywheelLensRouter(0x3391ed1C5203168337Fa827cB5Ac8BB8B60D93B7);
     router.getPoolMarketRewardsInfo(IonicComptroller(0x044c436b2f3EF29D30f89c121f9240cf0a08Ca4b));
   }
+
+  function testNetAprPolygon() public fork(POLYGON_MAINNET) {
+    address user = 0x8982aa50bb919E42e9204f12e5b59D053Eb2A602;
+    int256 blocks = 26 * 24 * 365 * 60;
+    int256 apr = lensRouter.getUserNetApr(user, blocks);
+    emit log_named_int("apr", apr);
+  }
+
+  function testNetAprChapel() public fork(BSC_CHAPEL) {
+    address user = 0x8982aa50bb919E42e9204f12e5b59D053Eb2A602;
+    int256 blocks = 26 * 24 * 365 * 60;
+    int256 apr = lensRouter.getUserNetApr(user, blocks);
+    emit log_named_int("apr", apr);
+  }
 }
