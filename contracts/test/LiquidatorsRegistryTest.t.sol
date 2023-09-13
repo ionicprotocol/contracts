@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import { LiquidatorsRegistry } from "../liquidators/registry/LiquidatorsRegistry.sol";
 import { LiquidatorsRegistryExtension } from "../liquidators/registry/LiquidatorsRegistryExtension.sol";
+import { LiquidatorsRegistrySecondExtension } from "../liquidators/registry/LiquidatorsRegistrySecondExtension.sol";
 import { ILiquidatorsRegistry } from "../liquidators/registry/ILiquidatorsRegistry.sol";
 import { IRedemptionStrategy } from "../liquidators/IRedemptionStrategy.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
@@ -47,9 +48,12 @@ contract LiquidatorsRegistryTest is BaseTest {
   function upgradeRegistry() internal {
     DiamondBase asBase = DiamondBase(address(registry));
     address[] memory exts = asBase._listExtensions();
-    LiquidatorsRegistryExtension newExt = new LiquidatorsRegistryExtension();
+    LiquidatorsRegistryExtension newExt1 = new LiquidatorsRegistryExtension();
+    LiquidatorsRegistrySecondExtension newExt2 = new LiquidatorsRegistrySecondExtension();
     vm.prank(SafeOwnable(address(registry)).owner());
-    asBase._registerExtension(newExt, DiamondExtension(exts[0]));
+    asBase._registerExtension(newExt1, DiamondExtension(exts[0]));
+    vm.prank(SafeOwnable(address(registry)).owner());
+    asBase._registerExtension(newExt2, DiamondExtension(exts[1]));
   }
 
   function _functionCall(
