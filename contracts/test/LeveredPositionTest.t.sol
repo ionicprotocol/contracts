@@ -518,9 +518,10 @@ contract Jbrl2BrlLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract BombTDaiLeveredPositionTest is LeveredPositionTest {
+contract BombWbnbLeveredPositionTest is LeveredPositionTest {
   uint256 depositAmount = 100e18;
   address whale = 0xe7B7dF67C1fe053f1C6B965826d3bFF19603c482;
+  address wbnbWhale = 0x57E30beb8054B248CE301FeabfD0c74677Fa40f0;
   uint256 ratioOnCreation = 1.0e18;
   uint256 minBorrowNative = 1e17;
 
@@ -537,8 +538,8 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
       abi.encode(minBorrowNative)
     );
 
-    address xMarket = 0x11771Cd06dB2633EF6A0cEef027E8e1A120d3f25; // BOMB
-    address yMarket = 0x66b05c1711094c32c99a65d2734C72dE0A1C3c81; // tdai
+    address xMarket = 0x9B6E1039103812E0dcC1100a158e4a68014b2571; // BOMB
+    address yMarket = 0x9dD00920f5B74A31177cbaB834AB0904703c31B1; // WBNB
 
     collateralMarket = ICErc20(xMarket);
     stableMarket = ICErc20(yMarket);
@@ -548,16 +549,18 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
     // call amountOutAndSlippageOfSwap to cache the slippage
-    vm.startPrank(whale);
     {
+      vm.startPrank(whale);
       collateralToken.approve(address(registry), 1e36);
       registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
+      collateralToken.transfer(address(this), depositAmount);
+      vm.stopPrank();
+
+      vm.startPrank(wbnbWhale);
       stableToken.approve(address(registry), 1e36);
       registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
-
-      collateralToken.transfer(address(this), depositAmount);
+      vm.stopPrank();
     }
-    vm.stopPrank();
 
     vm.prank(whale);
     collateralToken.transfer(address(this), depositAmount);
