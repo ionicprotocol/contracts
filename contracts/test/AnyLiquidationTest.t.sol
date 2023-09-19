@@ -605,10 +605,6 @@ contract AnyLiquidationTest is BaseTest {
 
   function testRawLiquidation() public debuggingOnly fork(POLYGON_MAINNET) {
     vm.prank(ap.getAddress("deployer"));
-    _functionCall(
-      address(0),
-      hex"00",
-      "raw liquidation failed"
-    );
+    _functionCall(address(0), hex"00", "raw liquidation failed");
   }
 }
