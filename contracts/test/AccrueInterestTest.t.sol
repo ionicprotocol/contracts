@@ -183,8 +183,8 @@ contract AccrueInterestTest is UpgradesBaseTest {
   }
 
   function testMintGated() public fork(POLYGON_MAINNET) {
-    address newMarket = 0x26EA46e975778662f98dAa0E7a12858dA9139262;
-    address assetWhale = 0xEd41f5967252248412E6C69475ae8a5A4274A6f8;
+    address newMarket = 0x71A7037a42D0fB9F905a76B7D16846b2EACC59Aa;
+    address assetWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
     // approve spending
     vm.startPrank(assetWhale);
     IERC20Upgradeable(CErc20Delegate(newMarket).underlying()).approve(newMarket, 1e6);

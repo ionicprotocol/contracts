@@ -85,7 +85,7 @@ contract LeveredPositionLensTest is BaseTest {
     }
   }
 
-  function testPrintLeveredPositions() public fork(POLYGON_MAINNET) {
+  function testPrintLeveredPositions() public debuggingOnly fork(POLYGON_MAINNET) {
     address[] memory markets = factory.getWhitelistedCollateralMarkets();
 
     emit log_named_array("markets", markets);
@@ -518,9 +518,10 @@ contract Jbrl2BrlLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract BombTDaiLeveredPositionTest is LeveredPositionTest {
+contract BombWbnbLeveredPositionTest is LeveredPositionTest {
   uint256 depositAmount = 100e18;
   address whale = 0xe7B7dF67C1fe053f1C6B965826d3bFF19603c482;
+  address wbnbWhale = 0x57E30beb8054B248CE301FeabfD0c74677Fa40f0;
   uint256 ratioOnCreation = 1.0e18;
   uint256 minBorrowNative = 1e17;
 
@@ -537,8 +538,8 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
       abi.encode(minBorrowNative)
     );
 
-    address xMarket = 0x11771Cd06dB2633EF6A0cEef027E8e1A120d3f25; // BOMB
-    address yMarket = 0x66b05c1711094c32c99a65d2734C72dE0A1C3c81; // tdai
+    address xMarket = 0x9B6E1039103812E0dcC1100a158e4a68014b2571; // BOMB
+    address yMarket = 0x9dD00920f5B74A31177cbaB834AB0904703c31B1; // WBNB
 
     collateralMarket = ICErc20(xMarket);
     stableMarket = ICErc20(yMarket);
@@ -548,16 +549,18 @@ contract BombTDaiLeveredPositionTest is LeveredPositionTest {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     IERC20Upgradeable stableToken = IERC20Upgradeable(stableMarket.underlying());
     // call amountOutAndSlippageOfSwap to cache the slippage
-    vm.startPrank(whale);
     {
+      vm.startPrank(whale);
       collateralToken.approve(address(registry), 1e36);
       registry.amountOutAndSlippageOfSwap(collateralToken, 1e18, stableToken);
+      collateralToken.transfer(address(this), depositAmount);
+      vm.stopPrank();
+
+      vm.startPrank(wbnbWhale);
       stableToken.approve(address(registry), 1e36);
       registry.amountOutAndSlippageOfSwap(stableToken, 1e18, collateralToken);
-
-      collateralToken.transfer(address(this), depositAmount);
+      vm.stopPrank();
     }
-    vm.stopPrank();
 
     vm.prank(whale);
     collateralToken.transfer(address(this), depositAmount);
@@ -610,7 +613,7 @@ contract PearlUsdrWUsdrUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0x06F61E22ef144f1cC4550D40ffbF681CB1C3aCAF;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x03Fa7A2628D63985bDFe07B95d4026663ED96065;
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -631,7 +634,7 @@ contract PearlUsdcUsdrLeveredPositionTest is LeveredPositionTest {
 
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address usdcMarket = 0x71A7037a42D0fB9F905a76B7D16846b2EACC59Aa;
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
     address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
 
     IRedemptionStrategy liquidator = new SolidlySwapLiquidator();
@@ -679,7 +682,7 @@ contract PearlUsdrUsdcUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0x83DF24fE1B1eBF38048B91ffc4a8De0bAa88b891;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x97Bd59A8202F8263C2eC39cf6cF6B438D0B45876; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -702,7 +705,7 @@ contract PearlUsdrDaiUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0xBcE30B4D78cEb9a75A1Aa62156529c3592b3F08b;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x85Fa2331040933A02b154579fAbE6A6a5A765279; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -725,7 +728,7 @@ contract PearlUsdrTngblUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0x2E870Aeee3D9d1eA29Ec93d2c0A99A4e0D5EB697;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0xdaeF32cA8D699015fcFB2884F6902fFCebE51c5b; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -748,7 +751,7 @@ contract PearlUsdrWbtcUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0xffc8c8d747E52fAfbf973c64Bab10d38A6902c46;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x39976f6328ebA2a3C860b7DE5cF2c1bB41581FB8; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -771,7 +774,7 @@ contract PearlUsdrWethUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0x343D9a8D2Bc6A62390aEc764bb5b900C4B039127;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0x7D02A8b758791A03319102f81bF61E220F73e43D; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -794,7 +797,7 @@ contract PearlUsdrMaticUsdrLpLeveredPositionTest is LeveredPositionTest {
     address lpTokenMarket = 0xfacEdA4f9731797102f040380aD5e234c92d1942;
     address usdrMarket = 0x1F11940B239D129dE0e5D30A3E59089af5Ecd6ed;
     address lpTokenWhale = 0xdA0AfBeEEBef6dA2F060237D35cab759b99B13B6; // Thena Gauge
-    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265;
+    address usdrWhale = 0x00e8c0E92eB3Ad88189E7125Ec8825eDc03Ab265; // wUSDR contract
 
     _configurePair(lpTokenMarket, usdrMarket);
     _fundMarketAndSelf(ICErc20(lpTokenMarket), lpTokenWhale);
@@ -816,7 +819,7 @@ contract RetroCashAUsdcCashLeveredPositionTest is LeveredPositionTest {
     // LP token underlying xCASH-USDC
     address lpTokenMarket = 0x1D2A7078a404ab970f951d5A6dbECD9e24838FB6;
     address cashMarket = 0xf69207CFDe6228A1e15A34F2b0c4fDe0845D9eBa;
-    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address lpTokenWhale = 0x35a499c15b4dDCf7e98628D415346B9795CCa80d;
     address cashWhale = 0x88C522E526E5Eea8d636fd6805cA7fEB488780D0;
 
     _configurePair(lpTokenMarket, cashMarket);
@@ -838,7 +841,7 @@ contract RetroUsdcAUsdcCashLeveredPositionTest is LeveredPositionTest {
     // LP token underlying xCASH-USDC
     address lpTokenMarket = 0x1D2A7078a404ab970f951d5A6dbECD9e24838FB6;
     address usdcMarket = 0x38EbA94210bCEf3F9231E1764EE230abC14D1cbc;
-    address lpTokenWhale = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+    address lpTokenWhale = 0x35a499c15b4dDCf7e98628D415346B9795CCa80d;
     address usdcWhale = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
 
     _configurePair(lpTokenMarket, usdcMarket);
@@ -898,7 +901,7 @@ contract RetroCashAUsdcWethLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 2e18;
+    uint256 depositAmount = 1e18;
 
     // LP token underlying xUSDC-WETH05
     address lpTokenMarket = 0xC7cA03A0bE1dBAc350E5BfE5050fC5af6406490E;
