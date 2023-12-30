@@ -79,7 +79,9 @@ contract LeveredPositionFactorySecondExtension is
     uint256 _leverageRatio
   ) external returns (LeveredPosition) {
     LeveredPosition position = createAndFundPosition(_collateralMarket, _stableMarket, _fundingAsset, _fundingAmount);
-    position.adjustLeverageRatio(_leverageRatio);
+    if (_leverageRatio > 1e18) {
+      position.adjustLeverageRatio(_leverageRatio);
+    }
     return position;
   }
 }
