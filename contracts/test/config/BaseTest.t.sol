@@ -198,8 +198,7 @@ abstract contract BaseTest is Test {
     }
     if (ap.getAddress("deployer") == address(0)) {
       vm.prank(ap.owner());
-      // TODO generate a new deployer mnemonic and address
-      ap.setAddress("deployer", 0x9308dddeC9B5cCd8a2685A46E913C892FE31C826);
+      ap.setAddress("deployer", 0x1155b614971f16758C92c4890eD338C9e3ede6b7);
     }
   }
 
