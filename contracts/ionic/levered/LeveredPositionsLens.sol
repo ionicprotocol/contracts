@@ -61,7 +61,7 @@ contract LeveredPositionsLens is Initializable {
   }
 
   /// @notice this is a lens fn, it is not intended to be used on-chain
-  /// @dev returns the Rate for the chosen borrowable at the specified  leverage ratio and supply amount
+  /// @dev returns the Rate for the chosen borrowable at the specified leverage ratio and supply amount
   function getBorrowRateAtRatio(
     ICErc20 _collateralMarket,
     ICErc20 _stableMarket,
