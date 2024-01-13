@@ -1,69 +1,51 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.0 <0.9.0;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity >=0.7.5;
+pragma abicoder v2;
 
+/// @title Quoter Interface
+/// @notice Supports quoting the calculated amounts from exact input or exact output swaps
+/// @dev These functions are not marked view because they rely on calling non-view functions and reverting
+/// to compute the result. They are also not gas efficient and should not be called on-chain.
 interface IUniswapV3Quoter {
-  struct PoolState {
-    // the current price
-    uint160 sqrtPriceX96;
-    // the current tick
-    int24 tick;
-    // the tick spacing
-    int24 tickSpacing;
-    // the pool's fee
-    uint24 fee;
-    // the pool's liquidity
-    uint128 liquidity;
-    // whether the pool is locked
-    bool unlocked;
-  }
+  /// @notice Returns the amount out received for a given exact input swap without executing the swap
+  /// @param path The path of the swap, i.e. each token pair and the pool fee
+  /// @param amountIn The amount of the first token to swap
+  /// @return amountOut The amount of the last token that would be received
+  function quoteExactInput(bytes memory path, uint256 amountIn) external returns (uint256 amountOut);
 
-  // accumulated protocol fees in token0/token1 units
-  struct ProtocolFees {
-    uint128 token0;
-    uint128 token1;
-  }
+  /// @notice Returns the amount out received for a given exact input but for a swap of a single pool
+  /// @param tokenIn The token being swapped in
+  /// @param tokenOut The token being swapped out
+  /// @param fee The fee of the token pool to consider for the pair
+  /// @param amountIn The desired input amount
+  /// @param sqrtPriceLimitX96 The price limit of the pool that cannot be exceeded by the swap
+  /// @return amountOut The amount of `tokenOut` that would be received
+  function quoteExactInputSingle(
+    address tokenIn,
+    address tokenOut,
+    uint24 fee,
+    uint256 amountIn,
+    uint160 sqrtPriceLimitX96
+  ) external returns (uint256 amountOut);
 
-  // the top level state of the swap, the results of which are recorded in storage at the end
-  struct SwapState {
-    // the amount remaining to be swapped in/out of the input/output asset
-    int256 amountSpecifiedRemaining;
-    // the amount already swapped out/in of the output/input asset
-    int256 amountCalculated;
-    // current sqrt(price)
-    uint160 sqrtPriceX96;
-    // the tick associated with the current price
-    int24 tick;
-    // the current liquidity in range
-    uint128 liquidity;
-  }
+  /// @notice Returns the amount in required for a given exact output swap without executing the swap
+  /// @param path The path of the swap, i.e. each token pair and the pool fee. Path must be provided in reverse order
+  /// @param amountOut The amount of the last token to receive
+  /// @return amountIn The amount of first token required to be paid
+  function quoteExactOutput(bytes memory path, uint256 amountOut) external returns (uint256 amountIn);
 
-  struct StepComputations {
-    // the price at the beginning of the step
-    uint160 sqrtPriceStartX96;
-    // the next tick to swap to from the current tick in the swap direction
-    int24 tickNext;
-    // whether tickNext is initialized or not
-    bool initialized;
-    // sqrt(price) for the next tick (1/0)
-    uint160 sqrtPriceNextX96;
-    // how much is being swapped in in this step
-    uint256 amountIn;
-    // how much is being swapped out
-    uint256 amountOut;
-    // how much fee is being paid in
-    uint256 feeAmount;
-  }
-
-  struct InitialState {
-    address poolAddress;
-    PoolState poolState;
-    uint256 feeGrowthGlobal0X128;
-    uint256 feeGrowthGlobal1X128;
-  }
-
-  struct NextTickPassage {
-    int24 tick;
-    int24 tickSpacing;
-  }
+  /// @notice Returns the amount in required to receive the given exact output amount but for a swap of a single pool
+  /// @param tokenIn The token being swapped in
+  /// @param tokenOut The token being swapped out
+  /// @param fee The fee of the token pool to consider for the pair
+  /// @param amountOut The desired output amount
+  /// @param sqrtPriceLimitX96 The price limit of the pool that cannot be exceeded by the swap
+  /// @return amountIn The amount required as the input for the swap in order to receive `amountOut`
+  function quoteExactOutputSingle(
+    address tokenIn,
+    address tokenOut,
+    uint24 fee,
+    uint256 amountOut,
+    uint160 sqrtPriceLimitX96
+  ) external returns (uint256 amountIn);
 }
