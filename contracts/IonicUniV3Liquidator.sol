@@ -8,6 +8,7 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20
 
 import "./liquidators/IRedemptionStrategy.sol";
 import "./liquidators/IFundsConversionStrategy.sol";
+import "./ILiquidator.sol";
 
 import "./external/uniswap/IUniswapV3FlashCallback.sol";
 import "./external/uniswap/IUniswapV3Pool.sol";
@@ -21,7 +22,7 @@ import { ICErc20 } from "./compound/CTokenInterfaces.sol";
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  * @notice IonicUniV3Liquidator liquidates unhealthy borrowers with flashloan support.
  */
-contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
+contract IonicUniV3Liquidator is OwnableUpgradeable, ILiquidator, IUniswapV3FlashCallback {
   using AddressUpgradeable for address payable;
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -99,19 +100,6 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     return seizedOutputAmount;
   }
 
-  struct LiquidateToTokensWithFlashSwapVars {
-    address borrower;
-    uint256 repayAmount;
-    ICErc20 cErc20;
-    ICErc20 cTokenCollateral;
-    IUniswapV3Pool flashSwapPool;
-    uint256 minProfitAmount;
-    IRedemptionStrategy[] redemptionStrategies;
-    bytes[] strategyData;
-    IFundsConversionStrategy[] debtFundingStrategies;
-    bytes[] debtFundingStrategiesData;
-  }
-
   function safeLiquidateToTokensWithFlashLoan(LiquidateToTokensWithFlashSwapVars calldata vars)
     external
     returns (uint256)
@@ -143,8 +131,9 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     _flashSwapAmount = fundingAmount;
     _flashSwapToken = address(fundingToken);
 
-    bool token0IsFlashSwapFundingToken = vars.flashSwapPool.token0() == address(fundingToken);
-    vars.flashSwapPool.flash(
+    IUniswapV3Pool flashSwapPool = IUniswapV3Pool(vars.flashSwapContract);
+    bool token0IsFlashSwapFundingToken = flashSwapPool.token0() == address(fundingToken);
+    flashSwapPool.flash(
       address(this),
       token0IsFlashSwapFundingToken ? fundingAmount : 0,
       !token0IsFlashSwapFundingToken ? fundingAmount : 0,
@@ -352,7 +341,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     uint256 underlyingCollateralSeized,
     IRedemptionStrategy strategy,
     bytes memory strategyData
-  ) public returns (IERC20Upgradeable, uint256) {
+  ) private returns (IERC20Upgradeable, uint256) {
     require(redemptionStrategiesWhitelist[address(strategy)], "only whitelisted redemption strategies can be used");
 
     bytes memory returndata = _functionDelegateCall(
@@ -367,7 +356,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     uint256 inputAmount,
     IFundsConversionStrategy strategy,
     bytes memory strategyData
-  ) public returns (IERC20Upgradeable, uint256) {
+  ) private returns (IERC20Upgradeable, uint256) {
     require(redemptionStrategiesWhitelist[address(strategy)], "only whitelisted redemption strategies can be used");
 
     bytes memory returndata = _functionDelegateCall(
@@ -414,48 +403,5 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
         revert(errorMessage);
       }
     }
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(uint256 a) private pure returns (uint256[] memory) {
-    uint256[] memory arr = new uint256[](1);
-    arr[0] = a;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(address a) private pure returns (address[] memory) {
-    address[] memory arr = new address[](1);
-    arr[0] = a;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(address a, address b) private pure returns (address[] memory) {
-    address[] memory arr = new address[](2);
-    arr[0] = a;
-    arr[1] = b;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(
-    address a,
-    address b,
-    address c
-  ) private pure returns (address[] memory) {
-    address[] memory arr = new address[](3);
-    arr[0] = a;
-    arr[1] = b;
-    arr[2] = c;
-    return arr;
   }
 }

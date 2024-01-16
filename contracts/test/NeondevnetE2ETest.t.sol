@@ -17,7 +17,7 @@ import { UniswapLpTokenLiquidator } from "../liquidators/UniswapLpTokenLiquidato
 import { IUniswapV2Pair } from "../external/uniswap/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "../external/uniswap/IUniswapV2Factory.sol";
 import { PoolLens } from "../PoolLens.sol";
-import { IonicLiquidator } from "../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../IonicLiquidator.sol";
 import { CErc20 } from "../compound/CToken.sol";
 import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
@@ -197,15 +197,13 @@ contract NeondevnetE2ETest is WithPool {
     IUniswapV2Pair flashSwapPair = IUniswapV2Pair(pairAddress);
 
     vars.liquidator.safeLiquidateToTokensWithFlashLoan(
-      IonicLiquidator.LiquidateToTokensWithFlashSwapVars(
+      ILiquidator.LiquidateToTokensWithFlashSwapVars(
         accountOne,
         4e13,
         ICErc20(address(cToken)),
         ICErc20(address(cWNeonToken)),
-        flashSwapPair,
+        address(flashSwapPair),
         0,
-        uniswapRouter,
-        uniswapRouter,
         vars.strategies,
         vars.abis,
         vars.fundingStrategies,
