@@ -43,7 +43,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     liquidatorsRegistry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
 
     liquidator = new IonicUniV3Liquidator();
-    liquidator.initialize(ap.getAddress("wtoken"), address(swapRouter), address(quoter));
+    liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
   }
 
   function testUniV3LiquidatorInitialized() public fork(POLYGON_MAINNET) {
