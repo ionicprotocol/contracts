@@ -13,7 +13,7 @@ import { ChainlinkPriceOracleV2 } from "../../../oracles/default/ChainlinkPriceO
 import { BasePriceOracle } from "../../../oracles/BasePriceOracle.sol";
 
 import { IUniswapV3Factory } from "../../../external/uniswap/IUniswapV3Factory.sol";
-import { Quoter } from "../../../external/uniswap/Quoter/Quoter.sol";
+import { Quoter } from "../../../external/uniswap/quoter/Quoter.sol";
 import { IUniswapV3Pool } from "../../../external/uniswap/IUniswapV3Pool.sol";
 import { ISwapRouter } from "../../../external/uniswap/ISwapRouter.sol";
 import { ERC4626Liquidator } from "../../../liquidators/ERC4626Liquidator.sol";

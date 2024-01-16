@@ -8,7 +8,7 @@ import { IonicLiquidator } from "../../IonicLiquidator.sol";
 import { IUniswapV2Pair } from "../../external/uniswap/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "../../external/uniswap/IUniswapV2Factory.sol";
 import { IUniswapV3Factory } from "../../external/uniswap/IUniswapV3Factory.sol";
-import { Quoter } from "../../external/uniswap/Quoter/Quoter.sol";
+import { Quoter } from "../../external/uniswap/quoter/Quoter.sol";
 import { IUniswapV3Pool } from "../../external/uniswap/IUniswapV3Pool.sol";
 import { ISwapRouter } from "../../external/uniswap/ISwapRouter.sol";
 import { IComptroller } from "../../external/compound/IComptroller.sol";
