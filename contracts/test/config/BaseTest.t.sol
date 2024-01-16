@@ -179,8 +179,7 @@ abstract contract BaseTest is Test {
     } else if (chainid == ZKEVM_MAINNET) {
       ap = AddressesProvider(0x27aA55A3D55959261e119d75256aadAB79aE897C);
     } else if (chainid == MODE_MAINNET) {
-      // TODO deploy AP
-      ap = AddressesProvider(address(555));
+      ap = AddressesProvider(0xb0033576a9E444Dd801d5B69e1b63DBC459A6115);
     } else {
       dpa = new ProxyAdmin();
       AddressesProvider logic = new AddressesProvider();

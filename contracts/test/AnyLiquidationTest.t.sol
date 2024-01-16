@@ -603,8 +603,12 @@ contract AnyLiquidationTest is BaseTest {
     return returndata;
   }
 
-  function testRawLiquidation() public debuggingOnly fork(POLYGON_MAINNET) {
+  function testRawLiquidation() public debuggingOnly fork(MODE_MAINNET) {
     vm.prank(ap.getAddress("deployer"));
-    _functionCall(address(0), hex"00", "raw liquidation failed");
+    _functionCall(
+      0x39C353Cf9041CcF467A04d0e78B63d961E81458a,
+      hex"86ed50b10000000000000000000000002791bca1f2de4661ed88a30c99a7a9449aa841740000000000000000000000007ceb23fd6bc0add59e62ac25578270cff1b9f6190000000000000000000000000000000000000000000000000000000005f5e10000000000000000000000000000000000000000000000000000000000000001f4",
+      "raw liquidation failed"
+    );
   }
 }

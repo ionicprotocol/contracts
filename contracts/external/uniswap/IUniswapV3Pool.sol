@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.0;
 
-interface IUniswapV3Pool {
+import "./IUniswapV3PoolActions.sol";
+
+interface IUniswapV3Pool is IUniswapV3PoolActions {
   function token0() external view returns (address);
 
   function token1() external view returns (address);
