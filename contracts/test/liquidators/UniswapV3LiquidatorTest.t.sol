@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 
-import { IonicUniV3Liquidator, IUniswapV3Pool } from "../../IonicUniV3Liquidator.sol";
+import { IonicUniV3Liquidator, IUniswapV3Pool, ILiquidator } from "../../IonicUniV3Liquidator.sol";
 import "../../external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
 import { IRedemptionStrategy } from "../../liquidators/IRedemptionStrategy.sol";
 import { ILiquidatorsRegistry } from "../../liquidators/registry/ILiquidatorsRegistry.sol";
@@ -131,12 +131,12 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
       .getRedemptionStrategies(weth, usdc);
 
     uint256 seizedAmount = liquidator.safeLiquidateToTokensWithFlashLoan(
-      IonicUniV3Liquidator.LiquidateToTokensWithFlashSwapVars({
+      ILiquidator.LiquidateToTokensWithFlashSwapVars({
         borrower: address(this),
         repayAmount: 100e6,
         cErc20: usdcMarket,
         cTokenCollateral: wethMarket,
-        flashSwapPool: IUniswapV3Pool(uniV3PooForFlash),
+        flashSwapContract: uniV3PooForFlash,
         minProfitAmount: 6,
         redemptionStrategies: strategies,
         strategyData: strategiesData,

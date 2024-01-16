@@ -6,7 +6,7 @@ import { BasePriceOracle } from "../oracles/BasePriceOracle.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { IonicLiquidator } from "../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../IonicLiquidator.sol";
 import { PoolDirectory } from "../PoolDirectory.sol";
 import { BaseTest } from "./config/BaseTest.t.sol";
 import { AddressesProvider } from "../ionic/AddressesProvider.sol";
@@ -325,15 +325,13 @@ contract AnyLiquidationTest is BaseTest {
     vm.prank(ap.owner());
     try
       vars.liquidator.safeLiquidateToTokensWithFlashLoan(
-        IonicLiquidator.LiquidateToTokensWithFlashSwapVars(
+        ILiquidator.LiquidateToTokensWithFlashSwapVars(
           vars.borrower,
           vars.repayAmount,
           ICErc20(address(vars.debtMarket)),
           ICErc20(address(vars.collateralMarket)),
-          vars.flashSwapPair,
+          address(vars.flashSwapPair),
           0,
-          IUniswapV2Router02(uniswapRouter), // TODO ASSET_SPECIFIC_ROUTER
-          IUniswapV2Router02(uniswapRouter), // TODO ASSET_SPECIFIC_ROUTER
           vars.strategies,
           vars.redemptionDatas,
           vars.fundingStrategies,

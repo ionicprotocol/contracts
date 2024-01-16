@@ -8,6 +8,7 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20
 
 import "./liquidators/IRedemptionStrategy.sol";
 import "./liquidators/IFundsConversionStrategy.sol";
+import "./ILiquidator.sol";
 
 import "./utils/IW_NATIVE.sol";
 
@@ -24,7 +25,7 @@ import { ICErc20 } from "./compound/CTokenInterfaces.sol";
  * @notice IonicLiquidator safely liquidates unhealthy borrowers (with flashloan support).
  * @dev Do not transfer NATIVE or tokens directly to this address. Only send NATIVE here when using a method, and only approve tokens for transfer to here when using a method. Direct NATIVE transfers will be rejected and direct token transfers will be lost.
  */
-contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
+contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
   using AddressUpgradeable for address payable;
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -144,30 +145,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
   }
 
   /**
-   * borrower The borrower's Ethereum address.
-   * repayAmount The amount to repay to liquidate the unhealthy loan.
-   * cErc20 The borrowed CErc20 contract to repay.
-   * cTokenCollateral The cToken collateral contract to be liquidated.
-   * minProfitAmount The minimum amount of profit required for execution (in terms of `exchangeProfitTo`). Reverts if this condition is not met.
-   * redemptionStrategies The IRedemptionStrategy contracts to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
-   * strategyData The data for the chosen IRedemptionStrategy contracts, if any.
-   */
-  struct LiquidateToTokensWithFlashSwapVars {
-    address borrower;
-    uint256 repayAmount;
-    ICErc20 cErc20;
-    ICErc20 cTokenCollateral;
-    IUniswapV2Pair flashSwapPair;
-    uint256 minProfitAmount;
-    IUniswapV2Router02 uniswapV2RouterForBorrow;
-    IUniswapV2Router02 uniswapV2RouterForCollateral;
-    IRedemptionStrategy[] redemptionStrategies;
-    bytes[] strategyData;
-    IFundsConversionStrategy[] debtFundingStrategies;
-    bytes[] debtFundingStrategiesData;
-  }
-
-  /**
    * @notice Safely liquidate an unhealthy loan, confirming that at least `minProfitAmount` in NATIVE profit is seized.
    * @param vars @see LiquidateToTokensWithFlashSwapVars.
    */
@@ -202,8 +179,9 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
     _flashSwapAmount = fundingAmount;
     _flashSwapToken = address(fundingToken);
 
-    bool token0IsFlashSwapFundingToken = vars.flashSwapPair.token0() == address(fundingToken);
-    vars.flashSwapPair.swap(
+    IUniswapV2Pair flashSwapPair = IUniswapV2Pair(vars.flashSwapContract);
+    bool token0IsFlashSwapFundingToken = flashSwapPair.token0() == address(fundingToken);
+    flashSwapPair.swap(
       token0IsFlashSwapFundingToken ? fundingAmount : 0,
       !token0IsFlashSwapFundingToken ? fundingAmount : 0,
       address(this),
@@ -307,8 +285,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
     return
       repayTokenFlashLoan(
         vars.cTokenCollateral,
-        vars.uniswapV2RouterForBorrow,
-        vars.uniswapV2RouterForCollateral,
         vars.redemptionStrategies,
         vars.strategyData
       );
@@ -319,8 +295,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
    */
   function repayTokenFlashLoan(
     ICErc20 cTokenCollateral,
-    IUniswapV2Router02 uniswapV2RouterForBorrow,
-    IUniswapV2Router02 uniswapV2RouterForCollateral,
     IRedemptionStrategy[] memory redemptionStrategies,
     bytes[] memory strategyData
   ) private returns (address) {
@@ -360,7 +334,7 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
       } else {
         // repay amount for the non-borrow side
         collateralRequired = UniswapV2Library.getAmountsIn(
-          uniswapV2RouterForBorrow.factory(),
+          UNISWAP_V2_ROUTER_02.factory(),
           _flashSwapAmount, //flashSwapReturnAmount,
           array(address(underlyingCollateral), _flashSwapToken),
           flashSwapFee
@@ -386,7 +360,7 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
       } else {
         // Get W_NATIVE required to repay flashloan
         wethRequired = UniswapV2Library.getAmountsIn(
-          uniswapV2RouterForBorrow.factory(),
+          UNISWAP_V2_ROUTER_02.factory(),
           flashSwapReturnAmount,
           array(W_NATIVE_ADDRESS, _flashSwapToken),
           flashSwapFee
@@ -395,10 +369,10 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
 
       if (address(underlyingCollateral) != W_NATIVE_ADDRESS) {
         // Approve to Uniswap router
-        justApprove(underlyingCollateral, address(uniswapV2RouterForCollateral), underlyingCollateralSeized);
+        justApprove(underlyingCollateral, address(UNISWAP_V2_ROUTER_02), underlyingCollateralSeized);
 
         // Swap collateral tokens for W_NATIVE to be repaid via Uniswap router
-        uniswapV2RouterForCollateral.swapTokensForExactTokens(
+        UNISWAP_V2_ROUTER_02.swapTokensForExactTokens(
           wethRequired,
           underlyingCollateralSeized,
           array(address(underlyingCollateral), W_NATIVE_ADDRESS),
@@ -459,7 +433,7 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
     uint256 underlyingCollateralSeized,
     IRedemptionStrategy strategy,
     bytes memory strategyData
-  ) public returns (IERC20Upgradeable, uint256) {
+  ) private returns (IERC20Upgradeable, uint256) {
     require(redemptionStrategiesWhitelist[address(strategy)], "only whitelisted redemption strategies can be used");
 
     bytes memory returndata = _functionDelegateCall(
@@ -474,7 +448,7 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
     uint256 inputAmount,
     IFundsConversionStrategy strategy,
     bytes memory strategyData
-  ) public returns (IERC20Upgradeable, uint256) {
+  ) private returns (IERC20Upgradeable, uint256) {
     require(redemptionStrategiesWhitelist[address(strategy)], "only whitelisted redemption strategies can be used");
 
     bytes memory returndata = _functionDelegateCall(
@@ -526,43 +500,10 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV2Callee {
   /**
    * @dev Returns an array containing the parameters supplied.
    */
-  function array(uint256 a) private pure returns (uint256[] memory) {
-    uint256[] memory arr = new uint256[](1);
-    arr[0] = a;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(address a) private pure returns (address[] memory) {
-    address[] memory arr = new address[](1);
-    arr[0] = a;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
   function array(address a, address b) private pure returns (address[] memory) {
     address[] memory arr = new address[](2);
     arr[0] = a;
     arr[1] = b;
-    return arr;
-  }
-
-  /**
-   * @dev Returns an array containing the parameters supplied.
-   */
-  function array(
-    address a,
-    address b,
-    address c
-  ) private pure returns (address[] memory) {
-    address[] memory arr = new address[](3);
-    arr[0] = a;
-    arr[1] = b;
-    arr[2] = c;
     return arr;
   }
 }

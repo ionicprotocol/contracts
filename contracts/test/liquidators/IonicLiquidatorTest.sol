@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
-import { IonicLiquidator } from "../../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../../IonicLiquidator.sol";
 import { ICurvePool } from "../../external/curve/ICurvePool.sol";
 import { CurveSwapLiquidatorFunder } from "../../liquidators/CurveSwapLiquidatorFunder.sol";
 import { IonicComptroller } from "../../compound/ComptrollerInterface.sol";
@@ -42,36 +42,11 @@ contract IonicLiquidatorTest is BaseTest {
   }
 
   function testBsc() public fork(BSC_MAINNET) {
-    testWhitelistRevert();
-    testWhitelist();
     testUpgrade();
   }
 
   function testPolygon() public fork(POLYGON_MAINNET) {
-    testWhitelistRevert();
-    testWhitelist();
     testUpgrade();
-  }
-
-  function testWhitelistRevert() internal {
-    IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(address(0));
-    uint256 underlyingCollateralSeized = 1;
-    IRedemptionStrategy strategy = new MockRedemptionStrategy();
-    bytes memory strategyData = "";
-
-    vm.expectRevert("only whitelisted redemption strategies can be used");
-    fsl.redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, strategy, strategyData);
-  }
-
-  function testWhitelist() internal {
-    IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(address(0));
-    uint256 underlyingCollateralSeized = 1;
-    IRedemptionStrategy strategy = new MockRedemptionStrategy();
-    bytes memory strategyData = "";
-
-    vm.prank(fsl.owner());
-    fsl._whitelistRedemptionStrategy(strategy, true);
-    fsl.redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, strategy, strategyData);
   }
 
   function testUpgrade() internal {
@@ -93,12 +68,12 @@ contract IonicLiquidatorTest is BaseTest {
     address debtMarketAddr = 0x456b363D3dA38d3823Ce2e1955362bBd761B324b;
     address collateralMarketAddr = 0x28D0d45e593764C4cE88ccD1C033d0E2e8cE9aF3;
 
-    IonicLiquidator.LiquidateToTokensWithFlashSwapVars memory vars;
+    ILiquidator.LiquidateToTokensWithFlashSwapVars memory vars;
     vars.borrower = borrower;
     vars.cErc20 = ICErc20(debtMarketAddr);
     vars.cTokenCollateral = ICErc20(collateralMarketAddr);
     vars.repayAmount = 70565471214557927746795;
-    vars.flashSwapPair = IUniswapV2Pair(0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827);
+    vars.flashSwapContract = 0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827;
     vars.minProfitAmount = 0;
     vars.redemptionStrategies = new IRedemptionStrategy[](0);
     vars.strategyData = new bytes[](0);
