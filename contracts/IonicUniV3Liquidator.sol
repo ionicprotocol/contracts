@@ -269,14 +269,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     }
 
     // Repay flashloan
-    return
-      repayTokenFlashLoan(
-        vars.cTokenCollateral,
-        vars.redemptionStrategies,
-        vars.strategyData,
-        fee0,
-        fee1
-      );
+    return repayTokenFlashLoan(vars.cTokenCollateral, vars.redemptionStrategies, vars.strategyData, fee0, fee1);
   }
 
   /**

@@ -43,11 +43,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     liquidatorsRegistry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
 
     liquidator = new IonicUniV3Liquidator();
-    liquidator.initialize(
-      ap.getAddress("wtoken"),
-      address(swapRouter),
-      address(quoter)
-    );
+    liquidator.initialize(ap.getAddress("wtoken"), address(swapRouter), address(quoter));
   }
 
   function testUniV3LiquidatorInitialized() public fork(POLYGON_MAINNET) {
@@ -96,11 +92,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
       pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
       vm.startPrank(liquidatorsRegistry.owner());
       IRedemptionStrategy strategy = new UniswapV3LiquidatorFunder();
-      liquidatorsRegistry._setRedemptionStrategy(
-        strategy,
-        weth,
-        usdc
-      );
+      liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
       vm.stopPrank();
       vm.prank(liquidator.owner());
       liquidator._whitelistRedemptionStrategy(strategy, true);
@@ -135,21 +127,22 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
       );
     }
 
-    (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData) =
-      liquidatorsRegistry.getRedemptionStrategies(weth, usdc);
+    (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData) = liquidatorsRegistry
+      .getRedemptionStrategies(weth, usdc);
 
     liquidator.safeLiquidateToTokensWithFlashLoan(
       IonicUniV3Liquidator.LiquidateToTokensWithFlashSwapVars({
-      borrower: address(this),
-      repayAmount: 100e6,
-      cErc20: usdcMarket,
-      cTokenCollateral: wethMarket,
-      flashSwapPool: IUniswapV3Pool(uniV3PooForFlash),
-      minProfitAmount: 6,
-      redemptionStrategies: strategies,
-      strategyData: strategiesData,
-      debtFundingStrategies: new IFundsConversionStrategy[](0),
-      debtFundingStrategiesData: new bytes[](0)
-    }));
+        borrower: address(this),
+        repayAmount: 100e6,
+        cErc20: usdcMarket,
+        cTokenCollateral: wethMarket,
+        flashSwapPool: IUniswapV3Pool(uniV3PooForFlash),
+        minProfitAmount: 6,
+        redemptionStrategies: strategies,
+        strategyData: strategiesData,
+        debtFundingStrategies: new IFundsConversionStrategy[](0),
+        debtFundingStrategiesData: new bytes[](0)
+      })
+    );
   }
 }
