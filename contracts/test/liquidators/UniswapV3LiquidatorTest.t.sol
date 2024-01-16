@@ -130,7 +130,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData) = liquidatorsRegistry
       .getRedemptionStrategies(weth, usdc);
 
-    liquidator.safeLiquidateToTokensWithFlashLoan(
+    uint256 seizedAmount = liquidator.safeLiquidateToTokensWithFlashLoan(
       IonicUniV3Liquidator.LiquidateToTokensWithFlashSwapVars({
         borrower: address(this),
         repayAmount: 100e6,
@@ -144,5 +144,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
         debtFundingStrategiesData: new bytes[](0)
       })
     );
+
+    require(seizedAmount > 0, "didn't seize any assets");
   }
 }

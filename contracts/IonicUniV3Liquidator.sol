@@ -9,33 +9,21 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20
 import "./liquidators/IRedemptionStrategy.sol";
 import "./liquidators/IFundsConversionStrategy.sol";
 
-import "./utils/IW_NATIVE.sol";
-
-import "./external/uniswap/IUniswapV2Router02.sol";
-import "./external/uniswap/IUniswapV2Pair.sol";
-import "./external/uniswap/UniswapV2Library.sol";
-
 import "./external/uniswap/IUniswapV3FlashCallback.sol";
 import "./external/uniswap/IUniswapV3Pool.sol";
-import "./external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
+import { IUniswapV3Quoter } from "./external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
 import { ISwapRouter } from "./external/uniswap/ISwapRouter.sol";
 
 import { ICErc20 } from "./compound/CTokenInterfaces.sol";
 
 /**
- * @title IonicLiquidator
- * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice IonicLiquidator safely liquidates unhealthy borrowers (with flashloan support).
- * @dev Do not transfer NATIVE or tokens directly to this address. Only send NATIVE here when using a method, and only approve tokens for transfer to here when using a method. Direct NATIVE transfers will be rejected and direct token transfers will be lost.
+ * @title IonicUniV3Liquidator
+ * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
+ * @notice IonicUniV3Liquidator liquidates unhealthy borrowers with flashloan support.
  */
 contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
   using AddressUpgradeable for address payable;
   using SafeERC20Upgradeable for IERC20Upgradeable;
-
-  /**
-   * @dev W_NATIVE contract address.
-   */
-  address public W_NATIVE_ADDRESS;
 
   /**
    * @dev Cached liquidator profit exchange source.
@@ -43,8 +31,6 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
    * For use in `safeLiquidateToTokensWithFlashLoan` after it is set by `postFlashLoanTokens`.
    */
   address private _liquidatorProfitExchangeSource;
-
-  mapping(address => bool) public redemptionStrategiesWhitelist;
 
   /**
    * @dev Cached flash swap amount.
@@ -58,6 +44,8 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
    */
   address private _flashSwapToken;
 
+  address public W_NATIVE_ADDRESS;
+  mapping(address => bool) public redemptionStrategiesWhitelist;
   ISwapRouter public swapRouter;
   IUniswapV3Quoter public quoter;
 
@@ -70,35 +58,6 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     W_NATIVE_ADDRESS = _wtoken;
     swapRouter = ISwapRouter(_swapRouter);
     quoter = IUniswapV3Quoter(_quoter);
-  }
-
-  function _becomeImplementation(bytes calldata data) external {}
-
-  /**
-   * @dev Internal function to approve unlimited tokens of `erc20Contract` to `to`.
-   */
-  function safeApprove(
-    IERC20Upgradeable token,
-    address to,
-    uint256 minAmount
-  ) private {
-    uint256 allowance = token.allowance(address(this), to);
-
-    if (allowance < minAmount) {
-      if (allowance > 0) token.safeApprove(to, 0);
-      token.safeApprove(to, type(uint256).max);
-    }
-  }
-
-  /**
-   * @dev Internal function to approve
-   */
-  function justApprove(
-    IERC20Upgradeable token,
-    address to,
-    uint256 amount
-  ) private {
-    token.approve(to, amount);
   }
 
   /**
@@ -120,7 +79,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     require(repayAmount > 0, "Repay amount (transaction value) must be greater than 0.");
     IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
     underlying.safeTransferFrom(msg.sender, address(this), repayAmount);
-    justApprove(underlying, address(cErc20), repayAmount);
+    underlying.approve(address(cErc20), repayAmount);
     require(cErc20.liquidateBorrow(borrower, repayAmount, address(cTokenCollateral)) == 0, "Liquidation failed.");
     // Transfer seized amount to sender
     return transferSeizedFunds(address(cTokenCollateral), minOutputAmount);
@@ -253,7 +212,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
       );
       require(debtRepaymentAmount >= vars.repayAmount, "debt repayment amount not enough");
       // Approve repayAmount to cErc20
-      justApprove(IERC20Upgradeable(underlyingBorrow), address(vars.cErc20), vars.repayAmount);
+      IERC20Upgradeable(underlyingBorrow).approve(address(vars.cErc20), vars.repayAmount);
 
       // Liquidate borrow
       require(
