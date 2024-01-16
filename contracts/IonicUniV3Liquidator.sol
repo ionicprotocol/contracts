@@ -13,7 +13,6 @@ import "./ILiquidator.sol";
 import "./external/uniswap/IUniswapV3FlashCallback.sol";
 import "./external/uniswap/IUniswapV3Pool.sol";
 import { IUniswapV3Quoter } from "./external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
-import { ISwapRouter } from "./external/uniswap/ISwapRouter.sol";
 
 import { ICErc20 } from "./compound/CTokenInterfaces.sol";
 
@@ -47,17 +46,14 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, ILiquidator, IUniswapV3Flas
 
   address public W_NATIVE_ADDRESS;
   mapping(address => bool) public redemptionStrategiesWhitelist;
-  ISwapRouter public swapRouter;
   IUniswapV3Quoter public quoter;
 
   function initialize(
     address _wtoken,
-    address _swapRouter,
     address _quoter
   ) external initializer {
     __Ownable_init();
     W_NATIVE_ADDRESS = _wtoken;
-    swapRouter = ISwapRouter(_swapRouter);
     quoter = IUniswapV3Quoter(_quoter);
   }
 
