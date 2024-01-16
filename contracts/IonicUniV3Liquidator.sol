@@ -18,6 +18,7 @@ import "./external/uniswap/UniswapV2Library.sol";
 import "./external/uniswap/IUniswapV3FlashCallback.sol";
 import "./external/uniswap/IUniswapV3Pool.sol";
 import "./external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
+import { ISwapRouter } from "./external/uniswap/ISwapRouter.sol";
 
 import { ICErc20 } from "./compound/CTokenInterfaces.sol";
 
@@ -27,7 +28,7 @@ import { ICErc20 } from "./compound/CTokenInterfaces.sol";
  * @notice IonicLiquidator safely liquidates unhealthy borrowers (with flashloan support).
  * @dev Do not transfer NATIVE or tokens directly to this address. Only send NATIVE here when using a method, and only approve tokens for transfer to here when using a method. Direct NATIVE transfers will be rejected and direct token transfers will be lost.
  */
-contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
+contract IonicUniV3Liquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
   using AddressUpgradeable for address payable;
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -56,18 +57,19 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
    * For use in `repayTokenFlashLoan` after it is set by `safeLiquidateToTokensWithFlashLoan`.
    */
   address private _flashSwapToken;
-  /**
-   * @dev Percentage of the flash swap fee, measured in basis points.
-   */
-  uint8 public flashSwapFee;
+
+  ISwapRouter public swapRouter;
+  IUniswapV3Quoter public quoter;
 
   function initialize(
     address _wtoken,
-    uint8 _flashSwapFee
+    address _swapRouter,
+    address _quoter
   ) external initializer {
     __Ownable_init();
     W_NATIVE_ADDRESS = _wtoken;
-    flashSwapFee = _flashSwapFee;
+    swapRouter = ISwapRouter(_swapRouter);
+    quoter = IUniswapV3Quoter(_quoter);
   }
 
   function _becomeImplementation(bytes calldata data) external {}
@@ -145,8 +147,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     ICErc20 cTokenCollateral;
     IUniswapV3Pool flashSwapPool;
     uint256 minProfitAmount;
-    IUniswapV2Router02 uniswapV2RouterForBorrow;
-    IUniswapV2Router02 uniswapV2RouterForCollateral;
     IRedemptionStrategy[] redemptionStrategies;
     bytes[] strategyData;
     IFundsConversionStrategy[] debtFundingStrategies;
@@ -192,7 +192,7 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
       msg.data
     );
 
-    return transferSeizedFunds(address(vars.cTokenCollateral), vars.minProfitAmount);
+    return transferSeizedFunds(_liquidatorProfitExchangeSource, vars.minProfitAmount);
   }
 
   /**
@@ -272,8 +272,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
     return
       repayTokenFlashLoan(
         vars.cTokenCollateral,
-        vars.uniswapV2RouterForBorrow,
-        vars.uniswapV2RouterForCollateral,
         vars.redemptionStrategies,
         vars.strategyData,
         fee0,
@@ -286,8 +284,6 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
    */
   function repayTokenFlashLoan(
     ICErc20 cTokenCollateral,
-    IUniswapV2Router02 uniswapV2RouterForBorrow,
-    IUniswapV2Router02 uniswapV2RouterForCollateral,
     IRedemptionStrategy[] memory redemptionStrategies,
     bytes[] memory strategyData,
     uint256 fee0,
@@ -328,76 +324,42 @@ contract IonicLiquidator is OwnableUpgradeable, IUniswapV3FlashCallback {
       // Repay flashloan directly with collateral
       uint256 collateralRequired;
       if (address(underlyingCollateral) == _flashSwapToken) {
-        // repay amount for the borrow side
+        // repay the borrowed asset directly
         collateralRequired = flashSwapReturnAmount;
+
+        // Repay flashloan
+        IERC20Upgradeable(_flashSwapToken).transfer(address(pool), flashSwapReturnAmount);
       } else {
-        // TODO uni v3 calcs
-        // repay amount for the non-borrow side
-        bool zeroForOne = address(underlyingCollateral) == pool.token1();
-        uint160 sqrtPriceLimitX96;
-        IUniswapV3Quoter quoter; // TODO
-        collateralRequired = quoter.quoteExactInputSingle(
-          zeroForOne ? pool.token0() : pool.token1(),
-          zeroForOne ? pool.token1() : pool.token0(),
-          pool.fee(),
-          _flashSwapAmount, //amountIn,
-          sqrtPriceLimitX96 // TODO
+        // TODO swap within the same pool and then repay the FL to the pool
+        bool zeroForOne = address(underlyingCollateral) == pool.token0();
+
+        {
+          collateralRequired = quoter.quoteExactOutputSingle(
+            zeroForOne ? pool.token0() : pool.token1(),
+            zeroForOne ? pool.token1() : pool.token0(),
+            pool.fee(),
+            _flashSwapAmount,
+            0 // sqrtPriceLimitX96
+          );
+        }
+        require(
+          collateralRequired <= underlyingCollateralSeized,
+          "Token flashloan return amount greater than seized collateral."
+        );
+
+        // Repay flashloan
+        pool.swap(
+          address(pool),
+          zeroForOne,
+          int256(collateralRequired),
+          0, // sqrtPriceLimitX96
+          ""
         );
       }
-
-      // Repay flashloan
-      require(
-        collateralRequired <= underlyingCollateralSeized,
-        "Token flashloan return amount greater than seized collateral."
-      );
-      require(
-        underlyingCollateral.transfer(msg.sender, collateralRequired),
-        "Failed to repay token flashloan on borrow side."
-      );
 
       return address(underlyingCollateral);
     } else {
-      // exchange the collateral to W_NATIVE to repay the borrow side
-      uint256 wethRequired;
-      if (_flashSwapToken == W_NATIVE_ADDRESS) {
-        wethRequired = flashSwapReturnAmount;
-      } else {
-        // TODO use IUniswapV3Quoter
-        // Get W_NATIVE required to repay flashloan
-        wethRequired = UniswapV2Library.getAmountsIn(
-          uniswapV2RouterForBorrow.factory(),
-          flashSwapReturnAmount,
-          array(W_NATIVE_ADDRESS, _flashSwapToken),
-          flashSwapFee
-        )[0];
-      }
-
-      if (address(underlyingCollateral) != W_NATIVE_ADDRESS) {
-        // Approve to Uniswap router
-        justApprove(underlyingCollateral, address(uniswapV2RouterForCollateral), underlyingCollateralSeized);
-
-        // Swap collateral tokens for W_NATIVE to be repaid via Uniswap router
-        uniswapV2RouterForCollateral.swapTokensForExactTokens(
-          wethRequired,
-          underlyingCollateralSeized,
-          array(address(underlyingCollateral), W_NATIVE_ADDRESS),
-          address(this),
-          block.timestamp
-        );
-      }
-
-      // Repay flashloan
-      require(
-        wethRequired <= IERC20Upgradeable(W_NATIVE_ADDRESS).balanceOf(address(this)),
-        "Not enough W_NATIVE exchanged from seized collateral to repay flashloan."
-      );
-      require(
-        IW_NATIVE(W_NATIVE_ADDRESS).transfer(msg.sender, wethRequired),
-        "Failed to repay Uniswap flashloan with W_NATIVE exchanged from seized collateral."
-      );
-
-      // Return the profited token (underlying collateral if same as exchangeProfitTo; otherwise, W_NATIVE)
-      return address(underlyingCollateral);
+      revert("the redemptions strategy did not swap to the flash swapped pool assets");
     }
   }
 
