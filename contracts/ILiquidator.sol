@@ -6,7 +6,6 @@ import "./liquidators/IRedemptionStrategy.sol";
 import "./liquidators/IFundsConversionStrategy.sol";
 
 interface ILiquidator {
-
   /**
    * borrower The borrower's Ethereum address.
    * repayAmount The amount to repay to liquidate the unhealthy loan.
@@ -39,9 +38,12 @@ interface ILiquidator {
     uint256 minOutputAmount
   ) external returns (uint256);
 
-  function safeLiquidateToTokensWithFlashLoan(LiquidateToTokensWithFlashSwapVars calldata vars) external returns (uint256);
+  function safeLiquidateToTokensWithFlashLoan(LiquidateToTokensWithFlashSwapVars calldata vars)
+    external
+    returns (uint256);
 
   function _whitelistRedemptionStrategy(IRedemptionStrategy strategy, bool whitelisted) external;
 
-  function _whitelistRedemptionStrategies(IRedemptionStrategy[] calldata strategies, bool[] calldata whitelisted) external;
+  function _whitelistRedemptionStrategies(IRedemptionStrategy[] calldata strategies, bool[] calldata whitelisted)
+    external;
 }

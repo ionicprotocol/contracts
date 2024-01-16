@@ -282,12 +282,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
     }
 
     // Repay flashloan
-    return
-      repayTokenFlashLoan(
-        vars.cTokenCollateral,
-        vars.redemptionStrategies,
-        vars.strategyData
-      );
+    return repayTokenFlashLoan(vars.cTokenCollateral, vars.redemptionStrategies, vars.strategyData);
   }
 
   /**
