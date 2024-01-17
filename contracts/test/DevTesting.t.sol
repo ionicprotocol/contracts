@@ -10,10 +10,15 @@ import "../external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import "../external/uniswap/IUniswapV3FlashCallback.sol";
 
-contract DevTesting is BaseTest {
-  function testMarketAddress() public fork(MODE_MAINNET) {
-    IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
+import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 
+contract DevTesting is BaseTest {
+  IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
+  address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
+  ICErc20 wethMarket = ICErc20(0xb7DD0B1E3B5f2A4343AB4d84bE865b1635C5eCAA);
+  ICErc20 usdcMarket = ICErc20(0xD3af2e473317E002A3C8Daf2Aeaf2f7dE8008E91);
+
+  function testMarketAddress() public fork(MODE_MAINNET) {
     ICErc20[] memory markets = pool.getAllMarkets();
     emit log_named_uint("markets total", markets.length);
 
@@ -33,31 +38,72 @@ contract DevTesting is BaseTest {
   address BAL = 0xD08a2917653d4E460893203471f0000826fb4034;
   address AAVE = 0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2;
 
-  function testAssetsDecimals() public fork(MODE_MAINNET) {
-    emit log_named_uint("WETH decimals", ERC20(WETH).decimals());
-    emit log_named_uint("USDC decimals", ERC20(USDC).decimals());
-    emit log_named_uint("USDT decimals", ERC20(USDT).decimals());
-    emit log_named_uint("WBTC decimals", ERC20(WBTC).decimals());
-    emit log_named_uint("UNI decimals", ERC20(UNI).decimals());
-    emit log_named_uint("SNX decimals", ERC20(SNX).decimals());
-    emit log_named_uint("LINK decimals", ERC20(LINK).decimals());
-    emit log_named_uint("DAI decimals", ERC20(DAI).decimals());
-    emit log_named_uint("BAL decimals", ERC20(BAL).decimals());
-    emit log_named_uint("AAVE decimals", ERC20(AAVE).decimals());
+  function testAssetsPrices() public fork(MODE_MAINNET) {
+    MasterPriceOracle mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
+
+    emit log_named_uint("WETH price", mpo.price(WETH));
+    emit log_named_uint("USDC price", mpo.price(USDC));
+    emit log_named_uint("USDT price", mpo.price(USDT));
+    emit log_named_uint("UNI price", mpo.price(UNI));
+    emit log_named_uint("SNX price", mpo.price(SNX));
+    emit log_named_uint("LINK price", mpo.price(LINK));
+    emit log_named_uint("DAI price", mpo.price(DAI));
+    emit log_named_uint("BAL price", mpo.price(BAL));
+    emit log_named_uint("AAVE price", mpo.price(AAVE));
+    emit log_named_uint("WBTC price", mpo.price(WBTC));
   }
 
-  function testModeUniswap() public fork(MODE_MAINNET) {
-    address quoterAddr = 0x7Fd569b2021850fbA53887dd07736010aCBFc787;
+  function testDeployedMarkets() public fork(MODE_MAINNET) {
+    ICErc20[] memory markets = pool.getAllMarkets();
 
-//    IUniswapV3Quoter quoter = IUniswapV3Quoter(quoterAddr);
-//    quoter.quoteExactOutputSingle(
-//      USDC,
-//      WETH,
-//      30,
-//      1e8,
-//      0
-//    );
+    for (uint8 i = 0; i < markets.length; i++) {
+      emit log_named_address("market" , address(markets[i]));
+      emit log(markets[i].symbol());
+      emit log(markets[i].name());
+    }
+  }
 
-    IUniswapV3FlashCallback(quoterAddr).uniswapV3FlashCallback(1, 1, "");
+  function testAssetAsCollateralCap() public fork(MODE_MAINNET) {
+    pool.getAssetAsCollateralValueCap(
+      wethMarket,
+      usdcMarket,
+      false,
+      deployer
+    );
+  }
+
+  function testModeUsdcBorrow() public fork(MODE_MAINNET) {
+    vm.prank(deployer);
+    require(usdcMarket.borrow(5e6) == 0, "can't borrow");
+  }
+
+  function _functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    (bool success, bytes memory returndata) = target.call(data);
+
+    if (!success) {
+      // Look for revert reason and bubble it up if present
+      if (returndata.length > 0) {
+        // The easiest way to bubble the revert reason is using memory via assembly
+
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+          let returndata_size := mload(returndata)
+          revert(add(32, returndata), returndata_size)
+        }
+      } else {
+        revert(errorMessage);
+      }
+    }
+
+    return returndata;
+  }
+
+  function testRawCall() public fork(POLYGON_MAINNET) {
+    address caller = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
+    address target = 0xD3af2e473317E002A3C8Daf2Aeaf2f7dE8008E91;
+    bytes memory data =
+    hex"c5ebeaec00000000000000000000000000000000000000000000000000000000004c4b40";
+    vm.prank(caller);
+    _functionCall(target, data, "raw call failed");
   }
 }
