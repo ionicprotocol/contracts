@@ -440,6 +440,7 @@ contract LiquidatorsRegistryExtension is LiquidatorsRegistryStorage, DiamondExte
   {
     uint24 fee = uniswapV3Fees[inputToken][outputToken];
     if (fee == 0) fee = uniswapV3Fees[outputToken][inputToken];
+    if (fee == 0) fee = 500;
 
     address router = getUniswapV3Router(inputToken, outputToken);
     strategyData = abi.encode(inputToken, outputToken, fee, router, ap.getAddress("Quoter"));

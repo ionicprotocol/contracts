@@ -151,11 +151,19 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, ILiquidator, IUniswapV3Flas
    * @dev Callback function for Uniswap flashloans.
    */
 
-  function uniswapV3FlashCallback(
+  function supV3FlashCallback(
     uint256 fee0,
     uint256 fee1,
     bytes calldata data
   ) external {
+    uniswapV3FlashCallback(fee0, fee1, data);
+  }
+
+  function uniswapV3FlashCallback(
+    uint256 fee0,
+    uint256 fee1,
+    bytes calldata data
+  ) public {
     // Liquidate unhealthy borrow, exchange seized collateral, return flashloaned funds, and exchange profit
     // Decode params
     LiquidateToTokensWithFlashSwapVars memory vars = abi.decode(data[4:], (LiquidateToTokensWithFlashSwapVars));

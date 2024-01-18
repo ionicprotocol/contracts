@@ -98,11 +98,11 @@ contract DevTesting is BaseTest {
     return returndata;
   }
 
-  function testRawCall() public fork(POLYGON_MAINNET) {
+  function testRawCall() public fork(MODE_MAINNET) {
     address caller = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
-    address target = 0xD3af2e473317E002A3C8Daf2Aeaf2f7dE8008E91;
+    address target = 0x431C87E08e2636733a945D742d25Ba77577ED480;
     bytes memory data =
-    hex"c5ebeaec00000000000000000000000000000000000000000000000000000000004c4b40";
+    hex"4a5844320000000000000000000000002be717340023c9e14c1bb12cb3ecbcfd3c3fb038";
     vm.prank(caller);
     _functionCall(target, data, "raw call failed");
   }
