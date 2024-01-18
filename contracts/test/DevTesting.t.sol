@@ -38,7 +38,7 @@ contract DevTesting is BaseTest {
     usdcMarket = markets[1];
   }
 
-  function testMarketAddress() public fork(MODE_MAINNET) {
+  function testMarketAddress() public debuggingOnly fork(MODE_MAINNET) {
     ICErc20[] memory markets = pool.getAllMarkets();
     emit log_named_uint("markets total", markets.length);
 
@@ -46,7 +46,7 @@ contract DevTesting is BaseTest {
     emit log_named_address("sec market", address(markets[1]));
   }
 
-  function testAssetsPrices() public fork(MODE_MAINNET) {
+  function testAssetsPrices() public debuggingOnly fork(MODE_MAINNET) {
     MasterPriceOracle mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
 
     emit log_named_uint("WETH price", mpo.price(WETH));
@@ -61,7 +61,7 @@ contract DevTesting is BaseTest {
     emit log_named_uint("WBTC price", mpo.price(WBTC));
   }
 
-  function testDeployedMarkets() public fork(MODE_MAINNET) {
+  function testDeployedMarkets() public debuggingOnly fork(MODE_MAINNET) {
     ICErc20[] memory markets = pool.getAllMarkets();
 
     for (uint8 i = 0; i < markets.length; i++) {
@@ -71,11 +71,11 @@ contract DevTesting is BaseTest {
     }
   }
 
-  function testAssetAsCollateralCap() public fork(MODE_MAINNET) {
+  function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
     pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
   }
 
-  function testModeUsdcBorrow() public fork(MODE_MAINNET) {
+  function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
     vm.prank(deployer);
     require(usdcMarket.borrow(5e6) == 0, "can't borrow");
   }
@@ -105,7 +105,7 @@ contract DevTesting is BaseTest {
     return returndata;
   }
 
-  function testRawCall() public fork(MODE_MAINNET) {
+  function testRawCall() public debuggingOnly fork(MODE_MAINNET) {
     address caller = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
     address target = 0x431C87E08e2636733a945D742d25Ba77577ED480;
     bytes memory data = hex"4a5844320000000000000000000000002be717340023c9e14c1bb12cb3ecbcfd3c3fb038";
