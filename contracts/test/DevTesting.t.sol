@@ -57,19 +57,14 @@ contract DevTesting is BaseTest {
     ICErc20[] memory markets = pool.getAllMarkets();
 
     for (uint8 i = 0; i < markets.length; i++) {
-      emit log_named_address("market" , address(markets[i]));
+      emit log_named_address("market", address(markets[i]));
       emit log(markets[i].symbol());
       emit log(markets[i].name());
     }
   }
 
   function testAssetAsCollateralCap() public fork(MODE_MAINNET) {
-    pool.getAssetAsCollateralValueCap(
-      wethMarket,
-      usdcMarket,
-      false,
-      deployer
-    );
+    pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
   }
 
   function testModeUsdcBorrow() public fork(MODE_MAINNET) {
@@ -77,7 +72,11 @@ contract DevTesting is BaseTest {
     require(usdcMarket.borrow(5e6) == 0, "can't borrow");
   }
 
-  function _functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+  function _functionCall(
+    address target,
+    bytes memory data,
+    string memory errorMessage
+  ) internal returns (bytes memory) {
     (bool success, bytes memory returndata) = target.call(data);
 
     if (!success) {
@@ -101,8 +100,7 @@ contract DevTesting is BaseTest {
   function testRawCall() public fork(MODE_MAINNET) {
     address caller = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
     address target = 0x431C87E08e2636733a945D742d25Ba77577ED480;
-    bytes memory data =
-    hex"4a5844320000000000000000000000002be717340023c9e14c1bb12cb3ecbcfd3c3fb038";
+    bytes memory data = hex"4a5844320000000000000000000000002be717340023c9e14c1bb12cb3ecbcfd3c3fb038";
     vm.prank(caller);
     _functionCall(target, data, "raw call failed");
   }

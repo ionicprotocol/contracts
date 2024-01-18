@@ -48,10 +48,7 @@ contract IonicUniV3Liquidator is OwnableUpgradeable, ILiquidator, IUniswapV3Flas
   mapping(address => bool) public redemptionStrategiesWhitelist;
   IUniswapV3Quoter public quoter;
 
-  function initialize(
-    address _wtoken,
-    address _quoter
-  ) external initializer {
+  function initialize(address _wtoken, address _quoter) external initializer {
     __Ownable_init();
     W_NATIVE_ADDRESS = _wtoken;
     quoter = IUniswapV3Quoter(_quoter);
