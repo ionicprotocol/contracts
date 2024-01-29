@@ -4,7 +4,7 @@ pragma solidity >=0.8.0;
 import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { ComptrollerErrorReporter } from "../compound/ErrorReporter.sol";
 import { ICErc20 } from "./CTokenInterfaces.sol";
-import { ComptrollerExtensionInterface, ComptrollerBase } from "./ComptrollerInterface.sol";
+import { ComptrollerExtensionInterface, ComptrollerBase, SFSRegister } from "./ComptrollerInterface.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -38,7 +38,7 @@ contract ComptrollerFirstExtension is
   event MarketUnlisted(ICErc20 cToken);
 
   function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory) {
-    uint8 fnsCount = 30;
+    uint8 fnsCount = 31;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.addNonAccruingFlywheel.selector;
     functionSelectors[--fnsCount] = this._setMarketSupplyCaps.selector;
@@ -70,6 +70,7 @@ contract ComptrollerFirstExtension is
     functionSelectors[--fnsCount] = this.getWhitelistedSuppliersSupply.selector;
     functionSelectors[--fnsCount] = this.getWhitelistedBorrowersBorrows.selector;
     functionSelectors[--fnsCount] = this.getAssetAsCollateralValueCap.selector;
+    functionSelectors[--fnsCount] = this.registerInSFS.selector;
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
   }
@@ -502,5 +503,11 @@ contract ComptrollerFirstExtension is
     }
 
     return false;
+  }
+
+  function registerInSFS() external returns (uint256) {
+    require(hasAdminRights(), "!admin");
+    SFSRegister sfsContract = SFSRegister(0xBBd707815a7F7eb6897C7686274AFabd7B579Ff6);
+    return sfsContract.register(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
   }
 }

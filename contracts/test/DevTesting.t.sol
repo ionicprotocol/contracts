@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0;
 
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+
 import "./config/BaseTest.t.sol";
 import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
-import { ERC20 } from "solmate/tokens/ERC20.sol";
-
-import "../external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
-import "../external/uniswap/IUniswapV3FlashCallback.sol";
-
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 
 contract DevTesting is BaseTest {
