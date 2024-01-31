@@ -299,6 +299,8 @@ interface CTokenFirstExtensionInterface {
   function supplyRatePerBlockAfterWithdraw(uint256 withdrawAmount) external view returns (uint256);
 
   function borrowRatePerBlockAfterBorrow(uint256 borrowAmount) external view returns (uint256);
+
+  function registerInSFS() external returns (uint256);
 }
 
 interface CTokenSecondExtensionInterface {
