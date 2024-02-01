@@ -15,16 +15,8 @@ import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
   address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
-  ICErc20 wethMarket = ICErc20(0xb7DD0B1E3B5f2A4343AB4d84bE865b1635C5eCAA);
-  ICErc20 usdcMarket = ICErc20(0xD3af2e473317E002A3C8Daf2Aeaf2f7dE8008E91);
-
-  function testMarketAddress() public fork(MODE_MAINNET) {
-    ICErc20[] memory markets = pool.getAllMarkets();
-    emit log_named_uint("markets total", markets.length);
-
-    emit log_named_address("first market", address(markets[0]));
-    emit log_named_address("sec market", address(markets[1]));
-  }
+  ICErc20 wethMarket;
+  ICErc20 usdcMarket;
 
   // mode mainnet assets
   address WETH = 0x4200000000000000000000000000000000000006;
@@ -38,7 +30,23 @@ contract DevTesting is BaseTest {
   address BAL = 0xD08a2917653d4E460893203471f0000826fb4034;
   address AAVE = 0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2;
 
-  function testAssetsPrices() public fork(MODE_MAINNET) {
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+    wethMarket = markets[0];
+    usdcMarket = markets[1];
+  }
+
+  function testMarketAddress() public debuggingOnly fork(MODE_MAINNET) {
+    ICErc20[] memory markets = pool.getAllMarkets();
+    emit log_named_uint("markets total", markets.length);
+
+    emit log_named_address("first market", address(markets[0]));
+    emit log_named_address("sec market", address(markets[1]));
+  }
+
+  function testAssetsPrices() public debuggingOnly fork(MODE_MAINNET) {
     MasterPriceOracle mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
 
     emit log_named_uint("WETH price", mpo.price(WETH));
@@ -53,31 +61,30 @@ contract DevTesting is BaseTest {
     emit log_named_uint("WBTC price", mpo.price(WBTC));
   }
 
-  function testDeployedMarkets() public fork(MODE_MAINNET) {
+  function testDeployedMarkets() public debuggingOnly fork(MODE_MAINNET) {
     ICErc20[] memory markets = pool.getAllMarkets();
 
     for (uint8 i = 0; i < markets.length; i++) {
-      emit log_named_address("market" , address(markets[i]));
+      emit log_named_address("market", address(markets[i]));
       emit log(markets[i].symbol());
       emit log(markets[i].name());
     }
   }
 
-  function testAssetAsCollateralCap() public fork(MODE_MAINNET) {
-    pool.getAssetAsCollateralValueCap(
-      wethMarket,
-      usdcMarket,
-      false,
-      deployer
-    );
+  function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
+    pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
   }
 
-  function testModeUsdcBorrow() public fork(MODE_MAINNET) {
+  function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
     vm.prank(deployer);
     require(usdcMarket.borrow(5e6) == 0, "can't borrow");
   }
 
-  function _functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+  function _functionCall(
+    address target,
+    bytes memory data,
+    string memory errorMessage
+  ) internal returns (bytes memory) {
     (bool success, bytes memory returndata) = target.call(data);
 
     if (!success) {
@@ -98,11 +105,10 @@ contract DevTesting is BaseTest {
     return returndata;
   }
 
-  function testRawCall() public fork(POLYGON_MAINNET) {
+  function testRawCall() public debuggingOnly fork(MODE_MAINNET) {
     address caller = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
-    address target = 0xD3af2e473317E002A3C8Daf2Aeaf2f7dE8008E91;
-    bytes memory data =
-    hex"c5ebeaec00000000000000000000000000000000000000000000000000000000004c4b40";
+    address target = 0x431C87E08e2636733a945D742d25Ba77577ED480;
+    bytes memory data = hex"4a5844320000000000000000000000002be717340023c9e14c1bb12cb3ecbcfd3c3fb038";
     vm.prank(caller);
     _functionCall(target, data, "raw call failed");
   }
