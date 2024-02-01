@@ -709,7 +709,7 @@ contract CTokenFirstExtension is
 
   function registerInSFS() external returns (uint256) {
     require(hasAdminRights(), "!admin");
-    SFSRegister sfsContract = SFSRegister(0xBBd707815a7F7eb6897C7686274AFabd7B579Ff6);
+    SFSRegister sfsContract = SFSRegister(0x8680CEaBcb9b56913c519c069Add6Bc3494B7020);
     return sfsContract.register(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
   }
 }
