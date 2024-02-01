@@ -201,6 +201,10 @@ interface ComptrollerStorageInterface {
   function rewardsDistributors(uint256) external view returns (address);
 }
 
+interface SFSRegister {
+  function register(address _recipient) external returns (uint256 tokenId);
+}
+
 interface ComptrollerExtensionInterface {
   function getWhitelistedSuppliersSupply(address cToken) external view returns (uint256 supplied);
 
@@ -298,6 +302,8 @@ interface ComptrollerExtensionInterface {
     bool redeeming,
     address account
   ) external view returns (uint256);
+
+  function registerInSFS() external returns (uint256);
 }
 
 interface UnitrollerInterface {
