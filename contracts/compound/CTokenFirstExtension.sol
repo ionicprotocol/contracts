@@ -4,11 +4,13 @@ pragma solidity >=0.8.0;
 import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { IFlashLoanReceiver } from "../ionic/IFlashLoanReceiver.sol";
 import { CErc20FirstExtensionBase, CTokenFirstExtensionInterface, ICErc20 } from "./CTokenInterfaces.sol";
+import { SFSRegister } from "./ComptrollerInterface.sol";
 import { TokenErrorReporter } from "./ErrorReporter.sol";
 import { Exponential } from "./Exponential.sol";
 import { InterestRateModel } from "./InterestRateModel.sol";
 import { IFeeDistributor } from "./IFeeDistributor.sol";
 import { Multicall } from "../utils/Multicall.sol";
+
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract CTokenFirstExtension is
@@ -27,7 +29,7 @@ contract CTokenFirstExtension is
   }
 
   function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory) {
-    uint8 fnsCount = 23;
+    uint8 fnsCount = 24;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.transfer.selector;
     functionSelectors[--fnsCount] = this.transferFrom.selector;
@@ -52,6 +54,7 @@ contract CTokenFirstExtension is
     functionSelectors[--fnsCount] = this.flash.selector;
     functionSelectors[--fnsCount] = this.getAccountSnapshot.selector;
     functionSelectors[--fnsCount] = this.borrowBalanceCurrent.selector;
+    functionSelectors[--fnsCount] = this.registerInSFS.selector;
 
     require(fnsCount == 0, "use the correct array length");
     return functionSelectors;
@@ -702,5 +705,11 @@ contract CTokenFirstExtension is
     returns (bytes[] memory results)
   {
     return Multicall.multicall(data);
+  }
+
+  function registerInSFS() external returns (uint256) {
+    require(hasAdminRights(), "!admin");
+    SFSRegister sfsContract = SFSRegister(0x8680CEaBcb9b56913c519c069Add6Bc3494B7020);
+    return sfsContract.register(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
   }
 }

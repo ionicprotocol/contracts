@@ -64,6 +64,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     authRegistry = AuthoritiesRegistry(ap.getAddress("AuthoritiesRegistry"));
     liquidatorsRegistry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
 
+    //     liquidator = IonicUniV3Liquidator(ap.getAddress("IonicUniV3Liquidator"));
     liquidator = new IonicUniV3Liquidator();
     liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
   }
@@ -99,14 +100,6 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     IonicComptroller pool = IonicComptroller(poolAddress);
     _upgradePoolWithExtension(Unitroller(payable(poolAddress)));
     upgradeRegistry();
-
-    {
-      PoolRolesAuthority auth = authRegistry.poolsAuthorities(poolAddress);
-      vm.startPrank(auth.owner());
-      auth.openPoolSupplierCapabilities(pool);
-      auth.openPoolBorrowerCapabilities(pool);
-      vm.stopPrank();
-    }
 
     ICErc20[] memory markets = pool.getAllMarkets();
 
