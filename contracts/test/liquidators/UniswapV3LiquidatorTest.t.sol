@@ -61,11 +61,7 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
 
   function testModeUniV2LiquidatorLiquidate() public fork(MODE_MAINNET) {
     IonicLiquidator _liquidator = new IonicLiquidator();
-    _liquidator.initialize(
-      ap.getAddress("wtoken"),
-      ap.getAddress("IUniswapV2Router02"),
-      30
-    );
+    _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
     liquidator = _liquidator;
 
     IonicComptroller pool = IonicComptroller(poolAddress);
@@ -102,7 +98,11 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
     emit log_named_address("Factory", kimRouter.factory());
 
     IUniswapV3Factory factory = IUniswapV3Factory(kimRouter.factory());
-    address pool = factory.getPool(0x4200000000000000000000000000000000000006, 0xd988097fb8612cc24eeC14542bC03424c656005f, 500);
+    address pool = factory.getPool(
+      0x4200000000000000000000000000000000000006,
+      0xd988097fb8612cc24eeC14542bC03424c656005f,
+      500
+    );
     emit log_named_address("Pool", pool);
   }
 }

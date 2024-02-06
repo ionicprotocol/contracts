@@ -69,8 +69,8 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       wethMarketIndex = 5;
     } else if (block.chainid == MODE_MAINNET) {
       uniswapRouter = 0x5D61c537393cf21893BE619E36fC94cd73C77DD3; // kim router
-//      uniswapRouter = 0xC9Adff795f46105E53be9bbf14221b1C9919EE25; // sup router
-//      swapRouter = 0xC9Adff795f46105E53be9bbf14221b1C9919EE25; // sup router
+      //      uniswapRouter = 0xC9Adff795f46105E53be9bbf14221b1C9919EE25; // sup router
+      //      swapRouter = 0xC9Adff795f46105E53be9bbf14221b1C9919EE25; // sup router
       swapRouter = 0x5D61c537393cf21893BE619E36fC94cd73C77DD3; // kim router
       //quoter = IUniswapV3Quoter(0x7Fd569b2021850fbA53887dd07736010aCBFc787); // other sup quoter?
       quoter = IUniswapV3Quoter(0x5E6AEbab1AD525f5336Bd12E6847b851531F72ba); // sup quoter
@@ -79,7 +79,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       poolAddress = 0xFB3323E24743Caf4ADD0fDCCFB268565c0685556;
       //uniV3PooForFlash = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF; // kim weth-usdc pool
       uniV3PooForFlash = 0x047CF4b081ee80d2928cb2ce3F3C4964e26eB0B9; // kim usdt-usdc pool
-//      uniV3PooForFlash = 0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f; // sup univ2 0x34a1E3Db82f669f8cF88135422AfD80e4f70701A
+      //      uniV3PooForFlash = 0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f; // sup univ2 0x34a1E3Db82f669f8cF88135422AfD80e4f70701A
       usdcMarketIndex = 1;
       wethMarketIndex = 0;
       // weth 0x4200000000000000000000000000000000000006
