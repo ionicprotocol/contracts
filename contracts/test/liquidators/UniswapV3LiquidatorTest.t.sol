@@ -7,168 +7,102 @@ import { IonicUniV3Liquidator, IUniswapV3Pool, ILiquidator } from "../../IonicUn
 import "../../external/uniswap/quoter/interfaces/IUniswapV3Quoter.sol";
 import { IRedemptionStrategy } from "../../liquidators/IRedemptionStrategy.sol";
 import { ILiquidatorsRegistry } from "../../liquidators/registry/ILiquidatorsRegistry.sol";
-import "../../liquidators/registry/LiquidatorsRegistryExtension.sol";
-import { LiquidatorsRegistrySecondExtension } from "../../liquidators/registry/LiquidatorsRegistrySecondExtension.sol";
+import { IUniswapV2Router02 } from "../../external/uniswap/IUniswapV2Router02.sol";
+import { IUniswapV3Factory } from "../../external/uniswap/IUniswapV3Factory.sol";
+import { UniswapV2LiquidatorFunder } from "../../liquidators/UniswapV2LiquidatorFunder.sol";
 import { UniswapV3LiquidatorFunder } from "../../liquidators/UniswapV3LiquidatorFunder.sol";
 
 import { IFundsConversionStrategy } from "../../liquidators/IFundsConversionStrategy.sol";
 import { ICErc20 } from "../../compound/CTokenInterfaces.sol";
 import { IonicComptroller } from "../../compound/ComptrollerInterface.sol";
-import { BasePriceOracle } from "../../oracles/BasePriceOracle.sol";
-import { Unitroller } from "../../compound/Unitroller.sol";
 import { AuthoritiesRegistry } from "../../ionic/AuthoritiesRegistry.sol";
 import { PoolRolesAuthority } from "../../ionic/PoolRolesAuthority.sol";
 
 import { BaseTest } from "../config/BaseTest.t.sol";
-import { UpgradesBaseTest } from "../UpgradesBaseTest.sol";
+import "./IonicLiquidatorTest.sol";
 
-contract UniswapV3LiquidatorTest is UpgradesBaseTest {
-  address swapRouter;
-  IUniswapV3Quoter quoter;
-  address usdcWhale;
-  address wethWhale;
-  address poolAddress;
-  address uniV3PooForFlash;
-  uint256 usdcMarketIndex;
-  uint256 wethMarketIndex;
-
-  AuthoritiesRegistry authRegistry;
-  IonicUniV3Liquidator liquidator;
-  ILiquidatorsRegistry liquidatorsRegistry;
-
-  function afterForkSetUp() internal override {
-    super.afterForkSetUp();
-
-    if (block.chainid == POLYGON_MAINNET) {
-      swapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-      quoter = IUniswapV3Quoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-      usdcWhale = 0x625E7708f30cA75bfd92586e17077590C60eb4cD; // aave reserve
-      wethWhale = 0x1eED63EfBA5f81D95bfe37d82C8E736b974F477b;
-      poolAddress = 0x22A705DEC988410A959B8b17C8c23E33c121580b; // Retro stables pool
-      uniV3PooForFlash = 0xA374094527e1673A86dE625aa59517c5dE346d32; // usdc-wmatic
-      usdcMarketIndex = 3;
-      wethMarketIndex = 5;
-    } else if (block.chainid == MODE_MAINNET) {
-      swapRouter = 0xC9Adff795f46105E53be9bbf14221b1C9919EE25;
-      quoter = IUniswapV3Quoter(0x7Fd569b2021850fbA53887dd07736010aCBFc787);
-      usdcWhale = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF;
-      wethWhale = 0xF4C85269240C1D447309fA602A90ac23F1CB0Dc0;
-      poolAddress = 0xFB3323E24743Caf4ADD0fDCCFB268565c0685556;
-      uniV3PooForFlash = 0x2Ea23CB991DE9090487919dC80dd1af0A468bAE1; // univ2 0x34a1E3Db82f669f8cF88135422AfD80e4f70701A
-      usdcMarketIndex = 1;
-      wethMarketIndex = 0;
-      // weth 0x4200000000000000000000000000000000000006
-      // usdc 0xd988097fb8612cc24eeC14542bC03424c656005f
-    }
-
-    authRegistry = AuthoritiesRegistry(ap.getAddress("AuthoritiesRegistry"));
-    liquidatorsRegistry = ILiquidatorsRegistry(ap.getAddress("LiquidatorsRegistry"));
-
-    //     liquidator = IonicUniV3Liquidator(ap.getAddress("IonicUniV3Liquidator"));
-    liquidator = new IonicUniV3Liquidator();
-    liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
-  }
-
-  function testUniV3LiquidatorInitialized() public fork(POLYGON_MAINNET) {
-    emit log_named_address("wtoken", liquidator.W_NATIVE_ADDRESS());
-  }
-
-  function upgradeRegistry() internal {
-    DiamondBase asBase = DiamondBase(address(liquidatorsRegistry));
-    address[] memory exts = asBase._listExtensions();
-    LiquidatorsRegistryExtension newExt1 = new LiquidatorsRegistryExtension();
-    LiquidatorsRegistrySecondExtension newExt2 = new LiquidatorsRegistrySecondExtension();
-    vm.prank(SafeOwnable(address(liquidatorsRegistry)).owner());
-    asBase._registerExtension(newExt1, DiamondExtension(exts[0]));
-    vm.prank(SafeOwnable(address(liquidatorsRegistry)).owner());
-    asBase._registerExtension(newExt2, DiamondExtension(exts[1]));
-  }
-
-  function _setupLiquidatorsRegistry() internal {
-    upgradeRegistry();
-  }
-
+contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
   function testPolygonUniV3LiquidatorLiquidate() public fork(POLYGON_MAINNET) {
-    _testUniV3LiquidatorLiquidate();
+    IonicUniV3Liquidator _liquidator = new IonicUniV3Liquidator();
+    _liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
+    liquidator = _liquidator;
+    _testLiquidatorLiquidate(uniV3PooForFlash);
   }
 
   function testModeUniV3LiquidatorLiquidate() public fork(MODE_MAINNET) {
-    _testUniV3LiquidatorLiquidate();
+    IonicUniV3Liquidator _liquidator = new IonicUniV3Liquidator();
+    _liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
+    liquidator = _liquidator;
+
+    IonicComptroller pool = IonicComptroller(poolAddress);
+    {
+      ICErc20[] memory markets = pool.getAllMarkets();
+
+      ICErc20 usdcMarket = markets[usdcMarketIndex];
+      IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
+      ICErc20 wethMarket = markets[wethMarketIndex];
+      IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
+      {
+        emit log_named_address("usdc market", address(usdcMarket));
+        emit log_named_address("weth market", address(wethMarket));
+        emit log_named_address("usdc underlying", usdcMarket.underlying());
+        emit log_named_address("weth underlying", wethMarket.underlying());
+        vm.startPrank(liquidatorsRegistry.owner());
+        IRedemptionStrategy strategy = new UniswapV3LiquidatorFunder();
+        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
+        vm.stopPrank();
+        vm.prank(OwnableUpgradeable(address(liquidator)).owner());
+        liquidator._whitelistRedemptionStrategy(strategy, true);
+      }
+    }
+
+    _testLiquidatorLiquidate(uniV3PooForFlash);
   }
 
-  function _testUniV3LiquidatorLiquidate() internal {
-    IonicComptroller pool = IonicComptroller(poolAddress);
-    _upgradePoolWithExtension(Unitroller(payable(poolAddress)));
-    upgradeRegistry();
-
-    ICErc20[] memory markets = pool.getAllMarkets();
-
-    ICErc20 usdcMarket = markets[usdcMarketIndex];
-    IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
-    ICErc20 wethMarket = markets[wethMarketIndex];
-    IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
-    {
-      emit log_named_address("usdc market", address(usdcMarket));
-      emit log_named_address("weth market", address(wethMarket));
-      emit log_named_address("usdc underlying", usdcMarket.underlying());
-      emit log_named_address("weth underlying", wethMarket.underlying());
-      vm.prank(pool.admin());
-      pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
-      vm.startPrank(liquidatorsRegistry.owner());
-      IRedemptionStrategy strategy = new UniswapV3LiquidatorFunder();
-      liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
-      vm.stopPrank();
-      vm.prank(liquidator.owner());
-      liquidator._whitelistRedemptionStrategy(strategy, true);
-    }
-
-    {
-      vm.prank(wethWhale);
-      weth.transfer(address(this), 0.1e18);
-
-      weth.approve(address(wethMarket), 1e36);
-      require(wethMarket.mint(0.1e18) == 0, "mint weth failed");
-      pool.enterMarkets(asArray(address(usdcMarket), address(wethMarket)));
-    }
-
-    {
-      vm.startPrank(usdcWhale);
-      usdc.approve(address(usdcMarket), 2e36);
-      require(usdcMarket.mint(70e6) == 0, "mint usdc failed");
-      vm.stopPrank();
-    }
-
-    {
-      require(usdcMarket.borrow(50e6) == 0, "borrow usdc failed");
-
-      // the collateral prices change
-      BasePriceOracle mpo = pool.oracle();
-      uint256 priceCollateral = mpo.getUnderlyingPrice(wethMarket);
-      vm.mockCall(
-        address(mpo),
-        abi.encodeWithSelector(mpo.getUnderlyingPrice.selector, wethMarket),
-        abi.encode(priceCollateral / 10)
-      );
-    }
-
-    (IRedemptionStrategy[] memory strategies, bytes[] memory strategiesData) = liquidatorsRegistry
-      .getRedemptionStrategies(weth, usdc);
-
-    uint256 seizedAmount = liquidator.safeLiquidateToTokensWithFlashLoan(
-      ILiquidator.LiquidateToTokensWithFlashSwapVars({
-        borrower: address(this),
-        repayAmount: 10e6,
-        cErc20: usdcMarket,
-        cTokenCollateral: wethMarket,
-        flashSwapContract: uniV3PooForFlash,
-        minProfitAmount: 6,
-        redemptionStrategies: strategies,
-        strategyData: strategiesData,
-        debtFundingStrategies: new IFundsConversionStrategy[](0),
-        debtFundingStrategiesData: new bytes[](0)
-      })
+  function testModeUniV2LiquidatorLiquidate() public fork(MODE_MAINNET) {
+    IonicLiquidator _liquidator = new IonicLiquidator();
+    _liquidator.initialize(
+      ap.getAddress("wtoken"),
+      ap.getAddress("IUniswapV2Router02"),
+      30
     );
+    liquidator = _liquidator;
 
-    require(seizedAmount > 0, "didn't seize any assets");
+    IonicComptroller pool = IonicComptroller(poolAddress);
+    {
+      ICErc20[] memory markets = pool.getAllMarkets();
+
+      ICErc20 usdcMarket = markets[usdcMarketIndex];
+      IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
+      ICErc20 wethMarket = markets[wethMarketIndex];
+      IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
+      {
+        emit log_named_address("usdc market", address(usdcMarket));
+        emit log_named_address("weth market", address(wethMarket));
+        emit log_named_address("usdc underlying", usdcMarket.underlying());
+        emit log_named_address("weth underlying", wethMarket.underlying());
+        vm.startPrank(liquidatorsRegistry.owner());
+        IRedemptionStrategy strategy = new UniswapV2LiquidatorFunder();
+        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
+        vm.stopPrank();
+        vm.prank(OwnableUpgradeable(address(liquidator)).owner());
+        liquidator._whitelistRedemptionStrategy(strategy, true);
+      }
+    }
+
+    _testLiquidatorLiquidate(uniV3PooForFlash);
+  }
+
+  function testSupPair() public fork(MODE_MAINNET) {
+    IUniswapV2Pair flashSwapPair = IUniswapV2Pair(0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f);
+    IUniswapV3Pool flashSwapPool = IUniswapV3Pool(0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f);
+
+    IUniswapV2Router02 kimRouter = IUniswapV2Router02(0x5D61c537393cf21893BE619E36fC94cd73C77DD3);
+
+    emit log_named_address("Factory", kimRouter.factory());
+
+    IUniswapV3Factory factory = IUniswapV3Factory(kimRouter.factory());
+    address pool = factory.getPool(0x4200000000000000000000000000000000000006, 0xd988097fb8612cc24eeC14542bC03424c656005f, 500);
+    emit log_named_address("Pool", pool);
   }
 }

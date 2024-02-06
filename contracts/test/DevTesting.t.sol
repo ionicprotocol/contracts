@@ -68,8 +68,31 @@ contract DevTesting is BaseTest {
     }
   }
 
+  function testDisableCollateralUsdc() public debuggingOnly fork(MODE_MAINNET) {
+    address user = 0xF70CBE91fB1b1AfdeB3C45Fb8CDD2E1249b5b75E;
+    address usdcMarketAddr = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
+
+    vm.startPrank(user);
+
+    uint256 borrowed = ICErc20(usdcMarketAddr).borrowBalanceCurrent(user);
+
+    emit log_named_uint("borrowed", borrowed);
+
+    pool.exitMarket(usdcMarketAddr);
+  }
+
   function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
     pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
+  }
+
+  function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
+    pool.registerInSFS();
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+
+    for (uint8 i = 0; i < markets.length; i++) {
+      markets[i].registerInSFS();
+    }
   }
 
   function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {

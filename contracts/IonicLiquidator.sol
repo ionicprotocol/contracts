@@ -70,7 +70,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
     uint8 _flashSwapFee
   ) external initializer {
     __Ownable_init();
-    require(_uniswapV2router != address(0), "UniswapV2Factory not defined.");
+    require(_uniswapV2router != address(0), "_uniswapV2router not defined.");
     W_NATIVE_ADDRESS = _wtoken;
     UNISWAP_V2_ROUTER_02 = IUniswapV2Router02(_uniswapV2router);
     flashSwapFee = _flashSwapFee;
