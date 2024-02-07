@@ -188,7 +188,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
       msg.data
     );
 
-    return transferSeizedFunds(address(vars.cTokenCollateral), vars.minProfitAmount);
+    return transferSeizedFunds(_liquidatorProfitExchangeSource, vars.minProfitAmount);
   }
 
   /**
