@@ -41,14 +41,9 @@ abstract contract BaseUniswapV2Liquidator is IRedemptionStrategy {
 
     // Swap underlying tokens
     inputToken.approve(address(uniswapV2Router), inputAmount);
-    uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-      inputAmount,
-      0,
-      swapPath,
-      address(this),
-      address(0),
-      block.timestamp
-    );
+
+    // call the relevant fn depending on the uni v2 fork specifics
+    _swap(uniswapV2Router, inputAmount, swapPath);
 
     // Get new collateral
     outputToken = IERC20Upgradeable(swapPath[swapPath.length - 1]);
