@@ -159,7 +159,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
   // TODO test with marginal shortfall for liquidation penalty errors
   function _testLiquidatorLiquidate(address contractForFlashSwap) internal {
     IonicComptroller pool = IonicComptroller(poolAddress);
-    _upgradePoolWithExtension(Unitroller(payable(poolAddress)));
+    //    _upgradePoolWithExtension(Unitroller(payable(poolAddress)));
     upgradeRegistry();
 
     ICErc20[] memory markets = pool.getAllMarkets();
@@ -168,14 +168,6 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
     IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
     ICErc20 wethMarket = markets[wethMarketIndex];
     IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
-    {
-      emit log_named_address("usdc market", address(usdcMarket));
-      emit log_named_address("weth market", address(wethMarket));
-      emit log_named_address("usdc underlying", usdcMarket.underlying());
-      emit log_named_address("weth underlying", wethMarket.underlying());
-      vm.prank(pool.admin());
-      pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
-    }
 
     {
       vm.prank(wethWhale);
@@ -224,6 +216,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       })
     );
 
+    emit log_named_uint("seized amount", seizedAmount);
     require(seizedAmount > 0, "didn't seize any assets");
   }
 }

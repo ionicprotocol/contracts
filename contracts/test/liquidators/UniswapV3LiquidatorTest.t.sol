@@ -11,6 +11,7 @@ import { IUniswapV2Router02 } from "../../external/uniswap/IUniswapV2Router02.so
 import { IUniswapV3Factory } from "../../external/uniswap/IUniswapV3Factory.sol";
 import { UniswapV2LiquidatorFunder } from "../../liquidators/UniswapV2LiquidatorFunder.sol";
 import { UniswapV3LiquidatorFunder } from "../../liquidators/UniswapV3LiquidatorFunder.sol";
+import { KimUniV2Liquidator } from "../../liquidators/KimUniV2Liquidator.sol";
 
 import { IFundsConversionStrategy } from "../../liquidators/IFundsConversionStrategy.sol";
 import { ICErc20 } from "../../compound/CTokenInterfaces.sol";
@@ -59,7 +60,7 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
     _testLiquidatorLiquidate(uniV3PooForFlash);
   }
 
-  function testModeUniV2LiquidatorLiquidate() public fork(MODE_MAINNET) {
+  function testModeKimUniV2Liquidator() public fork(MODE_MAINNET) {
     IonicLiquidator _liquidator = new IonicLiquidator();
     _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
     liquidator = _liquidator;
@@ -78,7 +79,7 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
         emit log_named_address("usdc underlying", usdcMarket.underlying());
         emit log_named_address("weth underlying", wethMarket.underlying());
         vm.startPrank(liquidatorsRegistry.owner());
-        IRedemptionStrategy strategy = new UniswapV2LiquidatorFunder();
+        IRedemptionStrategy strategy = new KimUniV2Liquidator();
         liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
         vm.stopPrank();
         vm.prank(OwnableUpgradeable(address(liquidator)).owner());
