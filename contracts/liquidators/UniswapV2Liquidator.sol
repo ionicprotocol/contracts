@@ -14,13 +14,7 @@ contract UniswapV2Liquidator is BaseUniswapV2Liquidator {
     uint256 inputAmount,
     address[] memory swapPath
   ) internal override {
-    uniswapV2Router.swapExactTokensForTokens(
-      inputAmount,
-      0,
-      swapPath,
-      address(this),
-      block.timestamp
-    );
+    uniswapV2Router.swapExactTokensForTokens(inputAmount, 0, swapPath, address(this), block.timestamp);
   }
 
   function name() public pure virtual returns (string memory) {
