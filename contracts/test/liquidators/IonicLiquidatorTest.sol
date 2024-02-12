@@ -86,8 +86,8 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       // usdc 0xd988097fb8612cc24eeC14542bC03424c656005f
     }
 
-    vm.prank(ap.owner());
-    ap.setAddress("IUniswapV2Router02", uniswapRouter);
+//    vm.prank(ap.owner());
+//    ap.setAddress("IUniswapV2Router02", uniswapRouter);
     vm.prank(ap.owner());
     ap.setAddress("UNISWAP_V3_ROUTER", uniswapRouter);
 
@@ -160,7 +160,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
   function _testLiquidatorLiquidate(address contractForFlashSwap) internal {
     IonicComptroller pool = IonicComptroller(poolAddress);
     //    _upgradePoolWithExtension(Unitroller(payable(poolAddress)));
-    upgradeRegistry();
+    //upgradeRegistry();
 
     ICErc20[] memory markets = pool.getAllMarkets();
 
