@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 import { BaseTest } from "./config/BaseTest.t.sol";
 import { SafeOwnableUpgradeable } from "../ionic/SafeOwnableUpgradeable.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
+import { PoolDirectory } from "../PoolDirectory.sol";
+import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ProtocolAdminTest is BaseTest {
@@ -75,6 +78,17 @@ contract ProtocolAdminTest is BaseTest {
 
     assertEq(MasterPriceOracle(ap.getAddress("MasterPriceOracle")).admin(), expectedAdmin, "mpo admin incorrect");
 
-    // TODO check all rewards distributors
+    // check all the pool admins and the flywheels owners
+    PoolDirectory poolDir = PoolDirectory(ap.getAddress("PoolDirectory"));
+    PoolDirectory.Pool[] memory pools = poolDir.getAllPools();
+    for (uint256 i = 0; i < pools.length; i++) {
+      IonicComptroller pool = IonicComptroller(pools[i].comptroller);
+      assertEq(pool.admin(), expectedAdmin, "pool admin does not match");
+
+      address[] memory flywheels = pool.getRewardsDistributors();
+      for (uint256 j = 0; j < flywheels.length; j++) {
+        assertEq(Ownable(flywheels[j]).owner(), expectedAdmin, "flywheel owner not the admin");
+      }
+    }
   }
 }
