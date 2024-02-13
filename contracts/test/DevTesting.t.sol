@@ -8,6 +8,7 @@ import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
+import { PoolLens } from "../PoolLens.sol";
 
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
@@ -33,6 +34,37 @@ contract DevTesting is BaseTest {
     ICErc20[] memory markets = pool.getAllMarkets();
     wethMarket = markets[0];
     usdcMarket = markets[1];
+  }
+
+  function testModePoolLens() public debuggingOnly fork(MODE_MAINNET) {
+    PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
+
+    address user = 0xF70CBE91fB1b1AfdeB3C45Fb8CDD2E1249b5b75E;
+    uint256 hf = lens.getHealthFactor(user, pool);
+
+    emit log_named_uint("health f", hf);
+  }
+
+  function testModeMaxBorrow() public debuggingOnly fork(MODE_MAINNET) {
+    address user = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
+    uint256 maxBorrow = pool.getMaxRedeemOrBorrow(user, usdcMarket, true);
+
+    emit log_named_uint("max borrow", maxBorrow);
+  }
+
+  function testModeLiquidationShortfall() public debuggingOnly fork(MODE_MAINNET) {
+    address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
+    (
+      uint256 err,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = pool.getAccountLiquidity(rahul);
+
+    emit log_named_uint("err", err);
+    emit log_named_uint("collateralValue", collateralValue);
+    emit log_named_uint("liquidity", liquidity);
+    emit log_named_uint("shortfall", shortfall);
   }
 
   function testMarketAddress() public debuggingOnly fork(MODE_MAINNET) {
