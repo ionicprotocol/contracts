@@ -615,6 +615,11 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.MARKET_NOT_LISTED);
     }
 
+    // Make sure the collateral is enabled
+    if (!markets[address(cTokenCollateral)].accountMembership[borrower]) {
+      return uint256(Error.UNAUTHORIZED);
+    }
+
     // Make sure cToken Comptrollers are identical
     if (ICErc20(cTokenCollateral).comptroller() != ICErc20(cTokenBorrowed).comptroller()) {
       return uint256(Error.COMPTROLLER_MISMATCH);
