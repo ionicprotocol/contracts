@@ -615,11 +615,6 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.MARKET_NOT_LISTED);
     }
 
-    // Make sure the collateral is enabled
-    if (!markets[address(cTokenCollateral)].accountMembership[borrower]) {
-      return uint256(Error.UNAUTHORIZED);
-    }
-
     // Make sure cToken Comptrollers are identical
     if (ICErc20(cTokenCollateral).comptroller() != ICErc20(cTokenBorrowed).comptroller()) {
       return uint256(Error.COMPTROLLER_MISMATCH);
@@ -718,6 +713,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     Exp oraclePrice;
     Exp tokensToDenom;
     uint256 borrowCapForCollateral;
+    uint256 borrowedAssetPrice;
   }
 
   function getAccountLiquidity(address account)
@@ -801,6 +797,10 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     )
   {
     AccountLiquidityLocalVars memory vars; // Holds all our calculation results
+
+    if (address(cTokenModify) != address(0)) {
+      vars.borrowedAssetPrice = oracle.getUnderlyingPrice(cTokenModify);
+    }
 
     // For each asset the account is in
     for (uint256 i = 0; i < accountAssets[account].length; i++) {
