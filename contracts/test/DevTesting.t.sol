@@ -14,6 +14,7 @@ import { PoolLensSecondary } from "../PoolLensSecondary.sol";
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
   PoolLensSecondary lens2 = PoolLensSecondary(0x7Ea7BB80F3bBEE9b52e6Ed3775bA06C9C80D4154);
+  PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
 
   address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
   ICErc20 wethMarket;
@@ -48,13 +49,11 @@ contract DevTesting is BaseTest {
     }
   }
 
-  function testModePoolLens() public debuggingOnly fork(MODE_MAINNET) {
-    PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
+  function testModeHealthFactor() public debuggingOnly fork(MODE_MAINNET) {
+    address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
+    uint256 hf = lens.getHealthFactor(rahul, pool);
 
-    address user = 0xF70CBE91fB1b1AfdeB3C45Fb8CDD2E1249b5b75E;
-    uint256 hf = lens.getHealthFactor(user, pool);
-
-    emit log_named_uint("health f", hf);
+    emit log_named_uint("hf", hf);
   }
 
   function testModeMaxBorrow() public debuggingOnly fork(MODE_MAINNET) {
@@ -62,16 +61,6 @@ contract DevTesting is BaseTest {
     uint256 maxBorrow = pool.getMaxRedeemOrBorrow(user, usdcMarket, true);
 
     emit log_named_uint("max borrow", maxBorrow);
-  }
-
-  function testModeLiquidationShortfall() public debuggingOnly fork(MODE_MAINNET) {
-    address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
-    (uint256 err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = pool.getAccountLiquidity(rahul);
-
-    emit log_named_uint("err", err);
-    emit log_named_uint("collateralValue", collateralValue);
-    emit log_named_uint("liquidity", liquidity);
-    emit log_named_uint("shortfall", shortfall);
   }
 
   function testMarketMember() public debuggingOnly fork(MODE_MAINNET) {
