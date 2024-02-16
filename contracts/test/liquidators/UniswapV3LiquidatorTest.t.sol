@@ -54,7 +54,7 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
       usdcWhale = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF;
       wethWhale = 0xF4C85269240C1D447309fA602A90ac23F1CB0Dc0;
       poolAddress = 0xFB3323E24743Caf4ADD0fDCCFB268565c0685556;
-      uniV3PooForFlash = 0x2Ea23CB991DE9090487919dC80dd1af0A468bAE1; // univ2 0x34a1E3Db82f669f8cF88135422AfD80e4f70701A
+      uniV3PooForFlash = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF; // univ2 0x34a1E3Db82f669f8cF88135422AfD80e4f70701A
       usdcMarketIndex = 1;
       wethMarketIndex = 0;
       // weth 0x4200000000000000000000000000000000000006
@@ -79,20 +79,20 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
     LiquidatorsRegistryExtension newExt1 = new LiquidatorsRegistryExtension();
     LiquidatorsRegistrySecondExtension newExt2 = new LiquidatorsRegistrySecondExtension();
     vm.prank(SafeOwnable(address(liquidatorsRegistry)).owner());
-    asBase._registerExtension(newExt1, DiamondExtension(exts[0]));
+    asBase._registerExtension(newExt1, DiamondExtension(exts[1]));
     vm.prank(SafeOwnable(address(liquidatorsRegistry)).owner());
-    asBase._registerExtension(newExt2, DiamondExtension(exts[1]));
+    asBase._registerExtension(newExt2, DiamondExtension(exts[0]));
   }
 
   function _setupLiquidatorsRegistry() internal {
     upgradeRegistry();
   }
 
-  function testPolygonUniV3LiquidatorLiquidate() public fork(POLYGON_MAINNET) {
+  function testPolygonUniV3LiquidatorLiquidate() public debuggingOnly fork(POLYGON_MAINNET) {
     _testUniV3LiquidatorLiquidate();
   }
 
-  function testModeUniV3LiquidatorLiquidate() public fork(MODE_MAINNET) {
+  function testModeUniV3LiquidatorLiquidate() public debuggingOnly fork(MODE_MAINNET) {
     _testUniV3LiquidatorLiquidate();
   }
 
@@ -120,6 +120,11 @@ contract UniswapV3LiquidatorTest is UpgradesBaseTest {
       vm.stopPrank();
       vm.prank(liquidator.owner());
       liquidator._whitelistRedemptionStrategy(strategy, true);
+    }
+
+    {
+      vm.prank(pool.admin());
+      pool._borrowCapWhitelist(0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038, address(this), true);
     }
 
     {

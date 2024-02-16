@@ -2,18 +2,26 @@
 pragma solidity >=0.8.0;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "./config/BaseTest.t.sol";
 import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
+import { PoolLens } from "../PoolLens.sol";
+import { PoolLensSecondary } from "../PoolLensSecondary.sol";
 
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
+  PoolLensSecondary lens2 = PoolLensSecondary(0x7Ea7BB80F3bBEE9b52e6Ed3775bA06C9C80D4154);
+  PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
+
   address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
   ICErc20 wethMarket;
   ICErc20 usdcMarket;
+  ICErc20 usdtMarket;
+  ICErc20 wbtcMarket;
 
   // mode mainnet assets
   address WETH = 0x4200000000000000000000000000000000000006;
@@ -30,17 +38,77 @@ contract DevTesting is BaseTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    ICErc20[] memory markets = pool.getAllMarkets();
-    wethMarket = markets[0];
-    usdcMarket = markets[1];
+    if (block.chainid == MODE_MAINNET) {
+      wethMarket = ICErc20(0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2);
+      usdcMarket = ICErc20(0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038);
+      usdtMarket = ICErc20(0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3);
+      wbtcMarket = ICErc20(0xd70254C3baD29504789714A7c69d60Ec1127375C);
+    } else {
+      ICErc20[] memory markets = pool.getAllMarkets();
+      wethMarket = markets[0];
+      usdcMarket = markets[1];
+    }
   }
 
-  function testMarketAddress() public debuggingOnly fork(MODE_MAINNET) {
-    ICErc20[] memory markets = pool.getAllMarkets();
-    emit log_named_uint("markets total", markets.length);
+  function testModeHealthFactor() public debuggingOnly fork(MODE_MAINNET) {
+    address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
 
-    emit log_named_address("first market", address(markets[0]));
-    emit log_named_address("sec market", address(markets[1]));
+    uint256 wethSupplied = wethMarket.balanceOfUnderlying(rahul);
+    uint256 usdcSupplied = usdcMarket.balanceOfUnderlying(rahul);
+    uint256 usdtSupplied = usdtMarket.balanceOfUnderlying(rahul);
+    uint256 wbtcSupplied = wbtcMarket.balanceOfUnderlying(rahul);
+    emit log_named_uint("wethSupplied", wethSupplied);
+    emit log_named_uint("usdcSupplied", usdcSupplied);
+    emit log_named_uint("usdtSupplied", usdtSupplied);
+    emit log_named_uint("wbtcSupplied", wbtcSupplied);
+    emit log_named_uint("value of wethSupplied", wethSupplied * pool.oracle().getUnderlyingPrice(wethMarket));
+    emit log_named_uint("value of usdcSupplied", usdcSupplied * pool.oracle().getUnderlyingPrice(usdcMarket));
+    emit log_named_uint("value of usdtSupplied", usdtSupplied * pool.oracle().getUnderlyingPrice(usdtMarket));
+    emit log_named_uint("value of wbtcSupplied", wbtcSupplied * pool.oracle().getUnderlyingPrice(wbtcMarket));
+
+    PoolLens newImpl = new PoolLens();
+    //    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(lens)));
+    //    vm.prank(dpa.owner());
+    //    proxy.upgradeTo(address(newImpl));
+
+    uint256 hf = newImpl.getHealthFactor(rahul, pool);
+
+    emit log_named_uint("hf", hf);
+  }
+
+  function testModeMaxBorrow() public debuggingOnly fork(MODE_MAINNET) {
+    address user = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
+    uint256 maxBorrow = pool.getMaxRedeemOrBorrow(user, usdcMarket, true);
+
+    emit log_named_uint("max borrow", maxBorrow);
+  }
+
+  function testMarketMember() public debuggingOnly fork(MODE_MAINNET) {
+    address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
+    ICErc20[] memory markets = pool.getAllMarkets();
+
+    for (uint256 i = 0; i < markets.length; i++) {
+      if (pool.checkMembership(rahul, markets[i])) {
+        emit log("is a member");
+      } else {
+        emit log("NOT a member");
+      }
+    }
+  }
+
+  function testModeRepay() public debuggingOnly fork(MODE_MAINNET) {
+    address user = 0x1A3C4E9B49e4fc595fB7e5f723159bA73a9426e7;
+    ICErc20 market = usdcMarket;
+    ERC20 asset = ERC20(market.underlying());
+
+    uint256 borrowBalance = market.borrowBalanceCurrent(user);
+    emit log_named_uint("borrowBalance", borrowBalance);
+
+    vm.startPrank(user);
+    asset.approve(address(market), borrowBalance);
+    uint256 err = market.repayBorrow(borrowBalance / 2);
+
+    emit log_named_uint("error", err);
   }
 
   function testAssetsPrices() public debuggingOnly fork(MODE_MAINNET) {
