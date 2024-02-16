@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "./config/BaseTest.t.sol";
 import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
@@ -51,7 +52,26 @@ contract DevTesting is BaseTest {
 
   function testModeHealthFactor() public debuggingOnly fork(MODE_MAINNET) {
     address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
-    uint256 hf = lens.getHealthFactor(rahul, pool);
+
+    uint256 wethSupplied = wethMarket.balanceOfUnderlying(rahul);
+    uint256 usdcSupplied = usdcMarket.balanceOfUnderlying(rahul);
+    uint256 usdtSupplied = usdtMarket.balanceOfUnderlying(rahul);
+    uint256 wbtcSupplied = wbtcMarket.balanceOfUnderlying(rahul);
+    emit log_named_uint("wethSupplied", wethSupplied);
+    emit log_named_uint("usdcSupplied", usdcSupplied);
+    emit log_named_uint("usdtSupplied", usdtSupplied);
+    emit log_named_uint("wbtcSupplied", wbtcSupplied);
+    emit log_named_uint("value of wethSupplied", wethSupplied * pool.oracle().getUnderlyingPrice(wethMarket));
+    emit log_named_uint("value of usdcSupplied", usdcSupplied * pool.oracle().getUnderlyingPrice(usdcMarket));
+    emit log_named_uint("value of usdtSupplied", usdtSupplied * pool.oracle().getUnderlyingPrice(usdtMarket));
+    emit log_named_uint("value of wbtcSupplied", wbtcSupplied * pool.oracle().getUnderlyingPrice(wbtcMarket));
+
+    PoolLens newImpl = new PoolLens();
+    //    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(lens)));
+    //    vm.prank(dpa.owner());
+    //    proxy.upgradeTo(address(newImpl));
+
+    uint256 hf = newImpl.getHealthFactor(rahul, pool);
 
     emit log_named_uint("hf", hf);
   }

@@ -713,7 +713,6 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     Exp oraclePrice;
     Exp tokensToDenom;
     uint256 borrowCapForCollateral;
-    uint256 borrowedAssetPrice;
   }
 
   function getAccountLiquidity(address account)
@@ -797,10 +796,6 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     )
   {
     AccountLiquidityLocalVars memory vars; // Holds all our calculation results
-
-    if (address(cTokenModify) != address(0)) {
-      vars.borrowedAssetPrice = oracle.getUnderlyingPrice(cTokenModify);
-    }
 
     // For each asset the account is in
     for (uint256 i = 0; i < accountAssets[account].length; i++) {
