@@ -66,12 +66,7 @@ contract DevTesting is BaseTest {
 
   function testModeLiquidationShortfall() public debuggingOnly fork(MODE_MAINNET) {
     address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
-    (
-      uint256 err,
-      uint256 collateralValue,
-      uint256 liquidity,
-      uint256 shortfall
-    ) = pool.getAccountLiquidity(rahul);
+    (uint256 err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = pool.getAccountLiquidity(rahul);
 
     emit log_named_uint("err", err);
     emit log_named_uint("collateralValue", collateralValue);
