@@ -73,7 +73,7 @@ Run the entire test suite
 >>> forge test --no-match-contract 'Abstract|BeefyERC4626Test|DotDotERC4626Test|ArrakisERC4626Test|JarvisERC4626Test|CurveERC4626Test|EllipsisERC4626Test|HelioERC4626Test|WombatERC4626Test|AaveV3ERC4626Test'
 ```
 
-Check the [CI.yaml](https://github.com/Midas-Protocol/contracts/blob/development/.github/workflows/pull-request-build-and-test.yml) file to see what chains we run the tests against
+Check the [CI.yaml](https://github.com/Ionic-Protocol/contracts/blob/development/.github/workflows/pull-request-build-and-test.yml) file to see what chains we run the tests against
 
 ### 4. Lint
 

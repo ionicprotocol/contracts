@@ -61,9 +61,9 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
   }
 
   function testModeKimUniV2Liquidator() public fork(MODE_MAINNET) {
-//    IonicLiquidator _liquidator = new IonicLiquidator();
-//    _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
-//    liquidator = _liquidator;
+    IonicLiquidator _liquidator = new IonicLiquidator();
+    _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
+    liquidator = _liquidator;
 
     IonicComptroller pool = IonicComptroller(poolAddress);
     {
@@ -78,12 +78,12 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
         emit log_named_address("weth market", address(wethMarket));
         emit log_named_address("usdc underlying", usdcMarket.underlying());
         emit log_named_address("weth underlying", wethMarket.underlying());
-//        vm.startPrank(liquidatorsRegistry.owner());
-//        IRedemptionStrategy strategy = new KimUniV2Liquidator();
-//        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
-//        vm.stopPrank();
-//        vm.prank(OwnableUpgradeable(address(liquidator)).owner());
-//        liquidator._whitelistRedemptionStrategy(strategy, true);
+        vm.startPrank(liquidatorsRegistry.owner());
+        IRedemptionStrategy strategy = new KimUniV2Liquidator();
+        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
+        vm.stopPrank();
+        vm.prank(OwnableUpgradeable(address(liquidator)).owner());
+        liquidator._whitelistRedemptionStrategy(strategy, true);
       }
     }
 

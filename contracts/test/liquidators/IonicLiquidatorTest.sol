@@ -7,6 +7,7 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 import { IonicLiquidator, ILiquidator } from "../../IonicLiquidator.sol";
 import { ICurvePool } from "../../external/curve/ICurvePool.sol";
 import { CurveSwapLiquidatorFunder } from "../../liquidators/CurveSwapLiquidatorFunder.sol";
+import { UniswapV3LiquidatorFunder } from "../../liquidators/UniswapV3LiquidatorFunder.sol";
 import { IonicComptroller } from "../../compound/ComptrollerInterface.sol";
 import { IRedemptionStrategy } from "../../liquidators/IRedemptionStrategy.sol";
 import { IFundsConversionStrategy } from "../../liquidators/IFundsConversionStrategy.sol";
@@ -168,6 +169,25 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
     IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
     ICErc20 wethMarket = markets[wethMarketIndex];
     IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
+    {
+      emit log_named_address("usdc market", address(usdcMarket));
+      emit log_named_address("weth market", address(wethMarket));
+      emit log_named_address("usdc underlying", usdcMarket.underlying());
+      emit log_named_address("weth underlying", wethMarket.underlying());
+      vm.prank(pool.admin());
+      pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
+      vm.startPrank(liquidatorsRegistry.owner());
+      IRedemptionStrategy strategy = new UniswapV3LiquidatorFunder();
+      liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
+      vm.stopPrank();
+      //      vm.prank(liquidator.owner());
+      //      liquidator._whitelistRedemptionStrategy(strategy, true);
+    }
+
+    {
+      vm.prank(pool.admin());
+      pool._borrowCapWhitelist(0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038, address(this), true);
+    }
 
     {
       vm.prank(wethWhale);
