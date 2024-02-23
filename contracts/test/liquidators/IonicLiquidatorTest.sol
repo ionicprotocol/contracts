@@ -176,12 +176,6 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       emit log_named_address("weth underlying", wethMarket.underlying());
       vm.prank(pool.admin());
       pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
-      vm.startPrank(liquidatorsRegistry.owner());
-      IRedemptionStrategy strategy = new UniswapV3LiquidatorFunder();
-      liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
-      vm.stopPrank();
-      //      vm.prank(liquidator.owner());
-      //      liquidator._whitelistRedemptionStrategy(strategy, true);
     }
 
     {

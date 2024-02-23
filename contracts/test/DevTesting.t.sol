@@ -154,6 +154,9 @@ contract DevTesting is BaseTest {
   }
 
   function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
+    emit log_named_address("pool admin", pool.admin());
+
+    vm.startPrank(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
     pool.registerInSFS();
 
     ICErc20[] memory markets = pool.getAllMarkets();
