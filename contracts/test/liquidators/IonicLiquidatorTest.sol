@@ -87,8 +87,8 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       // usdc 0xd988097fb8612cc24eeC14542bC03424c656005f
     }
 
-//    vm.prank(ap.owner());
-//    ap.setAddress("IUniswapV2Router02", uniswapRouter);
+    //    vm.prank(ap.owner());
+    //    ap.setAddress("IUniswapV2Router02", uniswapRouter);
     vm.prank(ap.owner());
     ap.setAddress("UNISWAP_V3_ROUTER", uniswapRouter);
 
