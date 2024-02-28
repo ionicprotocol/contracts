@@ -82,6 +82,7 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
         IRedemptionStrategy strategy = KimUniV2Liquidator(0x6aC17D406a820fa464fFdc0940FCa7E60b3b36B7);
         liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
         vm.stopPrank();
+        liquidator._whitelistRedemptionStrategy(strategy, true);
       }
     }
 

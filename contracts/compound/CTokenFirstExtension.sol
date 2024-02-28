@@ -346,7 +346,6 @@ contract CTokenFirstExtension is
   function borrowRatePerBlockAfterBorrow(uint256 borrowAmount) public view returns (uint256) {
     uint256 cash = asCToken().getCash();
     require(cash >= borrowAmount, "market cash not enough");
-    //if (cash < borrowAmount) revert ;
 
     return
       interestRateModel.getBorrowRate(
