@@ -508,6 +508,11 @@ contract ComptrollerFirstExtension is
   function registerInSFS() external returns (uint256) {
     require(hasAdminRights(), "!admin");
     SFSRegister sfsContract = SFSRegister(0x8680CEaBcb9b56913c519c069Add6Bc3494B7020);
+
+    for (uint256 i = 0; i < allMarkets.length; i++) {
+      allMarkets[i].registerInSFS();
+    }
+
     return sfsContract.register(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
   }
 }

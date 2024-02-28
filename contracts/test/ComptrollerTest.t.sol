@@ -61,6 +61,10 @@ contract ComptrollerTest is BaseTest {
     _testInflationProtection();
   }
 
+  function testModeInflationProtection() public debuggingOnly fork(MODE_MAINNET) {
+    _testInflationProtection();
+  }
+
   function _testInflationProtection() internal {
     PoolDirectory fpd = PoolDirectory(ap.getAddress("PoolDirectory"));
     PoolDirectory.Pool[] memory pools = fpd.getAllPools();
