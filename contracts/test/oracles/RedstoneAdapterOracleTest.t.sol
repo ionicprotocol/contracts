@@ -10,7 +10,6 @@ import { BaseTest } from "../config/BaseTest.t.sol";
 contract RedstoneAdapterOracleTest is BaseTest {
   RedstoneAdapterPriceOracle public oracle;
   address public redstoneOracleAddress;
-  address public usdTokenAddress;
   address MODE_USDC = 0xd988097fb8612cc24eeC14542bC03424c656005f;
   address MODE_EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
   address MODE_WBTC = 0xcDd475325D6F564d27247D1DddBb0DAc6fA0a5CF;
@@ -18,10 +17,9 @@ contract RedstoneAdapterOracleTest is BaseTest {
   function afterForkSetUp() internal override {
     if (block.chainid == MODE_MAINNET) {
       redstoneOracleAddress = 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256;
-      usdTokenAddress = MODE_USDC;
     }
 
-    oracle = new RedstoneAdapterPriceOracle(usdTokenAddress, redstoneOracleAddress);
+    oracle = new RedstoneAdapterPriceOracle(redstoneOracleAddress);
   }
 
   function testPrintPricesMode() public fork(MODE_MAINNET) {

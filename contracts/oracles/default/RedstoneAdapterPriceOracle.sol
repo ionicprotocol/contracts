@@ -14,22 +14,15 @@ import "../BasePriceOracle.sol";
  */
 contract RedstoneAdapterPriceOracle is BasePriceOracle {
   /**
-   * @notice The USD Token of the chain
-   */
-  address public USD_TOKEN;
-
-  /**
    * @notice The Redstone oracle contract
    */
   IRedstoneOracle public REDSTONE_ORACLE;
 
   /**
    * @dev Constructor to set admin, wtoken address and native token USD price feed address
-   * @param _usdToken The Wrapped native asset address
    * @param redstoneOracle The Redstone oracle contract address
    */
-  constructor(address _usdToken, address redstoneOracle) {
-    USD_TOKEN = _usdToken;
+  constructor(address redstoneOracle) {
     REDSTONE_ORACLE = IRedstoneOracle(redstoneOracle);
   }
 
