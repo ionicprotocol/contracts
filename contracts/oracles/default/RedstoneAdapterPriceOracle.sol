@@ -3,16 +3,22 @@ pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
+import "../../external/redstone/IRedstoneOracle.sol";
 import "../BasePriceOracle.sol";
 import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 /**
- * @title RedstonePriceOracle
+ * @title RedstoneAdapterPriceOracle
  * @notice Returns prices from Redstone.
  * @dev Implements `BasePriceOracle`.
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
-contract RedstonePriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
+contract RedstoneAdapterPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
+  /**
+   * @notice Maps ERC20 token addresses to USD-based Redstone price feed ids.
+   */
+  mapping(address => bytes32) public priceFeeds;
+
   /**
    * @notice Redstone NATIVE/USD price feed contracts.
    */
@@ -24,19 +30,24 @@ contract RedstonePriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
   address public USD_TOKEN;
 
   /**
-   * @notice The address of the Redstone oracle on Mode network
+   * @notice The Redstone oracle contract
    */
-  address public constant REDSTONE_ORACLE_ADDRESS = 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256;
+  IRedstoneOracle public REDSTONE_ORACLE_ADDRESS;
 
   /**
    * @dev Constructor to set admin, wtoken address and native token USD price feed address
    * @param _usdToken The Wrapped native asset address
    * @param nativeTokenUsdFeed Will this oracle return prices denominated in USD or in the native token.
    */
-  function initialize(address _usdToken, address nativeTokenUsdFeed) public initializer {
+  function initialize(
+    address _usdToken,
+    address nativeTokenUsdFeed,
+    address redstoneOracle
+  ) public initializer {
     __SafeOwnable_init(msg.sender);
     USD_TOKEN = _usdToken;
     NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsdFeed;
+    REDSTONE_ORACLE_ADDRESS = IRedstoneOracle(redstoneOracle); // 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256 on Mode
   }
 
   /**
