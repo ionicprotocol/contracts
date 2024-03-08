@@ -5,7 +5,6 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeabl
 
 import "../../external/redstone/IRedstoneOracle.sol";
 import "../BasePriceOracle.sol";
-import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 /**
  * @title RedstoneAdapterPriceOracle
@@ -13,17 +12,7 @@ import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
  * @dev Implements `BasePriceOracle`.
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
-contract RedstoneAdapterPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
-  /**
-   * @notice Maps ERC20 token addresses to USD-based Redstone price feed ids.
-   */
-  mapping(address => bytes32) public priceFeeds;
-
-  /**
-   * @notice Redstone NATIVE/USD price feed contracts.
-   */
-  address public NATIVE_TOKEN_USD_PRICE_FEED;
-
+contract RedstoneAdapterPriceOracle is BasePriceOracle {
   /**
    * @notice The USD Token of the chain
    */
@@ -32,22 +21,19 @@ contract RedstoneAdapterPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
   /**
    * @notice The Redstone oracle contract
    */
-  IRedstoneOracle public REDSTONE_ORACLE_ADDRESS;
+  IRedstoneOracle public REDSTONE_ORACLE;
 
   /**
    * @dev Constructor to set admin, wtoken address and native token USD price feed address
    * @param _usdToken The Wrapped native asset address
-   * @param nativeTokenUsdFeed Will this oracle return prices denominated in USD or in the native token.
+   * @param redstoneOracle The Redstone oracle contract address
    */
-  function initialize(
+  constructor(
     address _usdToken,
-    address nativeTokenUsdFeed,
     address redstoneOracle
-  ) public initializer {
-    __SafeOwnable_init(msg.sender);
+  ) {
     USD_TOKEN = _usdToken;
-    NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsdFeed;
-    REDSTONE_ORACLE_ADDRESS = IRedstoneOracle(redstoneOracle); // 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256 on Mode
+    REDSTONE_ORACLE = IRedstoneOracle(redstoneOracle);
   }
 
   /**
@@ -55,7 +41,9 @@ contract RedstoneAdapterPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
    * @dev will return a price denominated in the native token
    */
   function _price(address underlying) internal view returns (uint256) {
-    return 0;
+    uint256 priceInUsd = REDSTONE_ORACLE.priceOf(underlying);
+    uint256 priceOfNativeInUsd = REDSTONE_ORACLE.priceOfETH();
+    return (priceInUsd * 1e18) / priceOfNativeInUsd;
   }
 
   /**
