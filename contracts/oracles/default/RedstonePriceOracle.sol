@@ -7,12 +7,12 @@ import "../BasePriceOracle.sol";
 import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 /**
- * @title RedstoneLayerBankPriceOracle
+ * @title RedstonePriceOracle
  * @notice Returns prices from Redstone.
  * @dev Implements `BasePriceOracle`.
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
-contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
+contract RedstonePriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
   /**
    * @notice Redstone NATIVE/USD price feed contracts.
    */
@@ -24,20 +24,24 @@ contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle
   address public USD_TOKEN;
 
   /**
+   * @notice The address of the Redstone oracle on Mode network
+   */
+  address public constant REDSTONE_ORACLE_ADDRESS = 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256;
+
+  /**
    * @dev Constructor to set admin, wtoken address and native token USD price feed address
    * @param _usdToken The Wrapped native asset address
-   * @param nativeTokenUsd Will this oracle return prices denominated in USD or in the native token.
+   * @param nativeTokenUsdFeed Will this oracle return prices denominated in USD or in the native token.
    */
-  function initialize(address _usdToken, address nativeTokenUsd) public initializer {
+  function initialize(address _usdToken, address nativeTokenUsdFeed) public initializer {
     __SafeOwnable_init(msg.sender);
     USD_TOKEN = _usdToken;
-    NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsd;
+    NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsdFeed;
   }
 
   /**
    * @notice Internal function returning the price in of `underlying`.
-   * @dev If the oracle got constructed with `nativeTokenUsd` = TRUE
-   * this will return a price denominated in USD otherwise in the native token
+   * @dev will return a price denominated in the native token
    */
   function _price(address underlying) internal view returns (uint256) {
     return 0;
