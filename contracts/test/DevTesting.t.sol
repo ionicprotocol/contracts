@@ -18,6 +18,8 @@ contract DevTesting is BaseTest {
   PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
 
   address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
+  address multisig = 0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2;
+
   ICErc20 wethMarket;
   ICErc20 usdcMarket;
   ICErc20 usdtMarket;
@@ -150,13 +152,35 @@ contract DevTesting is BaseTest {
   }
 
   function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
-    pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
+    address MODE_EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+    uint256 errCode = pool._deployMarket(
+      1, //delegateType
+      abi.encode(
+        MODE_EZETH,
+        address(pool),
+        payable(address(multisig)),
+        0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
+        "ez ether",
+        "ezETH",
+        uint256(0),
+        uint256(0)
+      ),
+      "",
+      0.70e18
+    );
+    require(errCode != 0, "error deploying market");
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+
+    uint256 cap = pool.getAssetAsCollateralValueCap(markets[markets.length-1], usdcMarket, false, deployer);
+
+    require(cap == 0, "non-zero cap");
   }
 
   function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
     emit log_named_address("pool admin", pool.admin());
 
-    vm.startPrank(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
+    vm.startPrank(multisig);
     pool.registerInSFS();
 
     ICErc20[] memory markets = pool.getAllMarkets();

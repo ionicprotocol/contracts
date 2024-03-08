@@ -1222,6 +1222,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     uint256 err = _supportMarket(cToken);
 
     IFeeDistributor(ionicAdmin).authoritiesRegistry().reconfigureAuthority(address(this));
+    //supplyCaps[address(cToken)] = 1;
 
     // Set collateral factor
     return err == uint256(Error.NO_ERROR) ? _setCollateralFactor(cToken, collateralFactorMantissa) : err;
