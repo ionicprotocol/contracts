@@ -153,12 +153,15 @@ contract DevTesting is BaseTest {
 
   function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
     address MODE_EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+    address ezEthWhale = 0xd3B02d999C681BD8B75F340FA7e078cE9097bF23;
+
+    vm.startPrank(multisig);
     uint256 errCode = pool._deployMarket(
       1, //delegateType
       abi.encode(
         MODE_EZETH,
         address(pool),
-        payable(address(multisig)),
+        ap.getAddress("FeeDistributor"),
         0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
         "ez ether",
         "ezETH",
@@ -168,13 +171,20 @@ contract DevTesting is BaseTest {
       "",
       0.70e18
     );
-    require(errCode != 0, "error deploying market");
+    vm.stopPrank();
+    require(errCode == 0, "error deploying market");
 
     ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 ezEthMarket = markets[markets.length-1];
 
-    uint256 cap = pool.getAssetAsCollateralValueCap(markets[markets.length-1], usdcMarket, false, deployer);
-
+    //    uint256 cap = pool.getAssetAsCollateralValueCap(ezEthMarket, usdcMarket, false, deployer);
+    uint256 cap = pool.supplyCaps(address(ezEthMarket));
     require(cap == 0, "non-zero cap");
+
+    vm.startPrank(ezEthWhale);
+    ERC20(MODE_EZETH).approve(address(ezEthMarket), 1e36);
+    errCode = ezEthMarket.mint(1e18);
+    require(errCode == 0, "should be unable to supply");
   }
 
   function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
