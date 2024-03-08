@@ -48,6 +48,7 @@ contract ModeE2ETest is BaseTest {
             0.1 ether
         );
         bytes memory becomeImplData = hex"00";
-        comptroller._deployMarket(1, constructorData, becomeImplData, 0.7 ether);
+        uint256 err = comptroller._deployMarket(1, constructorData, becomeImplData, 0.7 ether);
+        emit log_named_uint("err", err);
     }
 }
