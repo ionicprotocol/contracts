@@ -163,10 +163,10 @@ contract DevTesting is BaseTest {
         address(pool),
         ap.getAddress("FeeDistributor"),
         0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
-        "ez ether",
+        "Renzo Restaked ETH",
         "ezETH",
-        uint256(0),
-        uint256(0)
+        0.10e18,
+        0.10e18
       ),
       "",
       0.70e18
