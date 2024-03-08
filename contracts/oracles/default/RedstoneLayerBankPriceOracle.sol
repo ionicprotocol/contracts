@@ -13,7 +13,6 @@ import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
 contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
-
   /**
    * @notice Redstone NATIVE/USD price feed contracts.
    */
@@ -35,7 +34,6 @@ contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle
     NATIVE_TOKEN_USD_PRICE_FEED = nativeTokenUsd;
   }
 
-
   /**
    * @notice Internal function returning the price in of `underlying`.
    * @dev If the oracle got constructed with `nativeTokenUsd` = TRUE
@@ -45,7 +43,6 @@ contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle
     return 0;
   }
 
-
   /**
    * @notice Returns the price in of `underlying` either in the
    * native token (implements `BasePriceOracle`).
@@ -53,7 +50,6 @@ contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle
   function price(address underlying) external view override returns (uint256) {
     return _price(underlying);
   }
-
 
   /**
    * @notice Returns the price in WNATIVE of the token underlying `cToken`.
@@ -68,8 +64,8 @@ contract RedstoneLayerBankPriceOracle is SafeOwnableUpgradeable, BasePriceOracle
 
     uint256 underlyingDecimals = uint256(ERC20Upgradeable(underlying).decimals());
     return
-    underlyingDecimals <= 18
-    ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
-    : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
+      underlyingDecimals <= 18
+        ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
+        : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
   }
 }
