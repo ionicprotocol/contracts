@@ -28,10 +28,7 @@ contract RedstoneAdapterPriceOracle is BasePriceOracle {
    * @param _usdToken The Wrapped native asset address
    * @param redstoneOracle The Redstone oracle contract address
    */
-  constructor(
-    address _usdToken,
-    address redstoneOracle
-  ) {
+  constructor(address _usdToken, address redstoneOracle) {
     USD_TOKEN = _usdToken;
     REDSTONE_ORACLE = IRedstoneOracle(redstoneOracle);
   }

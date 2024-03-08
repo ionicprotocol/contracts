@@ -6,7 +6,7 @@ interface IRedstoneOracle {
 
   function priceOfETH() external view returns (uint256);
 
-  function getDataFeedIdForAsset(address asset) external view returns(bytes32);
+  function getDataFeedIdForAsset(address asset) external view returns (bytes32);
 
   function getDataFeedIds() external view returns (bytes32[] memory dataFeedIds);
 }
