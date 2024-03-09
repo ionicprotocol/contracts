@@ -29,6 +29,8 @@ import { PoolRolesAuthority } from "../ionic/PoolRolesAuthority.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
+import "forge-std/console.sol";
+
 contract LeveredPositionLensTest is BaseTest {
   LeveredPositionsLens lens;
   ILeveredPositionFactory factory;
@@ -199,11 +201,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(
-    address _collat,
-    address _stable,
-    IRedemptionStrategy _liquidator
-  ) internal {
+  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -285,14 +283,10 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
-    internal
-    returns (
-      LeveredPosition _position,
-      uint256 _maxRatio,
-      uint256 _minRatio
-    )
-  {
+  function _openLeveredPosition(
+    address _positionOwner,
+    uint256 _depositAmount
+  ) internal returns (LeveredPosition _position, uint256 _maxRatio, uint256 _minRatio) {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 
@@ -709,6 +703,27 @@ contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
     _fundMarketAndSelf(ICErc20(wUsdrUsdrLpMarket), wUsdrUsdrLpWhale);
 
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract ModeLeveredPositionTest is LeveredPositionTest {
+  function setUp() public {
+    console.log("This is in setup");
+    vm.createSelectFork(vm.envString("MODE_RPC_URL"));
+    afterForkSetUp();
+  }
+
+  function afterForkSetUp() internal override {
+    console.log("This is in after fork setup");
+    super.afterForkSetUp();
+  }
+
+  function testForkIsOperational() public {
+    address targetAddress = 0x8445901c0cfbed52045d8aCBCBaCC1F0eD65a8f5;
+    uint balance = targetAddress.balance;
+
+    emit log_named_uint("MODE BLOCK NUMBER", block.number);
+    emit log_named_uint("MODE ADDRESS BALANCE", balance);
   }
 }
 
