@@ -748,6 +748,54 @@ contract WethUSDTLeveredPositionTest is LeveredPositionTest {
   }
 }
 
+contract WbtcUSDCLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(MODE) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 10e8;
+
+    address wbtcMarket = 0xd70254C3baD29504789714A7c69d60Ec1127375C;
+    address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
+    address wbtcWhale = 0x3f3429D28438Cc14133966820b8A9Ea61Cf1D4F0;
+    address USDCWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79;
+
+    IERC20Upgradeable token = IERC20Upgradeable(ICErc20(wbtcMarket).underlying());
+
+    _configurePair(wbtcMarket, USDCMarket);
+
+    uint256 allTokens = token.balanceOf(wbtcWhale);
+
+    vm.prank(wbtcWhale);
+    token.transfer(address(this), allTokens);
+    vm.stopPrank();
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
+contract WbtcUSDTLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(MODE) {}
+
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 1e8;
+
+    address wbtcMarket = 0xd70254C3baD29504789714A7c69d60Ec1127375C;
+    address USDTMarket = 0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3;
+    address wbtcWhale = 0x3f3429D28438Cc14133966820b8A9Ea61Cf1D4F0;
+    address USDTWhale = 0x082321F9939373b02Ad54ea214BF6e822531e679;
+
+    _configurePair(wbtcMarket, USDTMarket);
+    _fundMarketAndSelf(ICErc20(wbtcMarket), wbtcWhale);
+    _fundMarketAndSelf(ICErc20(USDTMarket), USDTWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
+  }
+}
+
 /*
 contract XYLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(X_CHAIN_ID) {}
