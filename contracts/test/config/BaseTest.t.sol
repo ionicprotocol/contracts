@@ -3,6 +3,7 @@ pragma solidity >=0.8.0;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 import { AddressesProvider } from "../../ionic/AddressesProvider.sol";
 
@@ -19,6 +20,7 @@ abstract contract BaseTest is Test {
   uint128 constant NEON_MAINNET = 245022934;
   uint128 constant LINEA_MAINNET = 59144;
   uint128 constant ZKEVM_MAINNET = 1101;
+  uint128 constant MODE = 34443;
 
   // taken from ERC1967Upgrade
   bytes32 internal constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
@@ -125,6 +127,8 @@ abstract contract BaseTest is Test {
         forkIds[chainid] = vm.createFork(vm.rpcUrl("linea")) + 100;
       } else if (chainid == ZKEVM_MAINNET) {
         forkIds[chainid] = vm.createFork(vm.rpcUrl("zkevm")) + 100;
+      } else if (chainid == MODE) {
+        forkIds[chainid] = vm.createFork(vm.rpcUrl("mode")) + 100;
       }
     }
 
@@ -151,6 +155,8 @@ abstract contract BaseTest is Test {
         forkIds[chainidWithOffset] = vm.createFork(vm.rpcUrl("linea_archive")) + 100;
       } else if (chainid == ZKEVM_MAINNET) {
         forkIds[chainidWithOffset] = vm.createFork(vm.rpcUrl("zkevm_archive")) + 100;
+      } else if (chainid == MODE) {
+        forkIds[chainidWithOffset] = vm.createFork(vm.rpcUrl("mode_archive")) + 100;
       }
     }
     return forkIds[chainidWithOffset] - 100;
@@ -173,6 +179,8 @@ abstract contract BaseTest is Test {
       ap = AddressesProvider(0x914694DA0bED80e74ef1a28029f016119782C0f1);
     } else if (chainid == ZKEVM_MAINNET) {
       ap = AddressesProvider(0x27aA55A3D55959261e119d75256aadAB79aE897C);
+    } else if (chainid == MODE) {
+      ap = AddressesProvider(0xb0033576a9E444Dd801d5B69e1b63DBC459A6115);
     } else {
       dpa = new ProxyAdmin();
       AddressesProvider logic = new AddressesProvider();
@@ -219,11 +227,7 @@ abstract contract BaseTest is Test {
     return array;
   }
 
-  function asArray(
-    address value0,
-    address value1,
-    address value2
-  ) public pure returns (address[] memory) {
+  function asArray(address value0, address value1, address value2) public pure returns (address[] memory) {
     address[] memory array = new address[](3);
     array[0] = value0;
     array[1] = value1;
@@ -263,11 +267,7 @@ abstract contract BaseTest is Test {
     return array;
   }
 
-  function asArray(
-    bytes memory value0,
-    bytes memory value1,
-    bytes memory value2
-  ) public pure returns (bytes[] memory) {
+  function asArray(bytes memory value0, bytes memory value1, bytes memory value2) public pure returns (bytes[] memory) {
     bytes[] memory array = new bytes[](3);
     array[0] = value0;
     array[1] = value1;

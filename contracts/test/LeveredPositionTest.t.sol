@@ -177,8 +177,8 @@ abstract contract LeveredPositionTest is MarketsTest {
         asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
         asBase._registerExtension(newExt2, DiamondExtension(address(0)));
       } else if (oldExts.length == 2) {
-        asBase._registerExtension(newExt1, DiamondExtension(oldExts[1]));
-        asBase._registerExtension(newExt2, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt1, DiamondExtension(oldExts[0]));
+        asBase._registerExtension(newExt2, DiamondExtension(oldExts[1]));
       }
       vm.stopPrank();
     }
@@ -706,24 +706,45 @@ contract PearlWUsdrLeveredPositionTest is LeveredPositionTest {
   }
 }
 
-contract ModeLeveredPositionTest is LeveredPositionTest {
-  function setUp() public {
-    console.log("This is in setup");
-    vm.createSelectFork(vm.envString("MODE_RPC_URL"));
-    afterForkSetUp();
-  }
+contract WethUSDCLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(MODE) {}
 
   function afterForkSetUp() internal override {
-    console.log("This is in after fork setup");
     super.afterForkSetUp();
+
+    uint256 depositAmount = 10e18;
+
+    address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
+    address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
+    address wethWhale = 0xd60DD6981Ec336fDa40820f8cA5E99CD17dD25A0;
+    address USDCWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79;
+
+    _configurePair(wethMarket, USDCMarket);
+    _fundMarketAndSelf(ICErc20(wethMarket), wethWhale);
+    _fundMarketAndSelf(ICErc20(USDCMarket), USDCWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
+}
 
-  function testForkIsOperational() public {
-    address targetAddress = 0x8445901c0cfbed52045d8aCBCBaCC1F0eD65a8f5;
-    uint balance = targetAddress.balance;
+contract WethUSDTLeveredPositionTest is LeveredPositionTest {
+  function setUp() public fork(MODE) {}
 
-    emit log_named_uint("MODE BLOCK NUMBER", block.number);
-    emit log_named_uint("MODE ADDRESS BALANCE", balance);
+  function afterForkSetUp() internal override {
+    super.afterForkSetUp();
+
+    uint256 depositAmount = 10e18;
+
+    address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
+    address USDTMarket = 0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3;
+    address wethWhale = 0xd60DD6981Ec336fDa40820f8cA5E99CD17dD25A0;
+    address USDTWhale = 0x082321F9939373b02Ad54ea214BF6e822531e679;
+
+    _configurePair(wethMarket, USDTMarket);
+    _fundMarketAndSelf(ICErc20(wethMarket), wethWhale);
+    _fundMarketAndSelf(ICErc20(USDTMarket), USDTWhale);
+
+    (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
 
