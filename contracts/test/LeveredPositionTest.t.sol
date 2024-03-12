@@ -774,7 +774,6 @@ contract WbtcUSDCLeveredPositionTest is LeveredPositionTest {
     (position, maxLevRatio, minLevRatio) = _openLeveredPosition(address(this), depositAmount);
   }
 }
-
 contract WbtcUSDTLeveredPositionTest is LeveredPositionTest {
   function setUp() public fork(MODE) {}
 
