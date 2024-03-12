@@ -34,15 +34,12 @@ contract AnkrRatioPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
    * @param stakedAssets Underlying token addresses for which to set price feeds.
    * @param originalAssets The Chainlink price feed contract addresses for each of `underlyings`.
    */
-  function setStakedAndOriginalAssets(
-    address[] memory stakedAssets,
-    address[] memory originalAssets
-  ) external onlyOwner {
+  function setStakedAndOriginalAssets(address[] memory stakedAssets, address[] memory originalAssets)
+    external
+    onlyOwner
+  {
     // Input validation
-    require(
-      stakedAssets.length > 0 && stakedAssets.length == originalAssets.length,
-      "arr len 0 or diff"
-    );
+    require(stakedAssets.length > 0 && stakedAssets.length == originalAssets.length, "arr len 0 or diff");
 
     for (uint256 i = 0; i < stakedAssets.length; i++) {
       stakedToOriginalAsset[stakedAssets[i]] = originalAssets[i];
