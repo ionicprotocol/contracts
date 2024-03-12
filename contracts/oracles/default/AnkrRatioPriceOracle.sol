@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0;
 
 import "../BasePriceOracle.sol";
+import { SafeOwnableUpgradeable } from "../../ionic/SafeOwnableUpgradeable.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
@@ -15,19 +16,47 @@ interface AnkrRatioFeed {
  * @dev Implements `BasePriceOracle`.
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
-contract AnkrRatioPriceOracle is BasePriceOracle {
-  address public ANKR_RATIO_FEED = 0xEf3C162450E1d08804493aA27BE60CDAa054050F;
+contract AnkrRatioPriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
+  address public ANKR_RATIO_FEED;
 
   mapping(address => address) public stakedToOriginalAsset;
 
   /**
-   * @notice Internal function returning the price in of `underlying`.
+   * @dev Initializer to ratio feed address
+   */
+  function initialize() public initializer {
+    __SafeOwnable_init(msg.sender);
+    ANKR_RATIO_FEED = 0xEf3C162450E1d08804493aA27BE60CDAa054050F;
+  }
+
+  /**
+   * @dev Admin-only function to map staked to original assets.
+   * @param stakedAssets Underlying token addresses for which to set price feeds.
+   * @param originalAssets The Chainlink price feed contract addresses for each of `underlyings`.
+   */
+  function setStakedAndOriginalAssets(
+    address[] memory stakedAssets,
+    address[] memory originalAssets
+  ) external onlyOwner {
+    // Input validation
+    require(
+      stakedAssets.length > 0 && stakedAssets.length == originalAssets.length,
+      "arr len 0 or diff"
+    );
+
+    for (uint256 i = 0; i < stakedAssets.length; i++) {
+      stakedToOriginalAsset[stakedAssets[i]] = originalAssets[i];
+    }
+  }
+
+  /**
+   * @notice Internal function returning the price in of `asset`.
    * @dev will return a price denominated in the native token
    */
-  function _price(address underlying) internal view returns (uint256) {
-    address originalAsset = stakedToOriginalAsset[underlying];
+  function _price(address asset) internal view returns (uint256) {
+    address originalAsset = stakedToOriginalAsset[asset];
     uint256 originalAssetPrice = BasePriceOracle(msg.sender).price(originalAsset);
-    uint256 ratio = AnkrRatioFeed(ANKR_RATIO_FEED).getRatioFor(underlying);
+    uint256 ratio = AnkrRatioFeed(ANKR_RATIO_FEED).getRatioFor(asset);
 
     // e.g. ankrETH/ratio=ETH => ankrETH = ETH * ratio
     // assuming ratio is scaled by 18 decimals
