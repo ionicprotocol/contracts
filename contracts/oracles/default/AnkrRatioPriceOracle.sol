@@ -16,10 +16,9 @@ interface AnkrRatioFeed {
  * @author Veliko Minkov <v.minkov@dcvx.io> (https://github.com/vminkov)
  */
 contract AnkrRatioPriceOracle is BasePriceOracle {
-
   address public ANKR_RATIO_FEED = 0xEf3C162450E1d08804493aA27BE60CDAa054050F;
 
-   mapping(address => address) public stakedToOriginalAsset;
+  mapping(address => address) public stakedToOriginalAsset;
 
   /**
    * @notice Internal function returning the price in of `underlying`.
@@ -56,9 +55,8 @@ contract AnkrRatioPriceOracle is BasePriceOracle {
 
     uint256 underlyingDecimals = uint256(ERC20Upgradeable(underlying).decimals());
     return
-    underlyingDecimals <= 18
-    ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
-    : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
+      underlyingDecimals <= 18
+        ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
+        : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
   }
-
 }
