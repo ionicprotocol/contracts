@@ -22,7 +22,7 @@ contract RedstoneAdapterOracleTest is BaseTest {
     oracle = new RedstoneAdapterPriceOracle(redstoneOracleAddress);
   }
 
-  function testPrintPricesMode() public fork(MODE_MAINNET) {
+  function testPrintRedstonePricesMode() public debuggingOnly fork(MODE_MAINNET) {
     emit log_named_uint("ezETH price (18 dec)", oracle.price(MODE_EZETH));
     emit log_named_uint("WBTC price (8 dec)", oracle.price(MODE_WBTC));
   }
