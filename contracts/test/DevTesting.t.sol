@@ -205,6 +205,42 @@ contract DevTesting is BaseTest {
     require(usdcMarket.borrow(5e6) == 0, "can't borrow");
   }
 
+  function testModeDeployMarket() public debuggingOnly fork(MODE_MAINNET) {
+    address MODE_WEETH = 0x028227c4dd1e5419d11Bb6fa6e661920c519D4F5;
+    address weEthWhale = 0x6e55a90772B92f17f87Be04F9562f3faafd0cc38;
+
+    vm.startPrank(pool.admin());
+    uint256 errCode = pool._deployMarket(
+      1, //delegateType
+      abi.encode(
+        MODE_WEETH,
+        address(pool),
+        ap.getAddress("FeeDistributor"),
+        0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
+        "Ionic Wrapped eETH",
+        "ionweETH",
+        0.10e18,
+        0.10e18
+      ),
+      "",
+      0.70e18
+    );
+    vm.stopPrank();
+    require(errCode == 0, "error deploying market");
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 weEthMarket = markets[markets.length-1];
+
+    //    uint256 cap = pool.getAssetAsCollateralValueCap(weEthMarket, usdcMarket, false, deployer);
+    uint256 cap = pool.supplyCaps(address(weEthMarket));
+    require(cap == 0, "non-zero cap");
+
+    vm.startPrank(weEthWhale);
+    ERC20(MODE_WEETH).approve(address(weEthMarket), 1e36);
+    errCode = weEthMarket.mint(0.01e18);
+    require(errCode == 0, "should be unable to supply");
+  }
+
   function _functionCall(
     address target,
     bytes memory data,
