@@ -962,8 +962,20 @@ contract ModeWethUSDCLeveredPositionTest is LeveredPositionTest {
 
     address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
     address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
-    address wethWhale = 0xd60DD6981Ec336fDa40820f8cA5E99CD17dD25A0;
+    address wethWhale = 0x7380511493DD4c2f1dD75E9CCe5bD52C787D4B51;
     address USDCWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79;
+
+    ICErc20[] memory cTokens = new ICErc20[](1);
+    cTokens[0] = ICErc20(USDCMarket);
+
+    uint256[] memory newBorrowCaps = new uint256[](1);
+    newBorrowCaps[0] = 1e36;
+
+    IonicComptroller comptroller = IonicComptroller(ICErc20(wethMarket).comptroller());
+
+    vm.prank(comptroller.admin());
+    comptroller._setMarketBorrowCaps(cTokens, newBorrowCaps);
+    vm.stopPrank();
 
     _configurePair(wethMarket, USDCMarket);
     _fundMarketAndSelf(ICErc20(wethMarket), wethWhale);
@@ -983,7 +995,7 @@ contract ModeWethUSDTLeveredPositionTest is LeveredPositionTest {
 
     address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
     address USDTMarket = 0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3;
-    address wethWhale = 0xd60DD6981Ec336fDa40820f8cA5E99CD17dD25A0;
+    address wethWhale = 0x7380511493DD4c2f1dD75E9CCe5bD52C787D4B51;
     address USDTWhale = 0x082321F9939373b02Ad54ea214BF6e822531e679;
 
     _configurePair(wethMarket, USDTMarket);
@@ -1006,6 +1018,18 @@ contract ModeWbtcUSDCLeveredPositionTest is LeveredPositionTest {
     address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
     address wbtcWhale = 0x3f3429D28438Cc14133966820b8A9Ea61Cf1D4F0;
     address USDCWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79;
+
+    ICErc20[] memory cTokens = new ICErc20[](1);
+    cTokens[0] = ICErc20(USDCMarket);
+
+    uint256[] memory newBorrowCaps = new uint256[](1);
+    newBorrowCaps[0] = 1e36;
+
+    IonicComptroller comptroller = IonicComptroller(ICErc20(wbtcMarket).comptroller());
+
+    vm.prank(comptroller.admin());
+    comptroller._setMarketBorrowCaps(cTokens, newBorrowCaps);
+    vm.stopPrank();
 
     IERC20Upgradeable token = IERC20Upgradeable(ICErc20(wbtcMarket).underlying());
 
