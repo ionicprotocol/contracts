@@ -175,7 +175,7 @@ contract DevTesting is BaseTest {
     require(errCode == 0, "error deploying market");
 
     ICErc20[] memory markets = pool.getAllMarkets();
-    ICErc20 ezEthMarket = markets[markets.length-1];
+    ICErc20 ezEthMarket = markets[markets.length - 1];
 
     //    uint256 cap = pool.getAssetAsCollateralValueCap(ezEthMarket, usdcMarket, false, deployer);
     uint256 cap = pool.supplyCaps(address(ezEthMarket));
@@ -229,7 +229,7 @@ contract DevTesting is BaseTest {
     require(errCode == 0, "error deploying market");
 
     ICErc20[] memory markets = pool.getAllMarkets();
-    ICErc20 weEthMarket = markets[markets.length-1];
+    ICErc20 weEthMarket = markets[markets.length - 1];
 
     //    uint256 cap = pool.getAssetAsCollateralValueCap(weEthMarket, usdcMarket, false, deployer);
     uint256 cap = pool.supplyCaps(address(weEthMarket));
