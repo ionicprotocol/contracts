@@ -17,6 +17,8 @@ import { MasterPriceOracle } from "./oracles/MasterPriceOracle.sol";
  * @notice PoolLens returns data on Ionic interest rate pools in mass for viewing by dApps, bots, etc.
  */
 contract PoolLens is Initializable {
+  error ComptrollerError(uint256 errCode);
+
   /**
    * @notice Initialize the `PoolDirectory` contract object.
    * @param _directory The PoolDirectory
@@ -579,5 +581,20 @@ contract PoolLens is Initializable {
     (uint256[] memory indexes, PoolDirectory.Pool[] memory accountPools) = getWhitelistedPoolsByAccount(account);
     (IonicPoolData[] memory data, bool[] memory errored) = getPoolsData(accountPools);
     return (indexes, accountPools, data, errored);
+  }
+
+  function getHealthFactor(address user, IonicComptroller pool) external view returns (uint256) {
+    (uint256 err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = pool.getAccountLiquidity(user);
+
+    if (err != 0) revert ComptrollerError(err);
+
+    if (shortfall > 0) {
+      // HF < 1.0
+      return (collateralValue * 1e18) / (collateralValue + shortfall);
+    } else {
+      // HF >= 1.0
+      if (collateralValue <= liquidity) return type(uint256).max;
+      else return (collateralValue * 1e18) / (collateralValue - liquidity);
+    }
   }
 }

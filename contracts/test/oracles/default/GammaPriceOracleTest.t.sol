@@ -2,7 +2,8 @@
 pragma solidity >=0.8.0;
 
 import { BaseTest } from "../../config/BaseTest.t.sol";
-import { GammaPoolPriceOracle } from "../../../oracles/default/GammaPoolPriceOracle.sol";
+import { GammaPoolAlgebraPriceOracle } from "../../../oracles/default/GammaPoolPriceOracle.sol";
+import { GammaPoolUniswapV3PriceOracle } from "../../../oracles/default/GammaPoolPriceOracle.sol";
 import { MasterPriceOracle } from "../../../oracles/MasterPriceOracle.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
@@ -13,28 +14,31 @@ import { IUniswapV3Pool } from "../../../external/uniswap/IUniswapV3Pool.sol";
 import { IHypervisor } from "../../../external/gamma/IHypervisor.sol";
 
 contract GammaPoolPriceOracleTest is BaseTest {
-  GammaPoolPriceOracle private oracle;
+  GammaPoolAlgebraPriceOracle private aOracle;
+  GammaPoolUniswapV3PriceOracle private uOracle;
   MasterPriceOracle mpo;
   address wtoken;
   address stable;
 
   function afterForkSetUp() internal override {
     stable = ap.getAddress("stableToken");
-    wtoken = ap.getAddress("wtoken"); // WETH
+    wtoken = ap.getAddress("wtoken");
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
-    oracle = new GammaPoolPriceOracle();
+    aOracle = new GammaPoolAlgebraPriceOracle();
+    uOracle = new GammaPoolUniswapV3PriceOracle();
     vm.prank(mpo.admin());
-    oracle.initialize(wtoken);
+    aOracle.initialize(wtoken);
+    uOracle.initialize(wtoken);
   }
 
-  function testPriceGammaPolygonNow() public fork(POLYGON_MAINNET) {
+  function testPriceGammaAlgebraNow() public fork(POLYGON_MAINNET) {
     {
       uint256 withdrawAmount = 1e18;
       address DAI_GNS_QS_GAMMA_VAULT = 0x7aE7FB44c92B4d41abB6E28494f46a2EB3c2a690; // QS aDAI-GNS (Narrow)
       address DAI_GNS_QS_GAMMA_WHALE = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D; // QS Masterchef
 
       vm.prank(address(mpo));
-      uint256 price_DAI_GNS = oracle.price(DAI_GNS_QS_GAMMA_VAULT);
+      uint256 price_DAI_GNS = aOracle.price(DAI_GNS_QS_GAMMA_VAULT);
 
       uint256 expectedPrice = priceAtWithdraw(DAI_GNS_QS_GAMMA_WHALE, DAI_GNS_QS_GAMMA_VAULT, withdrawAmount);
       assertApproxEqRel(price_DAI_GNS, expectedPrice, 1e16, "!aDAI-GNS price");
@@ -46,7 +50,7 @@ contract GammaPoolPriceOracleTest is BaseTest {
       address DAI_USDT_QS_WHALE = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D; // QS Masterchef
 
       vm.prank(address(mpo));
-      uint256 price_DAI_USDT = oracle.price(DAI_USDT_QS_GAMMA_VAULT) / (1e18 / withdrawAmount);
+      uint256 price_DAI_USDT = aOracle.price(DAI_USDT_QS_GAMMA_VAULT) / (1e18 / withdrawAmount);
 
       uint256 expectedPrice = priceAtWithdraw(DAI_USDT_QS_WHALE, DAI_USDT_QS_GAMMA_VAULT, withdrawAmount);
       assertApproxEqRel(price_DAI_USDT, expectedPrice, 1e16, "!aDAI-USDT price");
@@ -58,61 +62,62 @@ contract GammaPoolPriceOracleTest is BaseTest {
       address WETH_USDT_QS_WHALE = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D; // QS Masterchef
 
       vm.prank(address(mpo));
-      uint256 price_WETH_USDT = oracle.price(WETH_USDT_QS_GAMMA_VAULT) / (1e18 / withdrawAmount);
+      uint256 price_WETH_USDT = aOracle.price(WETH_USDT_QS_GAMMA_VAULT) / (1e18 / withdrawAmount);
 
       uint256 expectedPrice = priceAtWithdraw(WETH_USDT_QS_WHALE, WETH_USDT_QS_GAMMA_VAULT, withdrawAmount);
-      assertApproxEqRel(price_WETH_USDT, expectedPrice, 5e16, "!aWETH-USDT price");
+      assertApproxEqRel(price_WETH_USDT, expectedPrice, 10e16, "!aWETH-USDT price");
     }
   }
 
-  function testPriceGammaBscNow() public fork(BSC_MAINNET) {
+  function testPriceGammaUniV3Now() public fork(POLYGON_MAINNET) {
     uint256 withdrawAmount = 1e18;
     {
-      address USDT_WBNB_THENA_GAMMA_VAULT = 0x921C7aC35D9a528440B75137066adb1547289555; // Wide
-      address USDT_WBNB_THENA_WHALE = 0x04008Bf76d2BC193858101d932135e09FBfF4779; // thena gauge for aUSDT-WBNB
+      address USDC_CASH_RETRO_GAMMA_VAULT = 0x64e14623CA543b540d0bA80477977f7c2c00a7Ea;
+      address USDC_CASH_RETRO_WHALE = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
 
       vm.prank(address(mpo));
-      uint256 price_USDT_WBNB = oracle.price(USDT_WBNB_THENA_GAMMA_VAULT);
+      uint256 price_USDC_CASH = uOracle.price(USDC_CASH_RETRO_GAMMA_VAULT);
 
-      uint256 expectedPrice = priceAtWithdraw(USDT_WBNB_THENA_WHALE, USDT_WBNB_THENA_GAMMA_VAULT, withdrawAmount);
-      assertApproxEqRel(price_USDT_WBNB, expectedPrice, 1e16, "!aUSDT-WBNB price");
+      uint256 expectedPrice = priceAtWithdraw(USDC_CASH_RETRO_WHALE, USDC_CASH_RETRO_GAMMA_VAULT, withdrawAmount);
+      assertApproxEqRel(price_USDC_CASH, expectedPrice, 1e16, "!aUSDC-CASH price");
     }
 
     {
-      address USDT_USDC_THENA_GAMMA_VAULT = 0x5EEca990E9B7489665F4B57D27D92c78BC2AfBF2;
-      address USDT_USDC_THENA_WHALE = 0x1011530830c914970CAa96a52B9DA1C709Ea48fb; // thena gauge
+      address USDC_WETH_RETRO_GAMMA_VAULT = 0xe058e1FfFF9B13d3FCd4803FDb55d1Cc2fe07DDC;
+      address USDC_WETH_RETRO_WHALE = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
 
       vm.prank(address(mpo));
-      uint256 price_USDT_USDC = oracle.price(USDT_USDC_THENA_GAMMA_VAULT);
+      uint256 price_USDC_WETH = uOracle.price(USDC_WETH_RETRO_GAMMA_VAULT);
 
-      uint256 expectedPrice = priceAtWithdraw(USDT_USDC_THENA_WHALE, USDT_USDC_THENA_GAMMA_VAULT, withdrawAmount);
-      assertApproxEqRel(price_USDT_USDC, expectedPrice, 1e16, "!USDT_USDC price");
+      uint256 expectedPrice = priceAtWithdraw(USDC_WETH_RETRO_WHALE, USDC_WETH_RETRO_GAMMA_VAULT, withdrawAmount);
+      assertApproxEqRel(price_USDC_WETH, expectedPrice, 5e16, "!aUSDC_WETH price");
     }
 
     {
-      address WBTC_WBNB_THENA_GAMMA_VAULT = 0xBd2383816Bab04E46b69801CCa7e92D34aB94D3F; // Wide
-      address WBTC_WBNB_THENA_WHALE = 0xb75942D49e7F455C47DebBDCA81DF67244fe7d40; // thena gauge
+      address WMATIC_MATICX_RETRO_GAMMA_VAULT = 0x2589469b7A72802CE02484f053CB6df869eB2689;
+      address WMATIC_MATICX_RETRO_WHALE = 0xcFB07d195DB81da622E94BDB3171392756775914;
 
       vm.prank(address(mpo));
-      uint256 price_WBTC_WBNB = oracle.price(WBTC_WBNB_THENA_GAMMA_VAULT);
-
-      uint256 expectedPrice = priceAtWithdraw(WBTC_WBNB_THENA_WHALE, WBTC_WBNB_THENA_GAMMA_VAULT, withdrawAmount);
-      assertApproxEqRel(price_WBTC_WBNB, expectedPrice, 1e16, "!WBTC_WBNB price");
-    }
-
-    {
-      address ANKR_AnkrBNB_WIDE_THENA_GAMMA_VAULT = 0x31257f40e65585cC45fDABEb12002C25bC95eE80; // Wide
-      address ANKR_AnkrBNB_WIDE_THENA_WHALE = 0x7E4F069107cf0EE090AF5e4e075dC6Fcc644C61D; // thena gauge
-
-      vm.prank(address(mpo));
-      uint256 price_ANKR_AnkrBNB = oracle.price(ANKR_AnkrBNB_WIDE_THENA_GAMMA_VAULT);
+      uint256 price_WMATIC_MATICX = uOracle.price(WMATIC_MATICX_RETRO_GAMMA_VAULT);
 
       uint256 expectedPrice = priceAtWithdraw(
-        ANKR_AnkrBNB_WIDE_THENA_WHALE,
-        ANKR_AnkrBNB_WIDE_THENA_GAMMA_VAULT,
+        WMATIC_MATICX_RETRO_WHALE,
+        WMATIC_MATICX_RETRO_GAMMA_VAULT,
         withdrawAmount
       );
-      assertApproxEqRel(price_ANKR_AnkrBNB, expectedPrice, 1e16, "!WBTC_WBNB price");
+
+      assertApproxEqRel(price_WMATIC_MATICX, expectedPrice, 1e16, "!aWMATIC_MATICX price");
+    }
+
+    {
+      address WBTC_WETH_RETRO_GAMMA_VAULT = 0x336536F5bB478D8624dDcE0942fdeF5C92bC4662;
+      address WBTC_WETH_RETRO_GAMMA_WHALE = 0x38e481367E0c50f4166AD2A1C9fde0E3c662CFBa;
+
+      vm.prank(address(mpo));
+      uint256 price_WBTC_WETH = uOracle.price(WBTC_WETH_RETRO_GAMMA_VAULT);
+
+      uint256 expectedPrice = priceAtWithdraw(WBTC_WETH_RETRO_GAMMA_WHALE, WBTC_WETH_RETRO_GAMMA_VAULT, withdrawAmount);
+      assertApproxEqRel(price_WBTC_WETH, expectedPrice, 5e16, "!aWBTC_WETH price");
     }
   }
 

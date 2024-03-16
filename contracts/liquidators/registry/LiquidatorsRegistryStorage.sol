@@ -20,4 +20,7 @@ abstract contract LiquidatorsRegistryStorage is SafeOwnable {
 
   mapping(IERC20Upgradeable => mapping(IERC20Upgradeable => uint256)) internal conversionSlippage;
   mapping(IERC20Upgradeable => mapping(IERC20Upgradeable => uint256)) internal conversionSlippageUpdated;
+
+  mapping(IERC20Upgradeable => mapping(IERC20Upgradeable => uint24)) public uniswapV3Fees;
+  mapping(IERC20Upgradeable => mapping(IERC20Upgradeable => address)) public customUniV3Router;
 }

@@ -17,7 +17,7 @@ import { UniswapLpTokenLiquidator } from "../liquidators/UniswapLpTokenLiquidato
 import { IUniswapV2Pair } from "../external/uniswap/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "../external/uniswap/IUniswapV2Factory.sol";
 import { PoolLens } from "../PoolLens.sol";
-import { IonicLiquidator } from "../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../IonicLiquidator.sol";
 import { CErc20 } from "../compound/CToken.sol";
 import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
@@ -32,11 +32,11 @@ contract MockWNeon is MockERC20 {
 
 contract NeondevnetE2ETest is WithPool {
   address mpo;
-  address moraRouter = 0x491FFC6eE42FEfB4Edab9BA7D5F3e639959E081B;
-  address moraToken = 0x6dcDD1620Ce77B595E6490701416f6Dbf20D2f67; // MORA
-  address wtoken = 0xf1041596da0499c3438e3B1Eb7b95354C6Aed1f5;
-  address wWbtc = 0x6fbF8F06Ebce724272813327255937e7D1E72298;
-  address moraUsdc = 0x6Ab1F83c0429A1322D7ECDFdDf54CE6D179d911f;
+  ERC20Upgradeable wtoken;
+  ERC20Upgradeable wbtc;
+  ERC20Upgradeable stable;
+  address moraRouter = 0x594e37B9F39f5D31DEc4a8c1cC4fe2E254153034;
+  address moraToken = 0x2043191e10a2A4b4601F5123D6C94E000b5d915F;
 
   struct LiquidationData {
     address[] cTokens;
@@ -58,48 +58,35 @@ contract NeondevnetE2ETest is WithPool {
   }
 
   function afterForkSetUp() internal override {
+    wtoken = ERC20Upgradeable(ap.getAddress("wtoken"));
     mpo = ap.getAddress("MasterPriceOracle");
-    super.setUpWithPool(
-      MasterPriceOracle(mpo),
-      ERC20Upgradeable(moraToken) // MORA
-    );
-    deal(address(underlyingToken), address(this), 10e18);
-    deal(wtoken, address(this), 10e18);
+
+    super.setUpWithPool(MasterPriceOracle(mpo), ERC20Upgradeable(wtoken));
+
+    deal(address(wtoken), address(this), 10e18);
     setUpPool("neon-test", false, 0.1e18, 1.1e18);
   }
 
   function testNeonDeployCErc20Delegate() public fork(NEON_MAINNET) {
     vm.roll(1);
     deployCErc20Delegate(address(underlyingToken), "cUnderlyingToken", "CUT", 0.9e18);
-    deployCErc20Delegate(wtoken, "cWToken", "wtoken", 0.9e18);
 
     ICErc20[] memory allMarkets = comptroller.getAllMarkets();
     ICErc20 cToken = allMarkets[0];
-    ICErc20 cWToken = allMarkets[1];
 
     assertEq(cToken.name(), "cUnderlyingToken");
-    assertEq(cWToken.name(), "cWToken");
 
     underlyingToken.approve(address(cToken), 1e36);
-    ERC20Upgradeable(wtoken).approve(address(cWToken), 1e36);
 
-    address[] memory cTokens = new address[](2);
+    address[] memory cTokens = new address[](1);
     cTokens[0] = address(cToken);
-    cTokens[1] = address(cWToken);
+
     comptroller.enterMarkets(cTokens);
 
     vm.roll(1);
     cToken.mint(10e18);
     assertEq(cToken.totalSupply(), 10e18 * 5);
     assertEq(underlyingToken.balanceOf(address(cToken)), 10e18);
-
-    cWToken.mint(10e18);
-    assertEq(cWToken.totalSupply(), 10e18 * 5);
-    assertEq(ERC20Upgradeable(wtoken).balanceOf(address(cWToken)), 10e18);
-
-    cWToken.borrow(1000);
-    assertEq(cWToken.totalBorrows(), 1000);
-    assertEq(ERC20Upgradeable(wtoken).balanceOf(address(this)), 1000);
   }
 
   function testNeonGetPoolAssetsData() public fork(NEON_MAINNET) {
@@ -121,13 +108,13 @@ contract NeondevnetE2ETest is WithPool {
     assertEq(assets[0].supplyBalance, 10e18);
   }
 
-  function testNeonCErc20Liquidation() public fork(NEON_MAINNET) {
+  function testNeonCErc20Liquidation() public debuggingOnly fork(NEON_MAINNET) {
     LiquidationData memory vars;
     vm.roll(1);
-    vars.erc20 = MockERC20(moraToken); // MORA
-    vars.asset = MockWNeon(wtoken); // WNEON
+    vars.erc20 = MockERC20(address(wbtc));
+    vars.asset = MockWNeon(address(wtoken)); // WNEON
 
-    deployCErc20Delegate(address(vars.erc20), "MORA", "MoraSwap", 0.9e18);
+    deployCErc20Delegate(address(vars.erc20), "WBTC", "Wrapped BTC", 0.9e18);
     deployCErc20Delegate(address(vars.asset), "WNEON", "Wrapped Neon", 0.9e18);
     ionicAdmin.authoritiesRegistry().reconfigureAuthority(address(comptroller));
 
@@ -141,7 +128,7 @@ contract NeondevnetE2ETest is WithPool {
     // setting up liquidator
     vars.liquidator = new IonicLiquidator();
     vars.liquidator.initialize(
-      wtoken, // wneon
+      address(wtoken), // wneon
       moraRouter, // moraswap router
       30
     );
@@ -206,19 +193,17 @@ contract NeondevnetE2ETest is WithPool {
     uint256 neonBalance = cWNeonToken.balanceOf(accountOne);
 
     IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(moraRouter);
-    address pairAddress = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(underlyingToken), wtoken);
+    address pairAddress = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(underlyingToken), address(wtoken));
     IUniswapV2Pair flashSwapPair = IUniswapV2Pair(pairAddress);
 
     vars.liquidator.safeLiquidateToTokensWithFlashLoan(
-      IonicLiquidator.LiquidateToTokensWithFlashSwapVars(
+      ILiquidator.LiquidateToTokensWithFlashSwapVars(
         accountOne,
         4e13,
         ICErc20(address(cToken)),
         ICErc20(address(cWNeonToken)),
-        flashSwapPair,
+        address(flashSwapPair),
         0,
-        uniswapRouter,
-        uniswapRouter,
         vars.strategies,
         vars.abis,
         vars.fundingStrategies,

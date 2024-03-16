@@ -6,7 +6,7 @@ import { IFundsConversionStrategy } from "./IFundsConversionStrategy.sol";
 import { IRedemptionStrategy } from "./IRedemptionStrategy.sol";
 import "./UniswapV3Liquidator.sol";
 
-import { Quoter } from "../external/uniswap/Quoter/Quoter.sol";
+import { Quoter } from "../external/uniswap/quoter/Quoter.sol";
 
 contract UniswapV3LiquidatorFunder is UniswapV3Liquidator, IFundsConversionStrategy {
   using FixedPointMathLib for uint256;

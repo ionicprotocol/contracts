@@ -4,7 +4,7 @@ pragma solidity >=0.8.0;
 import { ICErc20 } from "../../compound/CTokenInterfaces.sol";
 import { MasterPriceOracle } from "../../oracles/MasterPriceOracle.sol";
 import { JarvisLiquidatorFunder } from "../../liquidators/JarvisLiquidatorFunder.sol";
-import { IonicLiquidator } from "../../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../../IonicLiquidator.sol";
 import { IUniswapV2Pair } from "../../external/uniswap/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "../../external/uniswap/IUniswapV2Factory.sol";
 import { IComptroller } from "../../external/compound/IComptroller.sol";
@@ -158,15 +158,13 @@ contract JarvisLiquidatorFunderTest is BaseTest {
     // liquidate
     vm.prank(accountTwo);
     vars.liquidator.safeLiquidateToTokensWithFlashLoan(
-      IonicLiquidator.LiquidateToTokensWithFlashSwapVars(
+      ILiquidator.LiquidateToTokensWithFlashSwapVars(
         accountOne,
         repayAmount,
         ICErc20(address(cTokenJBRL)),
         ICErc20(address(cTokenBUSD)),
-        flashSwapPair,
+        address(flashSwapPair),
         0,
-        uniswapRouter,
-        uniswapRouter,
         vars.strategies,
         vars.abis,
         vars.fundingStrategies,

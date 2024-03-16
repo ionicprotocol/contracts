@@ -64,6 +64,11 @@ contract MaxBorrowTest is WithPool {
     vars.cTokens = new address[](1);
 
     address accountOne = address(1);
+    PoolRolesAuthority pra = ionicAdmin.authoritiesRegistry().poolsAuthorities(address(comptroller));
+
+    vm.startPrank(pra.owner());
+    pra.setUserRole(accountOne, pra.BORROWER_ROLE(), true);
+    vm.stopPrank();
 
     vm.prank(usdcWhale);
     MockERC20(address(vars.usdc)).transfer(accountOne, 10000e6);
@@ -153,7 +158,7 @@ contract MaxBorrowTest is WithPool {
     uint256 borrowAmount = marketToBorrow.borrowBalanceCurrent(someBorrower);
 
     {
-      (uint256 errBefore, uint256 liquidityBefore, uint256 shortfallBefore) = pool.getHypotheticalAccountLiquidity(
+      (uint256 errBefore, , uint256 liquidityBefore, uint256 shortfallBefore) = pool.getHypotheticalAccountLiquidity(
         someBorrower,
         address(marketToBorrow),
         0,
@@ -173,7 +178,7 @@ contract MaxBorrowTest is WithPool {
     asExtension._setBorrowCapForCollateral(address(marketToBorrow), address(cappedCollateralMarket), 1);
     emit log("");
 
-    (uint256 errAfter, uint256 liquidityAfter, uint256 shortfallAfter) = pool.getHypotheticalAccountLiquidity(
+    (uint256 errAfter, , uint256 liquidityAfter, uint256 shortfallAfter) = pool.getHypotheticalAccountLiquidity(
       someBorrower,
       address(marketToBorrow),
       0,

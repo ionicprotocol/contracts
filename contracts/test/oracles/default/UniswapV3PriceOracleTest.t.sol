@@ -29,6 +29,35 @@ contract UniswapV3PriceOracleTest is BaseTest {
     oracle.initialize(wtoken, asArray(stable));
   }
 
+  function testPolygonRetroAlmAssets() public fork(POLYGON_MAINNET) {
+    address[] memory underlyings = new address[](1);
+    ConcentratedLiquidityBasePriceOracle.AssetConfig[]
+      memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](1);
+
+    underlyings[0] = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175; // CASH (18 decimals)
+
+    // USDC-CASH
+    configs[0] = ConcentratedLiquidityBasePriceOracle.AssetConfig(
+      0x619259F699839dD1498FFC22297044462483bD27,
+      10 minutes,
+      stable
+    );
+    uint256[] memory prices = getPriceFeed(underlyings, configs);
+    for (uint256 i = 0; i < prices.length; i++) {
+      assertTrue(prices[i] > 0, "!Price Error");
+    }
+    uint256[] memory expPrices = new uint256[](7);
+    expPrices[0] = mpo.price(stable);
+
+    // CASH should be priced like USDC
+    assertApproxEqRel(prices[0], expPrices[0], 1e15);
+
+    bool[] memory cardinalityChecks = getCardinality(configs);
+    for (uint256 i = 0; i < cardinalityChecks.length; i++) {
+      assertEq(cardinalityChecks[i], true, "!Cardinality Error");
+    }
+  }
+
   function testPolygonAssets() public fork(POLYGON_MAINNET) {
     address[] memory underlyings = new address[](1);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
@@ -75,7 +104,7 @@ contract UniswapV3PriceOracleTest is BaseTest {
     assertApproxEqRel(oraclePrice, mpoPrice, 1e16, "Oracle price != MPO price by > 1%");
   }
 
-  function testForkedArbitrumAssets() public forkAtBlock(ARBITRUM_ONE, 76531543) {
+  function testForkedArbitrumAssets() public debuggingOnly forkAtBlock(ARBITRUM_ONE, 122287973) {
     address[] memory underlyings = new address[](7);
     ConcentratedLiquidityBasePriceOracle.AssetConfig[]
       memory configs = new ConcentratedLiquidityBasePriceOracle.AssetConfig[](7);
@@ -132,13 +161,13 @@ contract UniswapV3PriceOracleTest is BaseTest {
     );
 
     uint256[] memory expPrices = new uint256[](7);
-    expPrices[0] = 40593178272890829; // (40593178272890829 / 1e18) * 1807 = $75.4 (03/04/2023)
-    expPrices[1] = 143330393236690077; // (143330393236690077 / 1e18) * 1807 = $259 (03/04/2023)
-    expPrices[2] = 751649566984753; //  (751649566984753 / 1e18) * 1807 = $1.35 (03/04/2023
-    expPrices[3] = 556167462143161; // (556167462143161 / 1e18) * 1807 = $1.005 (03/04/2023
-    expPrices[4] = 559233394986996; // (559233394986996 / 1e18) * 1807 = $1.01 (03/04/2023
-    expPrices[5] = 40593178272890829; // (40593178272890829 / 1e18) * 1807 = $75.4 (03/04/2023)
-    expPrices[6] = 15531111568051631540; //  (15531111568051631540 / 1e18) * 1807 = $28.064,6 (03/04/2023)
+    expPrices[0] = 22458983666679741; // (22458983666679741 / 1e18) * 1807 = $75.4 (17/08/2023)
+    expPrices[1] = 39909577522344847; //  (39909577522344847 / 1e18) * 1807 = $72 (17/08/2023)
+    expPrices[2] = 373271191958027; //  (373271191958027 / 1e18) * 1807 = $0.67 (17/08/2023
+    expPrices[3] = 557704868599802; // (557704868599802 / 1e18) * 1807 = $1.005 (17/08/2023
+    expPrices[4] = 559771099154822; // (559771099154822 / 1e18) * 1807 = $1.01 (17/08/2023
+    expPrices[5] = 22458983666679741; // (22458983666679741 / 1e18) * 1807 = $40,5 (17/08/2023)
+    expPrices[6] = 15955521590135476492; //  (15955521590135476492 / 1e18) * 1807 = $28.864,6 (17/08/2023)
 
     emit log_named_uint("USDC PRICE", mpo.price(stable));
     uint256[] memory prices = getPriceFeed(underlyings, configs);

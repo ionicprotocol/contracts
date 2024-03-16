@@ -16,6 +16,10 @@ contract LeveredPositionsLens is Initializable {
     factory = _factory;
   }
 
+  function reinitialize(ILeveredPositionFactory _factory) external reinitializer(2) {
+    factory = _factory;
+  }
+
   /// @notice this is a lens fn, it is not intended to be used on-chain
   /// @dev returns lists of the market addresses, names and symbols of the underlying assets of those collateral markets that are whitelisted
   function getCollateralMarkets()
@@ -57,7 +61,7 @@ contract LeveredPositionsLens is Initializable {
   }
 
   /// @notice this is a lens fn, it is not intended to be used on-chain
-  /// @dev returns the Rate for the chosen borrowable at the specified  leverage ratio and supply amount
+  /// @dev returns the Rate for the chosen borrowable at the specified leverage ratio and supply amount
   function getBorrowRateAtRatio(
     ICErc20 _collateralMarket,
     ICErc20 _stableMarket,

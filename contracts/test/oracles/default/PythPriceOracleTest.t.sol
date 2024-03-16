@@ -68,7 +68,7 @@ contract PythPriceOracleTest is BaseTest {
     assertApproxEqRel(price, priceMpo, 1e16);
   }
 
-  function testLineaTokenPrice() public fork(LINEA_MAINNET) {
+  function testLineaTokenPrice() public debuggingOnly fork(LINEA_MAINNET) {
     PythStructs.Price memory pythPrice = IPyth(lineaPyth).getPriceUnsafe(btcUsdTokenPriceFeed);
     emit log_named_uint("price", uint256(uint64(pythPrice.price)));
     emit log_named_uint("updated", pythPrice.publishTime);

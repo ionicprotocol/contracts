@@ -8,7 +8,7 @@ import { IERC4626 } from "../compound/IERC4626.sol";
 import { IUniswapV2Router02 } from "../external/uniswap/IUniswapV2Router02.sol";
 import { IRedemptionStrategy } from "./IRedemptionStrategy.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
-import { Quoter } from "../external/uniswap/Quoter/Quoter.sol";
+import { Quoter } from "../external/uniswap/quoter/Quoter.sol";
 
 /**
  * @title ERC4626Liquidator

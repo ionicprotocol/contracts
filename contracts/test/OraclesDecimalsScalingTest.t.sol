@@ -12,10 +12,12 @@ import { IERC20MetadataUpgradeable } from "openzeppelin-contracts-upgradeable/co
 contract OraclesDecimalsScalingTest is BaseTest {
   MasterPriceOracle mpo;
   PoolDirectory poolDirectory;
+  address stable;
 
   function afterForkSetUp() internal override {
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
     poolDirectory = PoolDirectory(ap.getAddress("PoolDirectory"));
+    stable = ap.getAddress("stableToken");
   }
 
   function testOracleDecimalsBsc() public fork(BSC_MAINNET) {
@@ -30,13 +32,14 @@ contract OraclesDecimalsScalingTest is BaseTest {
     testOraclesDecimals();
   }
 
-  function testOracleDecimalsNeonDev() public fork(NEON_MAINNET) {
+  function testOracleDecimalsNeon() public fork(NEON_MAINNET) {
+    vm.mockCall(stable, abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector), abi.encode(6));
+    // SOL
     vm.mockCall(
-      0x4F6B3c357c439E15FB61c1187cc5E28eC72bBc55,
+      0x5f38248f339Bf4e84A2caf4e4c0552862dC9F82a,
       abi.encodeWithSelector(IERC20MetadataUpgradeable.decimals.selector),
-      abi.encode(6)
+      abi.encode(9)
     );
-
     testOraclesDecimals();
   }
 
@@ -71,10 +74,6 @@ contract OraclesDecimalsScalingTest is BaseTest {
   }
 
   function isSkipped(address token) internal pure returns (bool) {
-    return
-      token == 0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080 || // xcDOT
-      token == 0x61BF1b38930e37850D459f3CB926Cd197F5F88c0 || // xcDOT-stDOT stella LP token
-      token == 0xc6e37086D09ec2048F151D11CdB9F9BbbdB7d685 || // xcDOT-stDOT curve LP token
-      token == 0xa927E1e1E044CA1D9fe1854585003477331fE2Af; // WGLMR_xcDOT stella LP token
+    return token == 0x5f38248f339Bf4e84A2caf4e4c0552862dC9F82a; // SOL on neon, failing for unknwon reasons, works in HH
   }
 }

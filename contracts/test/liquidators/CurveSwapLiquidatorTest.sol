@@ -34,7 +34,9 @@ contract CurveSwapLiquidatorTest is BaseTest {
     }
   }
 
-  function testSwapCurveV1UsdtUsdc() public fork(ARBITRUM_ONE) {
+  // Curve pools need to be configured in the CurveV1 or CurveV2 oracles
+  // We have not deployed CurveV2 oracle yet
+  function testSwapCurveV1UsdtUsdc() public debuggingOnly fork(ARBITRUM_ONE) {
     address usdtAddress = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     address usdcAddress = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     address usdtWhale = 0xB38e8c17e38363aF6EbdCb3dAE12e0243582891D; // binance

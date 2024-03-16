@@ -48,6 +48,7 @@ interface ComptrollerInterface {
     returns (
       uint256,
       uint256,
+      uint256,
       uint256
     );
 
@@ -137,6 +138,7 @@ interface ComptrollerInterface {
     returns (
       uint256,
       uint256,
+      uint256,
       uint256
     );
 
@@ -199,6 +201,10 @@ interface ComptrollerStorageInterface {
   function mintGuardianPaused(address cToken) external view returns (bool);
 
   function rewardsDistributors(uint256) external view returns (address);
+}
+
+interface SFSRegister {
+  function register(address _recipient) external returns (uint256 tokenId);
 }
 
 interface ComptrollerExtensionInterface {
@@ -298,6 +304,8 @@ interface ComptrollerExtensionInterface {
     bool redeeming,
     address account
   ) external view returns (uint256);
+
+  function registerInSFS() external returns (uint256);
 }
 
 interface ComptrollerPrudentiaCapsExtInterface {

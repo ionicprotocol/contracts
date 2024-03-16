@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import { BaseTest } from "./config/BaseTest.t.sol";
 import "../ionic/AuthoritiesRegistry.sol";
 import "./helpers/WithPool.sol";
+import { RolesAuthority, Authority } from "solmate/auth/authorities/RolesAuthority.sol";
 
 contract AuthoritiesRegistryTest is WithPool {
   AuthoritiesRegistry registry;
@@ -47,29 +48,49 @@ contract AuthoritiesRegistryTest is WithPool {
     vm.expectRevert("not owner or pool");
     registry.reconfigureAuthority(address(comptroller));
 
+    vm.prank(registry.owner());
     registry.reconfigureAuthority(address(comptroller));
   }
 
-  function testAuthPermissions() public fork(POLYGON_MAINNET) {
-    vm.prank(registry.owner());
-    PoolRolesAuthority auth = registry.createPoolAuthority(address(comptroller));
+  function upgradeRegistry() internal {
+    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(registry)));
+    AuthoritiesRegistry newImpl = new AuthoritiesRegistry();
+    vm.startPrank(dpa.owner());
+    dpa.upgradeAndCall(
+      proxy,
+      address(newImpl),
+      abi.encodeWithSelector(AuthoritiesRegistry.reinitialize.selector, registry.leveredPositionsFactory())
+    );
+    vm.stopPrank();
+  }
 
-    vm.prank(address(8283));
-    vm.expectRevert("UNAUTHORIZED");
-    auth.openPoolSupplierCapabilities(comptroller);
+  function upgradeAuth(PoolRolesAuthority auth) internal {
+    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(auth)));
+    PoolRolesAuthority newImpl = new PoolRolesAuthority();
+    vm.prank(dpa.owner());
+    dpa.upgrade(proxy, address(newImpl));
+  }
 
-    auth.openPoolSupplierCapabilities(comptroller);
+  function testAuthPermissions() public debuggingOnly fork(BSC_CHAPEL) {
+    address pool = 0xa4bc2fCF2F9d87EB349f74f8729024F92A030330;
+    registry = AuthoritiesRegistry(0xa5E190Fa38F325617381e835da8b2DB2D12cE5eb);
+    //upgradeRegistry();
 
-    vm.prank(address(8283));
-    vm.expectRevert("UNAUTHORIZED");
-    auth.closePoolSupplierCapabilities(comptroller);
+    PoolRolesAuthority auth = PoolRolesAuthority(0xFe5AfFFC8b55A2d139cb2ef76699C8B58c1EA299);
+    //upgradeAuth(auth);
+    TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(payable(address(auth)));
 
-    auth.closePoolSupplierCapabilities(comptroller);
+    vm.prank(address(dpa));
+    emit log_named_address("proxy.implementation", proxy.implementation());
 
-    vm.prank(address(8283));
-    vm.expectRevert("UNAUTHORIZED");
-    auth.closePoolBorrowerCapabilities(comptroller);
+    emit log_named_address("registry.poolAuthLogic", address(registry.poolAuthLogic()));
+    //vm.prank(registry.owner());
+    //registry.reconfigureAuthority(pool);
 
-    auth.closePoolBorrowerCapabilities(comptroller);
+    bool isReg = auth.doesUserHaveRole(address(registry), auth.REGISTRY_ROLE());
+    assertEq(isReg, true, "!not registry role");
+
+    bool canCall = auth.canCall(address(registry), address(auth), RolesAuthority.setUserRole.selector);
+    assertEq(canCall, true, "!cannot call setUserRol");
   }
 }

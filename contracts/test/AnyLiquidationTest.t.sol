@@ -6,7 +6,7 @@ import { BasePriceOracle } from "../oracles/BasePriceOracle.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { IonicLiquidator } from "../IonicLiquidator.sol";
+import { IonicLiquidator, ILiquidator } from "../IonicLiquidator.sol";
 import { PoolDirectory } from "../PoolDirectory.sol";
 import { BaseTest } from "./config/BaseTest.t.sol";
 import { AddressesProvider } from "../ionic/AddressesProvider.sol";
@@ -90,7 +90,7 @@ contract AnyLiquidationTest is BaseTest {
   }
 
   function testSpecificRandom() public debuggingOnly {
-    testBscAnyLiquidation(1668);
+    testPolygonAnyLiquidation(14341);
     //    testPolygonAnyLiquidation(101);
   }
 
@@ -199,7 +199,7 @@ contract AnyLiquidationTest is BaseTest {
             continue;
           }
 
-          (, , shortfall) = vars.comptroller.getAccountLiquidity(vars.borrower);
+          (, , , shortfall) = vars.comptroller.getAccountLiquidity(vars.borrower);
           if (shortfall == 0) {
             emit log("collateral still enough");
             continue;
@@ -222,25 +222,26 @@ contract AnyLiquidationTest is BaseTest {
 
     (, PoolDirectory.Pool[] memory pools) = PoolDirectory(ap.getAddress("PoolDirectory")).getActivePools();
 
+    uint256 initRandom = random;
     while (true) {
       // get a random pool and a random borrower from it
       (vars.comptroller, vars.borrower) = getPoolAndBorrower(random, pools);
 
       if (address(vars.comptroller) != address(0) && vars.borrower != address(0)) {
-        if (address(vars.comptroller) != 0xD265ff7e5487E9DD556a4BB900ccA6D087Eb3AD2) {
-          // find a market in which the borrower has debt and reduce his collateral price
-          vars.markets = vars.comptroller.getAllMarkets();
-          (vars.debtMarket, vars.collateralMarket, vars.repayAmount) = setUpDebtAndCollateralMarkets(random, vars);
+        // find a market in which the borrower has debt and reduce his collateral price
+        vars.markets = vars.comptroller.getAllMarkets();
+        (vars.debtMarket, vars.collateralMarket, vars.repayAmount) = setUpDebtAndCollateralMarkets(random, vars);
 
-          if (address(vars.debtMarket) != address(0) && address(vars.collateralMarket) != address(0)) {
-            if (vars.debtMarket.underlying() != ap.getAddress("wtoken")) {
-              emit log("found testable markets at random number");
-              emit log_uint(random);
-              break;
-            }
+        if (address(vars.debtMarket) != address(0) && address(vars.collateralMarket) != address(0)) {
+          if (vars.debtMarket.underlying() != ap.getAddress("wtoken")) {
+            emit log("found testable markets at random number");
+            emit log_uint(random);
+            break;
           }
         }
       }
+      // fail gracefully when there are no positions to liquidate
+      if (random - initRandom < 100) return;
       random++;
     }
 
@@ -324,15 +325,13 @@ contract AnyLiquidationTest is BaseTest {
     vm.prank(ap.owner());
     try
       vars.liquidator.safeLiquidateToTokensWithFlashLoan(
-        IonicLiquidator.LiquidateToTokensWithFlashSwapVars(
+        ILiquidator.LiquidateToTokensWithFlashSwapVars(
           vars.borrower,
           vars.repayAmount,
           ICErc20(address(vars.debtMarket)),
           ICErc20(address(vars.collateralMarket)),
-          vars.flashSwapPair,
+          address(vars.flashSwapPair),
           0,
-          IUniswapV2Router02(uniswapRouter), // TODO ASSET_SPECIFIC_ROUTER
-          IUniswapV2Router02(uniswapRouter), // TODO ASSET_SPECIFIC_ROUTER
           vars.strategies,
           vars.redemptionDatas,
           vars.fundingStrategies,
@@ -602,11 +601,11 @@ contract AnyLiquidationTest is BaseTest {
     return returndata;
   }
 
-  function testRawLiquidation() public debuggingOnly fork(POLYGON_MAINNET) {
+  function testRawLiquidation() public debuggingOnly fork(MODE_MAINNET) {
     vm.prank(ap.getAddress("deployer"));
     _functionCall(
-      address(fsl),
-      hex"a68ee119000000000000000000000000f93a5f0a4925eec32cd585641c88a498523f383c0000000000000000000000000000000000000000000000000000013f7702e3b7000000000000000000000000a9736ba05de1213145f688e4619e5a7e0dcf4c72000000000000000000000000b3d83f2cab787adcb99d4c768f1eb42c8734b5630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000070085a09d30d6f8c4ecf6ee10120d1847383bb570000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      0x39C353Cf9041CcF467A04d0e78B63d961E81458a,
+      hex"86ed50b10000000000000000000000002791bca1f2de4661ed88a30c99a7a9449aa841740000000000000000000000007ceb23fd6bc0add59e62ac25578270cff1b9f6190000000000000000000000000000000000000000000000000000000005f5e10000000000000000000000000000000000000000000000000000000000000001f4",
       "raw liquidation failed"
     );
   }

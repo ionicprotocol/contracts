@@ -474,7 +474,7 @@ contract DeployMarketsTest is Test {
     assertEq(cToken.totalSupply(), 5 * 1e18, "!total supply 5");
     assertEq(underlyingToken.balanceOf(address(cToken)), 1e18, "!market underlying balance 1");
 
-    (, uint256 liqBefore, uint256 sfBefore) = comptroller.getAccountLiquidity(address(this));
+    (, , uint256 liqBefore, uint256 sfBefore) = comptroller.getAccountLiquidity(address(this));
 
     uint256[] memory caps = new uint256[](1);
     caps[0] = 25e18;
@@ -488,7 +488,7 @@ contract DeployMarketsTest is Test {
     assertEq(underlyingToken.balanceOf(address(cToken)), 101e18, "!market balance 101");
     assertEq(cToken.balanceOfUnderlying(address(this)), 101e18, "!user balance 101");
 
-    (, uint256 liqAfter, uint256 sfAfter) = comptroller.getAccountLiquidity(address(this));
+    (, , uint256 liqAfter, uint256 sfAfter) = comptroller.getAccountLiquidity(address(this));
     emit log_named_uint("liqBefore", liqBefore);
     emit log_named_uint("liqAfter", liqAfter);
 
