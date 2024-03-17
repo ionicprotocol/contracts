@@ -200,7 +200,11 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
+  function _configurePairAndLiquidator(
+    address _collat,
+    address _stable,
+    IRedemptionStrategy _liquidator
+  ) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -282,10 +286,14 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(
-    address _positionOwner,
-    uint256 _depositAmount
-  ) internal returns (LeveredPosition _position, uint256 _maxRatio, uint256 _minRatio) {
+  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
+    internal
+    returns (
+      LeveredPosition _position,
+      uint256 _maxRatio,
+      uint256 _minRatio
+    )
+  {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 
