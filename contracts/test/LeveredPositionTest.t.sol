@@ -200,11 +200,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(
-    address _collat,
-    address _stable,
-    IRedemptionStrategy _liquidator
-  ) internal {
+  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -286,14 +282,10 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
-    internal
-    returns (
-      LeveredPosition _position,
-      uint256 _maxRatio,
-      uint256 _minRatio
-    )
-  {
+  function _openLeveredPosition(
+    address _positionOwner,
+    uint256 _depositAmount
+  ) internal returns (LeveredPosition _position, uint256 _maxRatio, uint256 _minRatio) {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 
@@ -966,7 +958,7 @@ contract ModeWethUSDCLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 10e18;
+    uint256 depositAmount = 1e17;
 
     address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
     address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
@@ -1032,7 +1024,7 @@ contract ModeWbtcUSDCLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 10e8;
+    uint256 depositAmount = 1e6;
 
     address wbtcMarket = 0xd70254C3baD29504789714A7c69d60Ec1127375C;
     address USDCMarket = 0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038;
@@ -1071,7 +1063,7 @@ contract ModeWbtcUSDTLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 1e8;
+    uint256 depositAmount = 1e6;
 
     address wbtcMarket = 0xd70254C3baD29504789714A7c69d60Ec1127375C;
     address USDTMarket = 0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3;
