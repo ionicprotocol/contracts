@@ -435,7 +435,8 @@ contract ComptrollerFirstExtension is
   function getPaginatedBorrowers(uint256 page, uint256 pageSize)
     public
     view
-    returns (uint256 _totalPages, address[] memory _pageOfBorrowers) {
+    returns (uint256 _totalPages, address[] memory _pageOfBorrowers)
+  {
     if (pageSize == 0) pageSize = 300;
     uint256 currentPageSize = pageSize;
     uint256 allBorrowersCount = allBorrowers.length;

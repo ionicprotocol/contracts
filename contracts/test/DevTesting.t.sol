@@ -176,10 +176,7 @@ contract DevTesting is BaseTest {
 
     // upgrade to the new comptroller extension
     vm.startPrank(asUnitroller.admin());
-    asUnitroller._registerExtension(
-      newComptrollerExtension,
-      DiamondExtension(asUnitroller._listExtensions()[1])
-    );
+    asUnitroller._registerExtension(newComptrollerExtension, DiamondExtension(asUnitroller._listExtensions()[1]));
 
     //asUnitroller._upgrade();
     vm.stopPrank();
@@ -203,19 +200,19 @@ contract DevTesting is BaseTest {
     emit log_named_array("page of 50 borrowers", borrowersPage);
 
     //    for (uint256 i = 0; i < borrowers.length; i++) {
-//      (
-//        uint256 error,
-//        uint256 collateralValue,
-//        uint256 liquidity,
-//        uint256 shortfall
-//      ) = pool.getAccountLiquidity(borrowers[i]);
-//
-//      emit log("");
-//      emit log_named_address("user", borrowers[i]);
-//      emit log_named_uint("collateralValue", collateralValue);
-//      if (liquidity > 0) emit log_named_uint("liquidity", liquidity);
-//      if (shortfall > 0) emit log_named_uint("SHORTFALL", shortfall);
-//    }
+    //      (
+    //        uint256 error,
+    //        uint256 collateralValue,
+    //        uint256 liquidity,
+    //        uint256 shortfall
+    //      ) = pool.getAccountLiquidity(borrowers[i]);
+    //
+    //      emit log("");
+    //      emit log_named_address("user", borrowers[i]);
+    //      emit log_named_uint("collateralValue", collateralValue);
+    //      if (liquidity > 0) emit log_named_uint("liquidity", liquidity);
+    //      if (shortfall > 0) emit log_named_uint("SHORTFALL", shortfall);
+    //    }
   }
 
   function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
