@@ -458,7 +458,7 @@ contract ComptrollerFirstExtension is
       return (_totalPages, new address[](0));
     }
 
-    _pageOfBorrowers = new address[](pageSize);
+    _pageOfBorrowers = new address[](currentPageSize);
     for (uint256 i = 0; i < currentPageSize; i++) {
       uint256 offset = page * pageSize;
       _pageOfBorrowers[i] = allBorrowers[i + offset];
