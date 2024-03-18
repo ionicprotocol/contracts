@@ -446,11 +446,15 @@ contract ComptrollerFirstExtension is
     }
 
     _totalPages = allBorrowersCount / pageSize;
-    if (allBorrowersCount % pageSize > 0) _totalPages++;
+    uint256 sizeOfPageFromRemainder = allBorrowersCount % pageSize;
+    if (sizeOfPageFromRemainder > 0) {
+      _totalPages++;
+      if (page + 1 == _totalPages) {
+        currentPageSize = sizeOfPageFromRemainder;
+      }
+    }
 
-    if (page + 1 == _totalPages) {
-      currentPageSize = allBorrowersCount % pageSize;
-    } else if (page + 1 > _totalPages) {
+    if (page + 1 > _totalPages) {
       return (_totalPages, new address[](0));
     }
 
