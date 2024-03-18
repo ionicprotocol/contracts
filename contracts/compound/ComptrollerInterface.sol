@@ -214,6 +214,8 @@ interface ComptrollerExtensionInterface {
 
   function getAllBorrowers() external view returns (address[] memory);
 
+  function getAllBorrowersCount() external view returns (uint256);
+
   function getPaginatedBorrowers(uint256 page, uint256 pageSize)
     external
     view

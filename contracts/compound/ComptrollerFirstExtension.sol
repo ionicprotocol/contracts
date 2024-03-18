@@ -38,7 +38,7 @@ contract ComptrollerFirstExtension is
   event MarketUnlisted(ICErc20 cToken);
 
   function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory) {
-    uint8 fnsCount = 32;
+    uint8 fnsCount = 33;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.addNonAccruingFlywheel.selector;
     functionSelectors[--fnsCount] = this._setMarketSupplyCaps.selector;
@@ -56,6 +56,7 @@ contract ComptrollerFirstExtension is
     functionSelectors[--fnsCount] = this._unsupportMarket.selector;
     functionSelectors[--fnsCount] = this.getAllMarkets.selector;
     functionSelectors[--fnsCount] = this.getAllBorrowers.selector;
+    functionSelectors[--fnsCount] = this.getAllBorrowersCount.selector;
     functionSelectors[--fnsCount] = this.getPaginatedBorrowers.selector;
     functionSelectors[--fnsCount] = this.getWhitelist.selector;
     functionSelectors[--fnsCount] = this.getRewardsDistributors.selector;
@@ -430,6 +431,10 @@ contract ComptrollerFirstExtension is
    */
   function getAllBorrowers() public view returns (address[] memory) {
     return allBorrowers;
+  }
+
+  function getAllBorrowersCount() public view returns (uint256) {
+    return allBorrowers.length;
   }
 
   function getPaginatedBorrowers(uint256 page, uint256 pageSize)
