@@ -6,6 +6,9 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 
 import "./config/BaseTest.t.sol";
 import { IonicComptroller } from "../compound/ComptrollerInterface.sol";
+import { ComptrollerFirstExtension } from "../compound/ComptrollerFirstExtension.sol";
+import { Unitroller } from "../compound/Unitroller.sol";
+import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
@@ -164,6 +167,52 @@ contract DevTesting is BaseTest {
     for (uint8 i = 0; i < markets.length; i++) {
       markets[i].registerInSFS();
     }
+  }
+
+  function upgradePool() internal {
+    ComptrollerFirstExtension newComptrollerExtension = new ComptrollerFirstExtension();
+
+    Unitroller asUnitroller = Unitroller(payable(address(pool)));
+
+    // upgrade to the new comptroller extension
+    vm.startPrank(asUnitroller.admin());
+    asUnitroller._registerExtension(newComptrollerExtension, DiamondExtension(asUnitroller._listExtensions()[1]));
+
+    //asUnitroller._upgrade();
+    vm.stopPrank();
+  }
+
+  function testModeFetchBorrowers() public fork(MODE_MAINNET) {
+    //    address[] memory borrowers = pool.getAllBorrowers();
+    //    emit log_named_uint("borrowers.len", borrowers.length);
+
+    upgradePool();
+
+    (uint256 totalPages, address[] memory borrowersPage) = pool.getPaginatedBorrowers(1, 0);
+
+    emit log_named_uint("total pages with 300 size (default)", totalPages);
+
+    (totalPages, borrowersPage) = pool.getPaginatedBorrowers(totalPages - 1, 50);
+    emit log_named_array("last page of 300 borrowers", borrowersPage);
+
+    (totalPages, borrowersPage) = pool.getPaginatedBorrowers(1, 50);
+    emit log_named_uint("total pages with 50 size", totalPages);
+    emit log_named_array("page of 50 borrowers", borrowersPage);
+
+    //    for (uint256 i = 0; i < borrowers.length; i++) {
+    //      (
+    //        uint256 error,
+    //        uint256 collateralValue,
+    //        uint256 liquidity,
+    //        uint256 shortfall
+    //      ) = pool.getAccountLiquidity(borrowers[i]);
+    //
+    //      emit log("");
+    //      emit log_named_address("user", borrowers[i]);
+    //      emit log_named_uint("collateralValue", collateralValue);
+    //      if (liquidity > 0) emit log_named_uint("liquidity", liquidity);
+    //      if (shortfall > 0) emit log_named_uint("SHORTFALL", shortfall);
+    //    }
   }
 
   function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
