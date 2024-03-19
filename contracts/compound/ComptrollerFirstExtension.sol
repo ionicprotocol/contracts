@@ -442,16 +442,16 @@ contract ComptrollerFirstExtension is
     view
     returns (uint256 _totalPages, address[] memory _pageOfBorrowers)
   {
-    if (pageSize == 0) pageSize = 300;
-    uint256 currentPageSize = pageSize;
     uint256 allBorrowersCount = allBorrowers.length;
-
     if (allBorrowersCount == 0) {
       return (0, new address[](0));
     }
 
-    _totalPages = allBorrowersCount / pageSize;
+    if (pageSize == 0) pageSize = 300;
+    uint256 currentPageSize = pageSize;
     uint256 sizeOfPageFromRemainder = allBorrowersCount % pageSize;
+
+    _totalPages = allBorrowersCount / pageSize;
     if (sizeOfPageFromRemainder > 0) {
       _totalPages++;
       if (page + 1 == _totalPages) {
@@ -463,9 +463,9 @@ contract ComptrollerFirstExtension is
       return (_totalPages, new address[](0));
     }
 
+    uint256 offset = page * pageSize;
     _pageOfBorrowers = new address[](currentPageSize);
     for (uint256 i = 0; i < currentPageSize; i++) {
-      uint256 offset = page * pageSize;
       _pageOfBorrowers[i] = allBorrowers[i + offset];
     }
   }
