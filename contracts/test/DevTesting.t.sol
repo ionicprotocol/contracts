@@ -14,6 +14,7 @@ import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 import { PoolLens } from "../PoolLens.sol";
 import { PoolLensSecondary } from "../PoolLensSecondary.sol";
+import { JumpRateModel } from "../compound/JumpRateModel.sol";
 
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
@@ -81,11 +82,28 @@ contract DevTesting is BaseTest {
     emit log_named_uint("hf", hf);
   }
 
-  function testModeMaxBorrow() public debuggingOnly fork(MODE_MAINNET) {
-    address user = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
-    uint256 maxBorrow = pool.getMaxRedeemOrBorrow(user, usdcMarket, true);
+  function testModeUsdcBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(usdcMarket);
+  }
 
-    emit log_named_uint("max borrow", maxBorrow);
+  function testModeUsdtBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(usdtMarket);
+  }
+
+  function testModeWethBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(wethMarket);
+    wethMarket.accrueInterest();
+    _testModeBorrowCaps(wethMarket);
+  }
+
+  function _testModeBorrowCaps(ICErc20 market) internal {
+    uint256 borrowCapUsdc = pool.borrowCaps(address(market));
+    uint256 totalBorrowsCurrent = market.totalBorrowsCurrent();
+
+    uint256 wethBorrowAmount = 154753148031252;
+    console.log("borrowCapUsdc %e", borrowCapUsdc);
+    console.log("totalBorrowsCurrent %e", totalBorrowsCurrent);
+    console.log("new totalBorrowsCurrent %e", totalBorrowsCurrent + wethBorrowAmount);
   }
 
   function testMarketMember() public debuggingOnly fork(MODE_MAINNET) {
@@ -216,11 +234,29 @@ contract DevTesting is BaseTest {
     vm.stopPrank();
   }
 
+  function testModeBorrowRate() public fork(MODE_MAINNET) {
+    //ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 ezEthMarket = ICErc20(0x59e710215d45F584f44c0FEe83DA6d43D762D857);
+
+    IonicComptroller pool = ezEthMarket.comptroller();
+    vm.prank(pool.admin());
+    ezEthMarket._setInterestRateModel(JumpRateModel(0x413aD59b80b1632988d478115a466bdF9B26743a));
+
+    JumpRateModel discRateModel = JumpRateModel(ezEthMarket.interestRateModel());
+
+    uint256 borrows = 200e18;
+    uint256 cash = 5000e18 - borrows;
+    uint256 reserves = 1e18;
+    uint256 rate = discRateModel.getBorrowRate(cash, borrows, reserves);
+
+    emit log_named_uint("rate per year %e", rate * discRateModel.blocksPerYear());
+  }
+
   function testModeFetchBorrowers() public fork(MODE_MAINNET) {
     //    address[] memory borrowers = pool.getAllBorrowers();
     //    emit log_named_uint("borrowers.len", borrowers.length);
 
-    upgradePool();
+    //upgradePool();
 
     (uint256 totalPages, address[] memory borrowersPage) = pool.getPaginatedBorrowers(1, 0);
 
