@@ -156,6 +156,8 @@ contract DevTesting is BaseTest {
       emit log_named_address("market", address(markets[i]));
       emit log(markets[i].symbol());
       emit log(markets[i].name());
+
+      emit log_named_uint("current exchange rate", markets[i].exchangeRateCurrent());
     }
   }
 

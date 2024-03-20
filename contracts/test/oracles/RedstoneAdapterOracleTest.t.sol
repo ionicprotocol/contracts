@@ -26,7 +26,7 @@ contract RedstoneAdapterOracleTest is BaseTest {
     mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
   }
 
-  function testPrintPricesMode() public fork(MODE_MAINNET) {
+  function testPrintRedstonePricesMode() public debuggingOnly fork(MODE_MAINNET) {
     emit log_named_uint("ezETH price (18 dec)", oracle.price(MODE_EZETH));
     emit log_named_uint("WBTC price (8 dec)", oracle.price(MODE_WBTC));
     emit log_named_uint("weETH price (18 dec)", oracle.price(MODE_WEETH));
