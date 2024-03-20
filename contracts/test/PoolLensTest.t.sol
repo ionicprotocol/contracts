@@ -15,11 +15,11 @@ contract PoolLensTest is BaseTest {
 
   function testModeFPL() public debuggingOnly fork(MODE_MAINNET) {
     IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
-    //    PoolLens fpl = PoolLens(0x611a68618412c2e15A36e3e59C0b979746d87AB8);
-    //    PoolLens.PoolAsset[] memory datas = fpl.getPoolAssetsWithData(pool);
-    //
-    //    emit log_named_uint("ionicFee", datas[0].ionicFee);
-    //    emit log_named_uint("adminFee", datas[0].adminFee);
+    PoolLens fpl = PoolLens(0x611a68618412c2e15A36e3e59C0b979746d87AB8);
+    PoolLens.PoolAsset[] memory datas = fpl.getPoolAssetsWithData(pool);
+
+    emit log_named_uint("ionicFee", datas[0].ionicFee);
+    emit log_named_uint("adminFee", datas[0].adminFee);
 
     ICErc20[] memory markets = pool.getAllMarkets();
 
