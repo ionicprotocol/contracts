@@ -75,7 +75,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       swapRouter = 0x5D61c537393cf21893BE619E36fC94cd73C77DD3; // kim router
       //quoter = IUniswapV3Quoter(0x7Fd569b2021850fbA53887dd07736010aCBFc787); // other sup quoter?
       quoter = IUniswapV3Quoter(0x5E6AEbab1AD525f5336Bd12E6847b851531F72ba); // sup quoter
-      usdcWhale = 0xB4fb31E7B1471A8e52dD1e962A281a732EaD59c1;
+      usdcWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79; // vault
       wethWhale = 0xF4C85269240C1D447309fA602A90ac23F1CB0Dc0;
       poolAddress = 0xFB3323E24743Caf4ADD0fDCCFB268565c0685556;
       //uniV3PooForFlash = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF; // kim weth-usdc pool
