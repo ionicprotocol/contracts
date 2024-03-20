@@ -14,6 +14,7 @@ import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
 import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
 import { PoolLens } from "../PoolLens.sol";
 import { PoolLensSecondary } from "../PoolLensSecondary.sol";
+import { JumpRateModel } from "../compound/JumpRateModel.sol";
 
 contract DevTesting is BaseTest {
   IonicComptroller pool = IonicComptroller(0xFB3323E24743Caf4ADD0fDCCFB268565c0685556);
@@ -21,6 +22,8 @@ contract DevTesting is BaseTest {
   PoolLens lens = PoolLens(0x431C87E08e2636733a945D742d25Ba77577ED480);
 
   address deployer = 0x1155b614971f16758C92c4890eD338C9e3ede6b7;
+  address multisig = 0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2;
+
   ICErc20 wethMarket;
   ICErc20 usdcMarket;
   ICErc20 usdtMarket;
@@ -79,11 +82,28 @@ contract DevTesting is BaseTest {
     emit log_named_uint("hf", hf);
   }
 
-  function testModeMaxBorrow() public debuggingOnly fork(MODE_MAINNET) {
-    address user = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
-    uint256 maxBorrow = pool.getMaxRedeemOrBorrow(user, usdcMarket, true);
+  function testModeUsdcBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(usdcMarket);
+  }
 
-    emit log_named_uint("max borrow", maxBorrow);
+  function testModeUsdtBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(usdtMarket);
+  }
+
+  function testModeWethBorrowCaps() public debuggingOnly fork(MODE_MAINNET) {
+    _testModeBorrowCaps(wethMarket);
+    wethMarket.accrueInterest();
+    _testModeBorrowCaps(wethMarket);
+  }
+
+  function _testModeBorrowCaps(ICErc20 market) internal {
+    uint256 borrowCapUsdc = pool.borrowCaps(address(market));
+    uint256 totalBorrowsCurrent = market.totalBorrowsCurrent();
+
+    uint256 wethBorrowAmount = 154753148031252;
+    console.log("borrowCapUsdc %e", borrowCapUsdc);
+    console.log("totalBorrowsCurrent %e", totalBorrowsCurrent);
+    console.log("new totalBorrowsCurrent %e", totalBorrowsCurrent + wethBorrowAmount);
   }
 
   function testMarketMember() public debuggingOnly fork(MODE_MAINNET) {
@@ -153,13 +173,45 @@ contract DevTesting is BaseTest {
   }
 
   function testAssetAsCollateralCap() public debuggingOnly fork(MODE_MAINNET) {
-    pool.getAssetAsCollateralValueCap(wethMarket, usdcMarket, false, deployer);
+    address MODE_EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+    address ezEthWhale = 0xd3B02d999C681BD8B75F340FA7e078cE9097bF23;
+
+    vm.startPrank(multisig);
+    uint256 errCode = pool._deployMarket(
+      1, //delegateType
+      abi.encode(
+        MODE_EZETH,
+        address(pool),
+        ap.getAddress("FeeDistributor"),
+        0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
+        "Ionic Renzo Restaked ETH",
+        "ionezETH",
+        0.10e18,
+        0.10e18
+      ),
+      "",
+      0.70e18
+    );
+    vm.stopPrank();
+    require(errCode == 0, "error deploying market");
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 ezEthMarket = markets[markets.length - 1];
+
+    //    uint256 cap = pool.getAssetAsCollateralValueCap(ezEthMarket, usdcMarket, false, deployer);
+    uint256 cap = pool.supplyCaps(address(ezEthMarket));
+    require(cap == 0, "non-zero cap");
+
+    vm.startPrank(ezEthWhale);
+    ERC20(MODE_EZETH).approve(address(ezEthMarket), 1e36);
+    errCode = ezEthMarket.mint(1e18);
+    require(errCode == 0, "should be unable to supply");
   }
 
   function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
     emit log_named_address("pool admin", pool.admin());
 
-    vm.startPrank(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
+    vm.startPrank(multisig);
     pool.registerInSFS();
 
     ICErc20[] memory markets = pool.getAllMarkets();
@@ -182,11 +234,29 @@ contract DevTesting is BaseTest {
     vm.stopPrank();
   }
 
+  function testModeBorrowRate() public fork(MODE_MAINNET) {
+    //ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 ezEthMarket = ICErc20(0x59e710215d45F584f44c0FEe83DA6d43D762D857);
+
+    IonicComptroller pool = ezEthMarket.comptroller();
+    vm.prank(pool.admin());
+    ezEthMarket._setInterestRateModel(JumpRateModel(0x413aD59b80b1632988d478115a466bdF9B26743a));
+
+    JumpRateModel discRateModel = JumpRateModel(ezEthMarket.interestRateModel());
+
+    uint256 borrows = 200e18;
+    uint256 cash = 5000e18 - borrows;
+    uint256 reserves = 1e18;
+    uint256 rate = discRateModel.getBorrowRate(cash, borrows, reserves);
+
+    emit log_named_uint("rate per year %e", rate * discRateModel.blocksPerYear());
+  }
+
   function testModeFetchBorrowers() public fork(MODE_MAINNET) {
     //    address[] memory borrowers = pool.getAllBorrowers();
     //    emit log_named_uint("borrowers.len", borrowers.length);
 
-    upgradePool();
+    //upgradePool();
 
     (uint256 totalPages, address[] memory borrowersPage) = pool.getPaginatedBorrowers(1, 0);
 
@@ -218,6 +288,42 @@ contract DevTesting is BaseTest {
   function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
     vm.prank(deployer);
     require(usdcMarket.borrow(5e6) == 0, "can't borrow");
+  }
+
+  function testModeDeployMarket() public debuggingOnly fork(MODE_MAINNET) {
+    address MODE_WEETH = 0x028227c4dd1e5419d11Bb6fa6e661920c519D4F5;
+    address weEthWhale = 0x6e55a90772B92f17f87Be04F9562f3faafd0cc38;
+
+    vm.startPrank(pool.admin());
+    uint256 errCode = pool._deployMarket(
+      1, //delegateType
+      abi.encode(
+        MODE_WEETH,
+        address(pool),
+        ap.getAddress("FeeDistributor"),
+        0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
+        "Ionic Wrapped eETH",
+        "ionweETH",
+        0.10e18,
+        0.10e18
+      ),
+      "",
+      0.70e18
+    );
+    vm.stopPrank();
+    require(errCode == 0, "error deploying market");
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 weEthMarket = markets[markets.length - 1];
+
+    //    uint256 cap = pool.getAssetAsCollateralValueCap(weEthMarket, usdcMarket, false, deployer);
+    uint256 cap = pool.supplyCaps(address(weEthMarket));
+    require(cap == 0, "non-zero cap");
+
+    vm.startPrank(weEthWhale);
+    ERC20(MODE_WEETH).approve(address(weEthMarket), 1e36);
+    errCode = weEthMarket.mint(0.01e18);
+    require(errCode == 0, "should be unable to supply");
   }
 
   function _functionCall(
