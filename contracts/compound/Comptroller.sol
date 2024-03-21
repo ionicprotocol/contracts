@@ -258,14 +258,15 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     if (capConfig.controller != address(0)) {
       // We have a controller, so we're using Adrastia Prudentia
 
+      address underlyingToken = ICErc20(cTokenAddress).underlying();
+
       // Get the supply cap from Adrastia Prudentia
-      supplyCap = IHistoricalRates(capConfig.controller).getRateAt(cTokenAddress, capConfig.offset).current;
+      supplyCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
 
       // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
       // must scale the supply cap to get the correct amount
 
       int256 scaleByDecimals = 18;
-      address underlyingToken = ICErc20(cTokenAddress).underlying();
       // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
       (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
       if (success && data.length == 32) {
@@ -514,14 +515,15 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     if (capConfig.controller != address(0)) {
       // We have a controller, so we're using Adrastia Prudentia
 
+      address underlyingToken = ICErc20(cToken).underlying();
+
       // Get the borrow cap from Adrastia Prudentia
-      borrowCap = IHistoricalRates(capConfig.controller).getRateAt(cToken, capConfig.offset).current;
+      borrowCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
 
       // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
       // must scale the supply cap to get the correct amount
 
       int256 scaleByDecimals = 18;
-      address underlyingToken = ICErc20(cToken).underlying();
       // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
       (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
       if (success && data.length == 32) {
