@@ -3,7 +3,9 @@ pragma solidity >=0.8.0;
 
 import { BasePriceOracle } from "../oracles/BasePriceOracle.sol";
 import { ICErc20 } from "./CTokenInterfaces.sol";
-import { ComptrollerV3Storage } from "../compound/ComptrollerStorage.sol";
+import { DiamondExtension } from "../ionic/DiamondExtension.sol";
+import { ComptrollerV4Storage } from "../compound/ComptrollerStorage.sol";
+import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
 
 interface ComptrollerInterface {
   function isDeprecated(ICErc20 cToken) external view returns (bool);
@@ -313,6 +315,34 @@ interface ComptrollerExtensionInterface {
   function registerInSFS() external returns (uint256);
 }
 
+interface ComptrollerPrudentiaCapsExtInterface {
+  /**
+   * @notice Retrieves Adrastia Prudentia borrow cap config from storage.
+   * @return The config.
+   */
+  function getBorrowCapConfig() external view returns (PrudentiaLib.PrudentiaConfig memory);
+
+  /**
+   * @notice Retrieves Adrastia Prudentia supply cap config from storage.
+   * @return The config.
+   */
+  function getSupplyCapConfig() external view returns (PrudentiaLib.PrudentiaConfig memory);
+
+  /**
+   * @notice Sets the Adrastia Prudentia supply cap config.
+   * @dev Specifying a zero address for the `controller` parameter will make the Comptroller use the native supply caps.
+   * @param newConfig The new config.
+   */
+  function _setSupplyCapConfig(PrudentiaLib.PrudentiaConfig calldata newConfig) external;
+
+  /**
+   * @notice Sets the Adrastia Prudentia supply cap config.
+   * @dev Specifying a zero address for the `controller` parameter will make the Comptroller use the native borrow caps.
+   * @param newConfig The new config.
+   */
+  function _setBorrowCapConfig(PrudentiaLib.PrudentiaConfig calldata newConfig) external;
+}
+
 interface UnitrollerInterface {
   function comptrollerImplementation() external view returns (address);
 
@@ -338,7 +368,7 @@ interface IonicComptroller is
 
 }
 
-abstract contract ComptrollerBase is ComptrollerV3Storage {
+abstract contract ComptrollerBase is ComptrollerV4Storage {
   /// @notice Indicator that this is a Comptroller contract (for inspection)
   bool public constant isComptroller = true;
 }

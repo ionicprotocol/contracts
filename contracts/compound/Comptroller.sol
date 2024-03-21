@@ -10,8 +10,11 @@ import { IFeeDistributor } from "./IFeeDistributor.sol";
 import { IIonicFlywheel } from "../ionic/strategies/flywheel/IIonicFlywheel.sol";
 import { DiamondExtension, DiamondBase, LibDiamond } from "../ionic/DiamondExtension.sol";
 import { ComptrollerExtensionInterface, ComptrollerBase, ComptrollerInterface } from "./ComptrollerInterface.sol";
+import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+import "adrastia-periphery/rates/IHistoricalRates.sol";
 
 /**
  * @title Compound's Comptroller Contract
@@ -247,7 +250,45 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     }
 
     // Check supply cap
-    uint256 supplyCap = supplyCaps[cTokenAddress];
+    PrudentiaLib.PrudentiaConfig memory capConfig = supplyCapConfig;
+
+    uint256 supplyCap;
+
+    // Check if we're using Adrastia Prudentia for the supply cap
+    if (capConfig.controller != address(0)) {
+      // We have a controller, so we're using Adrastia Prudentia
+
+      address underlyingToken = ICErc20(cTokenAddress).underlying();
+
+      // Get the supply cap from Adrastia Prudentia
+      supplyCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
+
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
+
+      int256 scaleByDecimals = 18;
+      // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
+      (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
+      if (success && data.length == 32) {
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
+      }
+
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        supplyCap *= 10**uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        supplyCap /= 10**uint256(-scaleByDecimals);
+      }
+    } else {
+      // We don't have a controller, so we're using the local supply cap
+
+      // Get the supply cap from the local supply cap
+      supplyCap = supplyCaps[cTokenAddress];
+    }
+
     // Supply cap of 0 corresponds to unlimited supplying
     if (supplyCap != 0 && !supplyCapWhitelist[cTokenAddress].contains(minter)) {
       uint256 totalUnderlyingSupply = ICErc20(cTokenAddress).getTotalUnderlyingSupplied();
@@ -466,7 +507,43 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     }
 
     // Check borrow cap
-    uint256 borrowCap = borrowCaps[cToken];
+    PrudentiaLib.PrudentiaConfig memory capConfig = borrowCapConfig;
+
+    uint256 borrowCap;
+
+    // Check if we're using Adrastia Prudentia for the borrow cap
+    if (capConfig.controller != address(0)) {
+      // We have a controller, so we're using Adrastia Prudentia
+
+      address underlyingToken = ICErc20(cToken).underlying();
+
+      // Get the borrow cap from Adrastia Prudentia
+      borrowCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
+
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
+
+      int256 scaleByDecimals = 18;
+      // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
+      (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
+      if (success && data.length == 32) {
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
+      }
+
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        borrowCap *= 10**uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        borrowCap /= 10**uint256(-scaleByDecimals);
+      }
+    } else {
+      // We don't have a controller, so we're using the local borrow cap
+      borrowCap = borrowCaps[cToken];
+    }
+
     // Borrow cap of 0 corresponds to unlimited borrowing
     if (borrowCap != 0 && !borrowCapWhitelist[cToken].contains(borrower)) {
       uint256 totalBorrows = ICErc20(cToken).totalBorrowsCurrent();
