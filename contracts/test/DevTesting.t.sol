@@ -11,7 +11,8 @@ import { Unitroller } from "../compound/Unitroller.sol";
 import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { ICErc20 } from "../compound/CTokenInterfaces.sol";
 import { ISwapRouter } from "../external/uniswap/ISwapRouter.sol";
-import { MasterPriceOracle } from "../oracles/MasterPriceOracle.sol";
+import { RedstoneAdapterPriceOracle } from "../oracles/default/RedstoneAdapterPriceOracle.sol";
+import { MasterPriceOracle, BasePriceOracle } from "../oracles/MasterPriceOracle.sol";
 import { PoolLens } from "../PoolLens.sol";
 import { PoolLensSecondary } from "../PoolLensSecondary.sol";
 import { JumpRateModel } from "../compound/JumpRateModel.sol";
@@ -208,6 +209,52 @@ contract DevTesting is BaseTest {
     require(errCode == 0, "should be unable to supply");
   }
 
+  function testNewStoneMarketCapped() public debuggingOnly fork(MODE_MAINNET) {
+    address MODE_STONE = 0x80137510979822322193FC997d400D5A6C747bf7;
+    address stoneWhale = 0x76486cbED5216C82d26Ee60113E48E06C189541A;
+    address redstoneOracleAddress = 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256;
+
+    RedstoneAdapterPriceOracle oracle = new RedstoneAdapterPriceOracle(redstoneOracleAddress);
+    MasterPriceOracle mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
+
+    BasePriceOracle[] memory oracles = new BasePriceOracle[](1);
+    oracles[0] = oracle;
+    vm.prank(mpo.admin());
+    mpo.add(asArray(MODE_STONE), oracles);
+
+    vm.startPrank(multisig);
+    uint256 errCode = pool._deployMarket(
+      1, //delegateType
+      abi.encode(
+        MODE_STONE,
+        address(pool),
+        ap.getAddress("FeeDistributor"),
+        0x21a455cEd9C79BC523D4E340c2B97521F4217817, // irm - jump rate model on mode
+        "Ionic StakeStone Ether",
+        "ionSTONE",
+        0.10e18,
+        0.10e18
+      ),
+      "",
+      0.70e18
+    );
+    vm.stopPrank();
+    require(errCode == 0, "error deploying market");
+
+    ICErc20[] memory markets = pool.getAllMarkets();
+    ICErc20 stoneMarket = markets[markets.length - 1];
+
+    //    uint256 cap = pool.getAssetAsCollateralValueCap(stoneMarket, usdcMarket, false, deployer);
+    uint256 cap = pool.supplyCaps(address(stoneMarket));
+    require(cap == 0, "non-zero cap");
+
+    vm.startPrank(stoneWhale);
+    ERC20(MODE_STONE).approve(address(stoneMarket), 1e36);
+    vm.expectRevert("not authorized");
+    errCode = stoneMarket.mint(1e18);
+    //require(errCode != 0, "should be unable to supply");
+  }
+
   function testRegisterSFS() public debuggingOnly fork(MODE_MAINNET) {
     emit log_named_address("pool admin", pool.admin());
 
@@ -283,6 +330,22 @@ contract DevTesting is BaseTest {
     //      if (liquidity > 0) emit log_named_uint("liquidity", liquidity);
     //      if (shortfall > 0) emit log_named_uint("SHORTFALL", shortfall);
     //    }
+  }
+
+  function testModeAccountLiquidity() public debuggingOnly fork(MODE_MAINNET) {
+    address borrower = 0x0C387030a5D3AcDcde1A8DDaF26df31BbC1CE763;
+    (
+      uint256 error,
+      uint256 collateralValue,
+      uint256 liquidity,
+      uint256 shortfall
+    ) = pool.getAccountLiquidity(borrower);
+
+    emit log("");
+    emit log_named_address("user", borrower);
+    emit log_named_uint("collateralValue", collateralValue);
+    if (liquidity > 0) emit log_named_uint("liquidity", liquidity);
+    if (shortfall > 0) emit log_named_uint("SHORTFALL", shortfall);
   }
 
   function testModeUsdcBorrow() public debuggingOnly fork(MODE_MAINNET) {
