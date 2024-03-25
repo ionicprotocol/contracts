@@ -334,12 +334,7 @@ contract DevTesting is BaseTest {
 
   function testModeAccountLiquidity() public debuggingOnly fork(MODE_MAINNET) {
     address borrower = 0x0C387030a5D3AcDcde1A8DDaF26df31BbC1CE763;
-    (
-      uint256 error,
-      uint256 collateralValue,
-      uint256 liquidity,
-      uint256 shortfall
-    ) = pool.getAccountLiquidity(borrower);
+    (uint256 error, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = pool.getAccountLiquidity(borrower);
 
     emit log("");
     emit log_named_address("user", borrower);
