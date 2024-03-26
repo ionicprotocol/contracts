@@ -30,7 +30,7 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
     _testLiquidatorLiquidate(uniV3PooForFlash);
   }
 
-  function testModeUniV3LiquidatorLiquidate() public fork(MODE_MAINNET) {
+  function testModeUniV3LiquidatorLiquidate() public debuggingOnly fork(MODE_MAINNET) {
     IonicUniV3Liquidator _liquidator = new IonicUniV3Liquidator();
     _liquidator.initialize(ap.getAddress("wtoken"), address(quoter));
     liquidator = _liquidator;
@@ -61,9 +61,9 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
   }
 
   function testModeKimUniV2Liquidator() public fork(MODE_MAINNET) {
-//    IonicLiquidator _liquidator = new IonicLiquidator();
-//    _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
-//    liquidator = _liquidator;
+    IonicLiquidator _liquidator = new IonicLiquidator();
+    _liquidator.initialize(ap.getAddress("wtoken"), ap.getAddress("IUniswapV2Router02"), 30);
+    liquidator = _liquidator;
 
     IonicComptroller pool = IonicComptroller(poolAddress);
     {
@@ -78,19 +78,18 @@ contract UniswapV3LiquidatorTest is IonicLiquidatorTest {
         emit log_named_address("weth market", address(wethMarket));
         emit log_named_address("usdc underlying", usdcMarket.underlying());
         emit log_named_address("weth underlying", wethMarket.underlying());
-//        vm.startPrank(liquidatorsRegistry.owner());
-//        IRedemptionStrategy strategy = new KimUniV2Liquidator();
-//        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
-//        vm.stopPrank();
-//        vm.prank(OwnableUpgradeable(address(liquidator)).owner());
-//        liquidator._whitelistRedemptionStrategy(strategy, true);
+        vm.startPrank(liquidatorsRegistry.owner());
+        IRedemptionStrategy strategy = KimUniV2Liquidator(0x6aC17D406a820fa464fFdc0940FCa7E60b3b36B7);
+        liquidatorsRegistry._setRedemptionStrategy(strategy, weth, usdc);
+        vm.stopPrank();
+        liquidator._whitelistRedemptionStrategy(strategy, true);
       }
     }
 
     _testLiquidatorLiquidate(uniV3PooForFlash);
   }
 
-  function testSupPair() public fork(MODE_MAINNET) {
+  function testSupPair() public debuggingOnly fork(MODE_MAINNET) {
     IUniswapV2Pair flashSwapPair = IUniswapV2Pair(0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f);
     IUniswapV3Pool flashSwapPool = IUniswapV3Pool(0xf2e9C024F1C0B7a2a4ea11243C2D86A7b38DD72f);
 

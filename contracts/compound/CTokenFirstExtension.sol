@@ -346,7 +346,6 @@ contract CTokenFirstExtension is
   function borrowRatePerBlockAfterBorrow(uint256 borrowAmount) public view returns (uint256) {
     uint256 cash = asCToken().getCash();
     require(cash >= borrowAmount, "market cash not enough");
-    //if (cash < borrowAmount) revert ;
 
     return
       interestRateModel.getBorrowRate(
@@ -708,7 +707,7 @@ contract CTokenFirstExtension is
   }
 
   function registerInSFS() external returns (uint256) {
-    require(hasAdminRights(), "!admin");
+    require(hasAdminRights() || msg.sender == address(comptroller), "!admin");
     SFSRegister sfsContract = SFSRegister(0x8680CEaBcb9b56913c519c069Add6Bc3494B7020);
     return sfsContract.register(0x8Fba84867Ba458E7c6E2c024D2DE3d0b5C3ea1C2);
   }

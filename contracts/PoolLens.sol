@@ -590,12 +590,11 @@ contract PoolLens is Initializable {
 
     if (shortfall > 0) {
       // HF < 1.0
-      if (collateralValue <= shortfall) return 0;
-      else return ((collateralValue - shortfall) * 1e18) / collateralValue;
+      return (collateralValue * 1e18) / (collateralValue + shortfall);
     } else {
       // HF >= 1.0
       if (collateralValue <= liquidity) return type(uint256).max;
-      else return ((collateralValue - liquidity) * 1e18) / collateralValue;
+      else return (collateralValue * 1e18) / (collateralValue - liquidity);
     }
   }
 }

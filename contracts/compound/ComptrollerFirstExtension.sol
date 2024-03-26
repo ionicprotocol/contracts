@@ -38,7 +38,7 @@ contract ComptrollerFirstExtension is
   event MarketUnlisted(ICErc20 cToken);
 
   function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory) {
-    uint8 fnsCount = 31;
+    uint8 fnsCount = 33;
     bytes4[] memory functionSelectors = new bytes4[](fnsCount);
     functionSelectors[--fnsCount] = this.addNonAccruingFlywheel.selector;
     functionSelectors[--fnsCount] = this._setMarketSupplyCaps.selector;
@@ -56,6 +56,8 @@ contract ComptrollerFirstExtension is
     functionSelectors[--fnsCount] = this._unsupportMarket.selector;
     functionSelectors[--fnsCount] = this.getAllMarkets.selector;
     functionSelectors[--fnsCount] = this.getAllBorrowers.selector;
+    functionSelectors[--fnsCount] = this.getAllBorrowersCount.selector;
+    functionSelectors[--fnsCount] = this.getPaginatedBorrowers.selector;
     functionSelectors[--fnsCount] = this.getWhitelist.selector;
     functionSelectors[--fnsCount] = this.getRewardsDistributors.selector;
     functionSelectors[--fnsCount] = this.isUserOfPool.selector;
@@ -429,6 +431,43 @@ contract ComptrollerFirstExtension is
    */
   function getAllBorrowers() public view returns (address[] memory) {
     return allBorrowers;
+  }
+
+  function getAllBorrowersCount() public view returns (uint256) {
+    return allBorrowers.length;
+  }
+
+  function getPaginatedBorrowers(uint256 page, uint256 pageSize)
+    public
+    view
+    returns (uint256 _totalPages, address[] memory _pageOfBorrowers)
+  {
+    uint256 allBorrowersCount = allBorrowers.length;
+    if (allBorrowersCount == 0) {
+      return (0, new address[](0));
+    }
+
+    if (pageSize == 0) pageSize = 300;
+    uint256 currentPageSize = pageSize;
+    uint256 sizeOfPageFromRemainder = allBorrowersCount % pageSize;
+
+    _totalPages = allBorrowersCount / pageSize;
+    if (sizeOfPageFromRemainder > 0) {
+      _totalPages++;
+      if (page + 1 == _totalPages) {
+        currentPageSize = sizeOfPageFromRemainder;
+      }
+    }
+
+    if (page + 1 > _totalPages) {
+      return (_totalPages, new address[](0));
+    }
+
+    uint256 offset = page * pageSize;
+    _pageOfBorrowers = new address[](currentPageSize);
+    for (uint256 i = 0; i < currentPageSize; i++) {
+      _pageOfBorrowers[i] = allBorrowers[i + offset];
+    }
   }
 
   /**

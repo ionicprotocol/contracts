@@ -15,21 +15,22 @@ contract ProtocolAdminTest is BaseTest {
   function afterForkSetUp() internal virtual override {
   }
 
-  function _checkIfAdmin(address addr) internal {
+  function _checkIfAdmin(address addr, string memory contractName) internal {
+    emit log(contractName);
     assertEq(addr, expectedAdmin, "not the same admin address");
   }
 
   function _checkSafeOwnableAdmin(string memory contractName) internal {
     SafeOwnableUpgradeable ownable = SafeOwnableUpgradeable(ap.getAddress(contractName));
     if (address(ownable) != address(0)) {
-      _checkIfAdmin(ownable.owner());
+      _checkIfAdmin(ownable.owner(), contractName);
     }
   }
 
   function _checkOwnableAdmin(string memory contractName) internal {
     Ownable ownable = Ownable(ap.getAddress(contractName));
     if (address(ownable) != address(0)) {
-      _checkIfAdmin(ownable.owner());
+      _checkIfAdmin(ownable.owner(), contractName);
     }
   }
 
@@ -41,7 +42,7 @@ contract ProtocolAdminTest is BaseTest {
   function _testProtocolAdmin() internal {
     //expectedAdmin = ap.owner();
     address apDeployer = ap.getAddress("deployer");
-    _checkIfAdmin(apDeployer);
+    _checkIfAdmin(apDeployer, "deployer");
 
     // safe ownable
     _checkSafeOwnableAdmin("FeeDistributor");

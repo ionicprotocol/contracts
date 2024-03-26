@@ -7,6 +7,7 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 import { IonicLiquidator, ILiquidator } from "../../IonicLiquidator.sol";
 import { ICurvePool } from "../../external/curve/ICurvePool.sol";
 import { CurveSwapLiquidatorFunder } from "../../liquidators/CurveSwapLiquidatorFunder.sol";
+import { UniswapV3LiquidatorFunder } from "../../liquidators/UniswapV3LiquidatorFunder.sol";
 import { IonicComptroller } from "../../compound/ComptrollerInterface.sol";
 import { IRedemptionStrategy } from "../../liquidators/IRedemptionStrategy.sol";
 import { IFundsConversionStrategy } from "../../liquidators/IFundsConversionStrategy.sol";
@@ -74,7 +75,7 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       swapRouter = 0x5D61c537393cf21893BE619E36fC94cd73C77DD3; // kim router
       //quoter = IUniswapV3Quoter(0x7Fd569b2021850fbA53887dd07736010aCBFc787); // other sup quoter?
       quoter = IUniswapV3Quoter(0x5E6AEbab1AD525f5336Bd12E6847b851531F72ba); // sup quoter
-      usdcWhale = 0xB4fb31E7B1471A8e52dD1e962A281a732EaD59c1;
+      usdcWhale = 0x34b83A3759ba4c9F99c339604181bf6bBdED4C79; // vault
       wethWhale = 0xF4C85269240C1D447309fA602A90ac23F1CB0Dc0;
       poolAddress = 0xFB3323E24743Caf4ADD0fDCCFB268565c0685556;
       //uniV3PooForFlash = 0x293f2B2c17f8cEa4db346D87Ef5712C9dd0491EF; // kim weth-usdc pool
@@ -86,8 +87,8 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
       // usdc 0xd988097fb8612cc24eeC14542bC03424c656005f
     }
 
-//    vm.prank(ap.owner());
-//    ap.setAddress("IUniswapV2Router02", uniswapRouter);
+    //    vm.prank(ap.owner());
+    //    ap.setAddress("IUniswapV2Router02", uniswapRouter);
     vm.prank(ap.owner());
     ap.setAddress("UNISWAP_V3_ROUTER", uniswapRouter);
 
@@ -168,6 +169,19 @@ contract IonicLiquidatorTest is UpgradesBaseTest {
     IERC20Upgradeable usdc = IERC20Upgradeable(usdcMarket.underlying());
     ICErc20 wethMarket = markets[wethMarketIndex];
     IERC20Upgradeable weth = IERC20Upgradeable(wethMarket.underlying());
+    {
+      emit log_named_address("usdc market", address(usdcMarket));
+      emit log_named_address("weth market", address(wethMarket));
+      emit log_named_address("usdc underlying", usdcMarket.underlying());
+      emit log_named_address("weth underlying", wethMarket.underlying());
+      vm.prank(pool.admin());
+      pool._setBorrowCapForCollateral(address(usdcMarket), address(wethMarket), 1e36);
+    }
+
+    {
+      vm.prank(pool.admin());
+      pool._borrowCapWhitelist(0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038, address(this), true);
+    }
 
     {
       vm.prank(wethWhale);
