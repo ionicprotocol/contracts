@@ -212,9 +212,9 @@ contract DevTesting is BaseTest {
   function testNewStoneMarketCapped() public debuggingOnly fork(MODE_MAINNET) {
     address MODE_STONE = 0x80137510979822322193FC997d400D5A6C747bf7;
     address stoneWhale = 0x76486cbED5216C82d26Ee60113E48E06C189541A;
-    address redstoneOracleAddress = 0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256;
 
-    RedstoneAdapterPriceOracle oracle = new RedstoneAdapterPriceOracle(redstoneOracleAddress);
+    address redstoneOracleAddress = 0x63A1531a06F0Ac597a0DfA5A516a37073c3E1e0a;
+    RedstoneAdapterPriceOracle oracle = RedstoneAdapterPriceOracle(redstoneOracleAddress);
     MasterPriceOracle mpo = MasterPriceOracle(ap.getAddress("MasterPriceOracle"));
 
     BasePriceOracle[] memory oracles = new BasePriceOracle[](1);
