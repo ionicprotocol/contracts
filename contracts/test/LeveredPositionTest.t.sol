@@ -999,7 +999,7 @@ contract ModeWethUSDTLeveredPositionTest is LeveredPositionTest {
   function afterForkSetUp() internal override {
     super.afterForkSetUp();
 
-    uint256 depositAmount = 10e18;
+    uint256 depositAmount = 1e18;
 
     address wethMarket = 0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2;
     address USDTMarket = 0x94812F2eEa03A49869f95e1b5868C6f3206ee3D3;
@@ -1016,7 +1016,6 @@ contract ModeWethUSDTLeveredPositionTest is LeveredPositionTest {
 
     vm.prank(comptroller.admin());
     comptroller._setMarketBorrowCaps(cTokens, newBorrowCaps);
-    vm.stopPrank();
 
     _configurePair(wethMarket, USDTMarket);
     _fundMarketAndSelf(ICErc20(wethMarket), wethWhale);
