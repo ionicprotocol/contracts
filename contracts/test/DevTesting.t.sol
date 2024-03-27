@@ -57,6 +57,21 @@ contract DevTesting is BaseTest {
     }
   }
 
+  function testModePoolBorrowers() public debuggingOnly fork(MODE_MAINNET) {
+    emit log_named_array("borrowers", pool.getAllBorrowers());
+  }
+
+  function testModeLiquidationShortfall() public debuggingOnly fork(MODE_MAINNET) {
+    (uint256 err, uint256 collateralValue, uint256 liquidity, uint256 shortfall) = pool.getAccountLiquidity(
+      0xa75F9C8246f7269279bE4c969e7Bc6Eb619cC204
+    );
+
+    emit log_named_uint("err", err);
+    emit log_named_uint("collateralValue", collateralValue);
+    emit log_named_uint("liquidity", liquidity);
+    emit log_named_uint("shortfall", shortfall);
+  }
+
   function testModeHealthFactor() public debuggingOnly fork(MODE_MAINNET) {
     address rahul = 0x5A9e792143bf2708b4765C144451dCa54f559a19;
 
