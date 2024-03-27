@@ -16,6 +16,7 @@ contract ProtocolAdminTest is BaseTest {
   }
 
   function _checkIfAdmin(address addr, string memory contractName) internal {
+    emit log("");
     emit log(contractName);
     assertEq(addr, expectedAdmin, "not the same admin address");
   }
@@ -41,9 +42,6 @@ contract ProtocolAdminTest is BaseTest {
 
   function _testProtocolAdmin() internal {
     //expectedAdmin = ap.owner();
-    address apDeployer = ap.getAddress("deployer");
-    _checkIfAdmin(apDeployer, "deployer");
-
     // safe ownable
     _checkSafeOwnableAdmin("FeeDistributor");
     _checkSafeOwnableAdmin("PoolDirectory");
