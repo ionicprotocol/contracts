@@ -12,8 +12,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract ProtocolAdminTest is BaseTest {
   address public expectedAdmin;
 
-  function afterForkSetUp() internal virtual override {
-  }
+  function afterForkSetUp() internal virtual override {}
 
   function _checkIfAdmin(address addr, string memory contractName) internal {
     emit log("");
