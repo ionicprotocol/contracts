@@ -19,13 +19,16 @@ import "./external/uniswap/UniswapV2Library.sol";
 
 import { ICErc20 } from "./compound/CTokenInterfaces.sol";
 
+import "@pythnetwork/express-relay-sdk-solidity/IExpressRelay.sol";
+import "@pythnetwork/express-relay-sdk-solidity/IExpressRelayFeeReceiver.sol";
+
 /**
  * @title IonicLiquidator
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice IonicLiquidator safely liquidates unhealthy borrowers (with flashloan support).
  * @dev Do not transfer NATIVE or tokens directly to this address. Only send NATIVE here when using a method, and only approve tokens for transfer to here when using a method. Direct NATIVE transfers will be rejected and direct token transfers will be lost.
  */
-contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
+contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, IExpressRelayFeeReceiver {
   using AddressUpgradeable for address payable;
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -63,6 +66,23 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
    * @dev Percentage of the flash swap fee, measured in basis points.
    */
   uint8 public flashSwapFee;
+
+  /**
+   * @dev Addres of Pyth Express Relay for preventing value leakage in liquidations.
+   */
+  address private expressRelay;
+
+  modifier onlyPERPermissioned(
+    address borrower,
+    ICErc20 cErc20,
+    ICErc20 cTokenCollateral
+  ) {
+    require(
+      IExpressRelay(expressRelay).isPermissioned(address(this), abi.encode(borrower, cErc20, cTokenCollateral)),
+      "invalid liquidation"
+    );
+    _;
+  }
 
   function initialize(
     address _wtoken,
@@ -119,7 +139,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
     ICErc20 cErc20,
     ICErc20 cTokenCollateral,
     uint256 minOutputAmount
-  ) external returns (uint256) {
+  ) external onlyPERPermissioned(borrower, cErc20, cTokenCollateral) returns (uint256) {
     // Transfer tokens in, approve to cErc20, and liquidate borrow
     require(repayAmount > 0, "Repay amount (transaction value) must be greater than 0.");
     IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
@@ -150,6 +170,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
    */
   function safeLiquidateToTokensWithFlashLoan(LiquidateToTokensWithFlashSwapVars calldata vars)
     external
+    onlyPERPermissioned(vars.borrower, vars.cErc20, vars.cTokenCollateral)
     returns (uint256)
   {
     // Input validation
@@ -198,6 +219,12 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee {
   receive() external payable {
     require(payable(msg.sender).isContract(), "Sender is not a contract.");
   }
+
+  /**
+   * @notice receiveAuctionProceedings function - receives native token from the express relay
+   * You can use permission key to distribute the received funds to users who got liquidated, LPs, etc...
+   */
+  function receiveAuctionProceedings(bytes calldata permissionKey) external payable {}
 
   /**
    * @dev Callback function for Uniswap flashloans.
