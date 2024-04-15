@@ -70,7 +70,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
   /**
    * @dev Addres of Pyth Express Relay for preventing value leakage in liquidations.
    */
-  address private expressRelay;
+  IExpressRelay private expressRelay;
 
   modifier onlyPERPermissioned(
     address borrower,
@@ -78,7 +78,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
     ICErc20 cTokenCollateral
   ) {
     require(
-      IExpressRelay(expressRelay).isPermissioned(address(this), abi.encode(borrower, cErc20, cTokenCollateral)),
+      expressRelay.isPermissioned(address(this), abi.encode(borrower, cErc20, cTokenCollateral)),
       "invalid liquidation"
     );
     _;
@@ -444,6 +444,10 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
     for (uint256 i = 0; i < strategies.length; i++) {
       redemptionStrategiesWhitelist[address(strategies[i])] = whitelisted[i];
     }
+  }
+
+  function setExpressRelay(IExpressRelay _expressRelay) external onlyOwner {
+    expressRelay = _expressRelay;
   }
 
   /**
