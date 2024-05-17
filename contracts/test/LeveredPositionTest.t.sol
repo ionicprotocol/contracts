@@ -85,15 +85,47 @@ contract LeveredPositionLensTest is BaseTest {
     }
   }
 
-  function testPrintLeveredPositions() public debuggingOnly fork(POLYGON_MAINNET) {
+  function testModeSpecificPositionInfo() public fork(MODE_MAINNET) {
+    LeveredPosition position = LeveredPosition(0x16a61576a611FC98cfCB62212FADAFC95d72C1be);
+
+    LeveredPosition[] memory pos = new LeveredPosition[](1);
+    pos[0] = LeveredPosition(position);
+    uint256[] memory apys = new uint256[](1);
+    LeveredPositionsLens.PositionInfo[] memory infos = lens.getPositionsInfo(pos, apys);
+
+    for (uint256 k = 0; k < infos.length; k++) {
+      emit log_named_address("address", address(pos[k]));
+      emit log_named_uint("positionSupplyAmount", infos[k].positionSupplyAmount);
+      emit log_named_uint("positionValue", infos[k].positionValue);
+      emit log_named_uint("debtAmount", infos[k].debtAmount);
+      emit log_named_uint("debtValue", infos[k].debtValue);
+      emit log_named_uint("equityValue", infos[k].equityValue);
+      emit log_named_uint("equityAmount", infos[k].equityAmount);
+      emit log_named_int("currentApy", infos[k].currentApy);
+      emit log_named_uint("debtRatio", infos[k].debtRatio);
+      emit log_named_uint("liquidationThreshold", infos[k].liquidationThreshold);
+      emit log_named_uint("safetyBuffer", infos[k].safetyBuffer);
+
+      emit log("");
+    }
+  }
+
+  function testPrintLeveredPositions() public debuggingOnly fork(MODE_MAINNET) {
     address[] memory accounts = factory.getAccountsWithOpenPositions();
 
+    emit log_named_uint("accounts len", accounts.length);
     emit log_named_array("accounts", accounts);
 
     for (uint256 j = 0; j < accounts.length; j++) {
       address[] memory positions;
       bool[] memory closed;
       (positions, closed) = factory.getPositionsByAccount(accounts[j]);
+      for (uint256 k = 0; k < closed.length; k++) {
+        emit log_named_address("POSITION", positions[k]);
+        emit log(closed[k] ? "CLOSED" : "OPEN");
+      }
+      emit log_named_address("account", accounts[j]);
+      emit log_named_uint("positions len", positions.length);
       emit log_named_array("positions", positions);
       //emit log_named_array("closed", closed);
     }

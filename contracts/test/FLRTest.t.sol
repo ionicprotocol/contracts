@@ -9,6 +9,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Authority } from "solmate/auth/Auth.sol";
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { IERC20MetadataUpgradeable, IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import { ERC20Upgradeable } from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
 import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
 import { FlywheelStaticRewards } from "flywheel-v2/rewards/FlywheelStaticRewards.sol";
@@ -151,10 +152,26 @@ contract FLRTest is BaseTest {
     emit log_named_int("apr", apr);
   }
 
+  function testRsETHTokenWrapperDecimals() public debuggingOnly fork(MODE_MAINNET) {
+    address rsETHTokenWrapperAddress = 0xe7903B1F75C534Dd8159b313d92cDCfbC62cB3Cd;
+    ERC20Upgradeable token = ERC20Upgradeable(rsETHTokenWrapperAddress);
+    emit log_named_uint("wrapper decimals", token.decimals());
+  }
+
+  function testRsETHTokenImplementationDecimals() public debuggingOnly fork(MODE_MAINNET) {
+    address rsETHTokenImplementationAddress = 0xBdF38F9E6bDFCC23668c7464cE5AFE899A358D52;
+    OddErc20 token = OddErc20(rsETHTokenImplementationAddress);
+    emit log_named_uint("impl decimals", token.decimals());
+  }
+
   function testNetAprChapel() public fork(BSC_CHAPEL) {
     address user = 0x8982aa50bb919E42e9204f12e5b59D053Eb2A602;
     int256 blocks = 26 * 24 * 365 * 60;
     int256 apr = lensRouter.getUserNetApr(user, blocks);
     emit log_named_int("apr", apr);
   }
+}
+
+interface OddErc20 {
+  function decimals() external returns (uint8);
 }
