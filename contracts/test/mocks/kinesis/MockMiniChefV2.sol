@@ -37,8 +37,8 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
   PoolInfo[] public poolInfo;
   /// @notice Address of the LP token for each MCV2 pool.
   IERC20[] public lpToken;
-  /// @notice Address of each `IRewarder` contract in MCV2.
-  IRewarder[] public rewarder;
+  /// @notice Address of each `IRewarder_SR` contract in MCV2.
+  IRewarder_SR[] public rewarder;
 
   /// @notice Info of each user that stakes LP tokens.
   mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -52,8 +52,8 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
   event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
   event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
   event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
-  event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
-  event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
+  event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder_SR indexed rewarder);
+  event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder_SR indexed rewarder, bool overwrite);
   event LogUpdatePool(uint256 indexed pid, uint64 lastRewardTime, uint256 lpSupply, uint256 accSaddlePerShare);
   event LogSaddlePerSecond(uint256 saddlePerSecond);
 
@@ -75,7 +75,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
   function add(
     uint256 allocPoint,
     IERC20 _lpToken,
-    IRewarder _rewarder
+    IRewarder_SR _rewarder
   ) public onlyOwner {
     totalAllocPoint = totalAllocPoint.add(allocPoint);
     lpToken.push(_lpToken);
@@ -87,7 +87,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
     emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
   }
 
-  /// @notice Update the given pool's SADDLE allocation point and `IRewarder` contract. Can only be called by the owner.
+  /// @notice Update the given pool's SADDLE allocation point and `IRewarder_SR` contract. Can only be called by the owner.
   /// @param _pid The index of the pool. See `poolInfo`.
   /// @param _allocPoint New AP of the pool.
   /// @param _rewarder Address of the rewarder delegate.
@@ -95,7 +95,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
   function set(
     uint256 _pid,
     uint256 _allocPoint,
-    IRewarder _rewarder,
+    IRewarder_SR _rewarder,
     bool overwrite
   ) public onlyOwner {
     totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
@@ -176,7 +176,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
     user.rewardDebt = int256(uint256(user.rewardDebt).add(amount.mul(pool.accSaddlePerShare) / ACC_SADDLE_PRECISION));
 
     // Interactions
-    IRewarder _rewarder = rewarder[pid];
+    IRewarder_SR _rewarder = rewarder[pid];
     if (address(_rewarder) != address(0)) {
       _rewarder.onSaddleReward(pid, to, to, 0, user.amount);
     }
@@ -203,7 +203,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
     user.amount = user.amount.sub(amount);
 
     // Interactions
-    IRewarder _rewarder = rewarder[pid];
+    IRewarder_SR _rewarder = rewarder[pid];
     if (address(_rewarder) != address(0)) {
       _rewarder.onSaddleReward(pid, msg.sender, to, 0, user.amount);
     }
@@ -230,7 +230,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
       SADDLE.transfer(to, _pendingSaddle);
     }
 
-    IRewarder _rewarder = rewarder[pid];
+    IRewarder_SR _rewarder = rewarder[pid];
     if (address(_rewarder) != address(0)) {
       _rewarder.onSaddleReward(pid, msg.sender, to, _pendingSaddle, user.amount);
     }
@@ -259,7 +259,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
     // Interactions
     SADDLE.transfer(to, _pendingSaddle);
 
-    IRewarder _rewarder = rewarder[pid];
+    IRewarder_SR _rewarder = rewarder[pid];
     if (address(_rewarder) != address(0)) {
       _rewarder.onSaddleReward(pid, msg.sender, to, _pendingSaddle, user.amount);
     }
@@ -279,7 +279,7 @@ contract MockMiniChefV2 is BoringOwnable, BoringBatchable {
     user.amount = 0;
     user.rewardDebt = 0;
 
-    IRewarder _rewarder = rewarder[pid];
+    IRewarder_SR _rewarder = rewarder[pid];
     if (address(_rewarder) != address(0)) {
       _rewarder.onSaddleReward(pid, msg.sender, to, 0, 0);
     }

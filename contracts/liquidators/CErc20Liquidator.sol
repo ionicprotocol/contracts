@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 
-import "../external/compound/ICErc20.sol";
+import "../compound/CTokenInterfaces.sol";
 
 import "./IRedemptionStrategy.sol";
 

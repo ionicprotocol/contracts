@@ -10,7 +10,7 @@ import { IUniswapV2Pair } from "./external/uniswap/IUniswapV2Pair.sol";
 
 import { PoolDirectory } from "./PoolDirectory.sol";
 
-interface IRewardsDistributor {
+interface IRewardsDistributor_PLS {
   function rewardToken() external view returns (address);
 
   function compSupplySpeeds(address) external view returns (uint256);
@@ -202,7 +202,7 @@ contract PoolLensSecondary is Initializable {
 
     // Get reward tokens for each distributor
     for (uint256 i = 0; i < distributors.length; i++) {
-      rewardTokens[i] = IRewardsDistributor(distributors[i]).rewardToken();
+      rewardTokens[i] = IRewardsDistributor_PLS(distributors[i]).rewardToken();
     }
 
     // Get reward speeds for each market for each distributor
@@ -212,7 +212,7 @@ contract PoolLensSecondary is Initializable {
       borrowSpeeds[i] = new uint256[](distributors.length);
 
       for (uint256 j = 0; j < distributors.length; j++) {
-        IRewardsDistributor distributor = IRewardsDistributor(distributors[j]);
+        IRewardsDistributor_PLS distributor = IRewardsDistributor_PLS(distributors[j]);
         supplySpeeds[i][j] = distributor.compSupplySpeeds(cToken);
         borrowSpeeds[i][j] = distributor.compBorrowSpeeds(cToken);
       }
@@ -257,7 +257,7 @@ contract PoolLensSecondary is Initializable {
    */
   function getUnaccruedRewards(
     address holder,
-    IRewardsDistributor distributor,
+    IRewardsDistributor_PLS distributor,
     ICErc20 cToken
   ) internal returns (uint256, uint256) {
     // Get unaccrued supply rewards
@@ -280,7 +280,7 @@ contract PoolLensSecondary is Initializable {
    * @param distributors The `RewardsDistributor` contracts to check.
    * @return For each of `distributors`: total quantity of unclaimed rewards, array of cTokens, array of unaccrued (unclaimed) supply-side and borrow-side rewards per cToken, and quantity of funds available in the distributor.
    */
-  function getUnclaimedRewardsByDistributors(address holder, IRewardsDistributor[] memory distributors)
+  function getUnclaimedRewardsByDistributors(address holder, IRewardsDistributor_PLS[] memory distributors)
     external
     returns (
       address[] memory,
@@ -297,7 +297,7 @@ contract PoolLensSecondary is Initializable {
     uint256[] memory distributorFunds = new uint256[](distributors.length);
 
     for (uint256 i = 0; i < distributors.length; i++) {
-      IRewardsDistributor distributor = distributors[i];
+      IRewardsDistributor_PLS distributor = distributors[i];
       rewardTokens[i] = distributor.rewardToken();
       allMarkets[i] = distributor.getAllMarkets();
       rewardsUnaccrued[i] = new uint256[2][](allMarkets[i].length);
@@ -400,7 +400,7 @@ contract PoolLensSecondary is Initializable {
   {
     address[] memory distributors = new address[](_distributors.length);
     for (uint256 j = 0; j < _distributors.length; j++) {
-      if (IRewardsDistributor(_distributors[j]).compAccrued(user) > 0) {
+      if (IRewardsDistributor_PLS(_distributors[j]).compAccrued(user) > 0) {
         distributors[j] = _distributors[j];
       }
     }

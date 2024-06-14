@@ -3,8 +3,8 @@ pragma solidity >=0.8.0;
 
 import "../../external/compound/IPriceOracle.sol";
 import "../../external/compound/ICToken.sol";
-import "../../external/compound/ICErc20.sol";
 import "../../external/compound/IComptroller.sol";
+import "../../compound/CTokenInterfaces.sol";
 
 /**
  * @title RecursivePriceOracle

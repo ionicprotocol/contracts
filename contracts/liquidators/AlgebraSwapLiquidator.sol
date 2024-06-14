@@ -23,12 +23,12 @@ contract AlgebraSwapLiquidator is IRedemptionStrategy {
     uint256 inputAmount,
     bytes memory strategyData
   ) external returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
-    (address _outputToken, ISwapRouter swapRouter) = abi.decode(strategyData, (address, ISwapRouter));
+    (address _outputToken, IAlgebraSwapRouter swapRouter) = abi.decode(strategyData, (address, IAlgebraSwapRouter));
     outputToken = IERC20Upgradeable(_outputToken);
 
     inputToken.approve(address(swapRouter), inputAmount);
 
-    ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams(
+    IAlgebraSwapRouter.ExactInputSingleParams memory params = IAlgebraSwapRouter.ExactInputSingleParams(
       address(inputToken),
       _outputToken,
       address(this),

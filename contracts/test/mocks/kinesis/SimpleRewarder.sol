@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./BoringOwnable.sol";
 import "./BoringBatchable.sol";
 
-interface IRewarder {
+interface IRewarder_SR {
   function onSaddleReward(
     uint256 pid,
     address user,
@@ -33,7 +33,7 @@ interface IMiniChef {
  * Emission rate is controlled by the owner of this contract, independently from MiniChef's owner.
  * @author @0xKeno @weeb_mcgee
  */
-contract SimpleRewarder is IRewarder, BoringOwnable {
+contract SimpleRewarder is IRewarder_SR, BoringOwnable {
   using SafeMath for uint256;
   using SafeMath for uint128;
 

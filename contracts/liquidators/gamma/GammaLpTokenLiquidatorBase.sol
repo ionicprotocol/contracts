@@ -5,7 +5,7 @@ import "../IRedemptionStrategy.sol";
 import { IHypervisor } from "../../external/gamma/IHypervisor.sol";
 import { IUniProxy } from "../../external/gamma/IUniProxy.sol";
 import { IUniswapV3Pool } from "../../external/uniswap/IUniswapV3Pool.sol";
-import { ISwapRouter as IAlgebraSwapRouter } from "../../external/algebra/ISwapRouter.sol";
+import { IAlgebraSwapRouter } from "../../external/algebra/ISwapRouter.sol";
 import { ISwapRouter as IUniswapSwapRouter } from "../../external/uniswap/ISwapRouter.sol";
 import { IAlgebraPool } from "../../external/algebra/IAlgebraPool.sol";
 

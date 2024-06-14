@@ -9,7 +9,7 @@ import { ICErc20 } from "../../../compound/CTokenInterfaces.sol";
 import { BasePriceOracle } from "../../../oracles/BasePriceOracle.sol";
 import { PoolDirectory } from "../../../PoolDirectory.sol";
 
-interface IPriceOracle {
+interface IPriceOracle_FLR {
   function getUnderlyingPrice(ERC20 cToken) external view returns (uint256);
 
   function price(address underlying) external view returns (uint256);

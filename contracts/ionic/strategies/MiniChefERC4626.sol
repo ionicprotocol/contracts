@@ -15,7 +15,7 @@ struct UserInfo {
   int256 rewardDebt;
 }
 
-interface IRewarder {
+interface IRewarder_MCE4626 {
   function pendingTokens(
     uint256,
     address,
@@ -44,7 +44,7 @@ interface IMiniChefV2 {
     address to
   ) external;
 
-  function rewarder(uint256) external view returns (IRewarder);
+  function rewarder(uint256) external view returns (IRewarder_MCE4626);
 
   function lpToken(uint256) external view returns (address);
 
