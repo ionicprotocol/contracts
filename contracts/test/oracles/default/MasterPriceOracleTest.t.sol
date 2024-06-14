@@ -136,7 +136,7 @@ contract MasterPriceOracleTest is BaseTest {
     revertingOracle = new MockRevertPriceOracle();
   }
 
-  function testUpgrade() public debuggingOnly forkAtBlock(MODE_MAINNET, 9064734) {
+  function testUpgrade() public debuggingOnly forkAtBlock(MODE_MAINNET, 9111409) {
     address mpoAddress = 0x2BAF3A2B667A5027a83101d218A9e8B73577F117;
     MasterPriceOracle mpoExisting = MasterPriceOracle(mpoAddress);
     AssetPrices memory prices;
@@ -193,8 +193,8 @@ contract MasterPriceOracleTest is BaseTest {
     vars.feeds = new address[](2);
     vars.underlyings[0] = ezETH;
     vars.underlyings[1] = weETH_mode;
-    vars.feeds[0] = 0x3621b06BfFE478eB481adf65bbF139A052Ed7321;
-    vars.feeds[1] = 0x672020bd166A51A79Ada022B51C974775d17e0f6;
+    vars.feeds[0] = 0x85baF4a3d1494576d0941a146E24a8690Efa87D5;
+    vars.feeds[1] = 0x95a02CBb3f19D88b228858A48cFade87fd337c22;
     vars.chainlinkPriceOracleV2.setPriceFeeds(
       vars.underlyings,
       vars.feeds,
