@@ -48,8 +48,14 @@ contract MasterPriceOracleTest is BaseTest {
   address redstoneAdapterPriceOracle = 0x63A1531a06F0Ac597a0DfA5A516a37073c3E1e0a;
   address redstoneAdapterPriceOracleWeETH = 0x9c0819E3235c8fF74e79f0caBb51ec477603DE78;
 
+  address cbETHBase = 0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22;
+  address ezETHBase = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+  address ion_cbETHBase = 0x9c201024A62466F9157b2dAaDda9326207ADDd29;
+  address ion_ezETHBase = 0x079f84161642D81aaFb67966123C9949F9284bf5;
+
   struct AssetPrices {
     uint256 ezETH;
+    uint256 cbETH;
     uint256 WETH;
     uint256 USDC;
     uint256 USDT;
@@ -60,6 +66,7 @@ contract MasterPriceOracleTest is BaseTest {
     uint256 weETH_OLD;
     uint256 M_BTC;
     uint256 ion_ezETH;
+    uint256 ion_cbETH;
     uint256 ion_WETH;
     uint256 ion_USDC;
     uint256 ion_USDT;
@@ -260,20 +267,60 @@ contract MasterPriceOracleTest is BaseTest {
     assertApproxEqAbs(prices.WBTC, afterPrices.WBTC, (prices.WBTC * 2) / 100, "WBTC price mismatch");
     assertApproxEqAbs(prices.STONE, afterPrices.STONE, (prices.STONE * 2) / 100, "STONE price mismatch");
     assertApproxEqAbs(prices.wrsETH, afterPrices.wrsETH, (prices.wrsETH * 2) / 100, "wrsETH price mismatch");
-    assertApproxEqAbs(prices.weETH_mode, afterPrices.weETH_mode, (prices.weETH_mode * 2) / 100, "weETH_mode price mismatch");
-    assertApproxEqAbs(prices.weETH_OLD, afterPrices.weETH_OLD, (prices.weETH_OLD * 2) / 100, "weETH_OLD price mismatch");
+    assertApproxEqAbs(
+      prices.weETH_mode,
+      afterPrices.weETH_mode,
+      (prices.weETH_mode * 2) / 100,
+      "weETH_mode price mismatch"
+    );
+    assertApproxEqAbs(
+      prices.weETH_OLD,
+      afterPrices.weETH_OLD,
+      (prices.weETH_OLD * 2) / 100,
+      "weETH_OLD price mismatch"
+    );
     assertApproxEqAbs(prices.M_BTC, afterPrices.M_BTC, (prices.M_BTC * 2) / 100, "M_BTC price mismatch");
 
-    assertApproxEqAbs(prices.ion_ezETH, afterPrices.ion_ezETH, (prices.ion_ezETH * 2) / 100, "ion_ezETH price mismatch");
+    assertApproxEqAbs(
+      prices.ion_ezETH,
+      afterPrices.ion_ezETH,
+      (prices.ion_ezETH * 2) / 100,
+      "ion_ezETH price mismatch"
+    );
     assertApproxEqAbs(prices.ion_WETH, afterPrices.ion_WETH, (prices.ion_WETH * 2) / 100, "ion_WETH price mismatch");
     assertApproxEqAbs(prices.ion_USDC, afterPrices.ion_USDC, (prices.ion_USDC * 2) / 100, "ion_USDC price mismatch");
     assertApproxEqAbs(prices.ion_USDT, afterPrices.ion_USDT, (prices.ion_USDT * 2) / 100, "ion_USDT price mismatch");
     assertApproxEqAbs(prices.ion_WBTC, afterPrices.ion_WBTC, (prices.ion_WBTC * 2) / 100, "ion_WBTC price mismatch");
-    assertApproxEqAbs(prices.ion_STONE, afterPrices.ion_STONE, (prices.ion_STONE * 2) / 100, "ion_STONE price mismatch");
-    assertApproxEqAbs(prices.ion_wrsETH, afterPrices.ion_wrsETH, (prices.ion_wrsETH * 2) / 100, "ion_wrsETH price mismatch");
-    assertApproxEqAbs(prices.ion_weETH_mode, afterPrices.ion_weETH_mode, (prices.ion_weETH_mode * 2) / 100, "ion_weETH_mode price mismatch");
-    assertApproxEqAbs(prices.ion_weETH_OLD, afterPrices.ion_weETH_OLD, (prices.ion_weETH_OLD * 2) / 100, "ion_weETH_OLD price mismatch");
-    assertApproxEqAbs(prices.ion_M_BTC, afterPrices.ion_M_BTC, (prices.ion_M_BTC * 2) / 100, "ion_M_BTC price mismatch");
+    assertApproxEqAbs(
+      prices.ion_STONE,
+      afterPrices.ion_STONE,
+      (prices.ion_STONE * 2) / 100,
+      "ion_STONE price mismatch"
+    );
+    assertApproxEqAbs(
+      prices.ion_wrsETH,
+      afterPrices.ion_wrsETH,
+      (prices.ion_wrsETH * 2) / 100,
+      "ion_wrsETH price mismatch"
+    );
+    assertApproxEqAbs(
+      prices.ion_weETH_mode,
+      afterPrices.ion_weETH_mode,
+      (prices.ion_weETH_mode * 2) / 100,
+      "ion_weETH_mode price mismatch"
+    );
+    assertApproxEqAbs(
+      prices.ion_weETH_OLD,
+      afterPrices.ion_weETH_OLD,
+      (prices.ion_weETH_OLD * 2) / 100,
+      "ion_weETH_OLD price mismatch"
+    );
+    assertApproxEqAbs(
+      prices.ion_M_BTC,
+      afterPrices.ion_M_BTC,
+      (prices.ion_M_BTC * 2) / 100,
+      "ion_M_BTC price mismatch"
+    );
 
     emit log_named_uint("afterPrices.ezETH", afterPrices.ezETH);
     emit log_named_uint("afterPrices.ion_ezETH", afterPrices.ion_ezETH);
