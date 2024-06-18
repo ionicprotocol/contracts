@@ -3,6 +3,7 @@ src = 'contracts'
 bytecode_hash = 'none'
 solc_version = "0.8.10"
 libs = ["lib"]
+evm_version = "shanghai"
 
 [rpc_endpoints]
 bsc = "${BSC_MAINNET_RPC_URL}"
