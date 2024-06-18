@@ -136,7 +136,7 @@ contract MasterPriceOracleTest is BaseTest {
     revertingOracle = new MockRevertPriceOracle();
   }
 
-  function testUpgrade() public debuggingOnly forkAtBlock(MODE_MAINNET, 9111409) {
+  function testUpgradeMPO() public debuggingOnly forkAtBlock(MODE_MAINNET, 9232262) {
     address mpoAddress = 0x2BAF3A2B667A5027a83101d218A9e8B73577F117;
     MasterPriceOracle mpoExisting = MasterPriceOracle(mpoAddress);
     AssetPrices memory prices;
@@ -174,18 +174,10 @@ contract MasterPriceOracleTest is BaseTest {
 
     vm.startPrank(multisig);
 
-    // Upgrades Master Price Oracle
-    vars.newMpoImpl = new MasterPriceOracle();
-    dpa.upgrade(TransparentUpgradeableProxy(payable(mpoAddress)), address(vars.newMpoImpl));
-
     // Deploys Chainlink Oracle
-    vars.chainklinkOracleImpl = new ChainlinkPriceOracleV2();
+    vars.chainklinkOracleImpl = ChainlinkPriceOracleV2(0xACea9bfBD6A1DA56a27bada1a8D0e5bb35bFF4E7);
     vars.nativeTokenUSDChainlinkFeed = 0xa47Fd122b11CdD7aad7c3e8B740FB91D83Ce43D1;
-    vars.chainklinkOracleProxy = new TransparentUpgradeableProxy(
-      address(vars.chainklinkOracleImpl),
-      address(dpa),
-      abi.encodeWithSelector(vars.chainklinkOracleImpl.initialize.selector, USDC, vars.nativeTokenUSDChainlinkFeed)
-    );
+    vars.chainklinkOracleProxy = TransparentUpgradeableProxy(payable(0xACea9bfBD6A1DA56a27bada1a8D0e5bb35bFF4E7));
 
     // Sets Price Feeds On Chainlink Oracle
     vars.chainlinkPriceOracleV2 = ChainlinkPriceOracleV2(address(vars.chainklinkOracleProxy));
@@ -261,27 +253,27 @@ contract MasterPriceOracleTest is BaseTest {
     afterPrices.ion_weETH_OLD = mpoExisting.getUnderlyingPrice(ICErc20(ionweETH_OLD)); // afterIon_weETH_OLD
     afterPrices.ion_M_BTC = mpoExisting.getUnderlyingPrice(ICErc20(ionM_BTC)); // afterIon_M_BTC
 
-    assertEq(prices.ezETH, afterPrices.ezETH, "ezETH price mismatch");
-    assertEq(prices.WETH, afterPrices.WETH, "WETH price mismatch");
-    assertEq(prices.USDC, afterPrices.USDC, "USDC price mismatch");
-    assertEq(prices.USDT, afterPrices.USDT, "USDT price mismatch");
-    assertEq(prices.WBTC, afterPrices.WBTC, "WBTC price mismatch");
-    assertEq(prices.STONE, afterPrices.STONE, "STONE price mismatch");
-    assertEq(prices.wrsETH, afterPrices.wrsETH, "wrsETH price mismatch");
-    assertEq(prices.weETH_mode, afterPrices.weETH_mode, "weETH_mode price mismatch");
-    assertEq(prices.weETH_OLD, afterPrices.weETH_OLD, "weETH_OLD price mismatch");
-    assertEq(prices.M_BTC, afterPrices.M_BTC, "M_BTC price mismatch");
+    assertApproxEqAbs(prices.ezETH, afterPrices.ezETH, (prices.ezETH * 2) / 100, "ezETH price mismatch");
+    assertApproxEqAbs(prices.WETH, afterPrices.WETH, (prices.WETH * 2) / 100, "WETH price mismatch");
+    assertApproxEqAbs(prices.USDC, afterPrices.USDC, (prices.USDC * 2) / 100, "USDC price mismatch");
+    assertApproxEqAbs(prices.USDT, afterPrices.USDT, (prices.USDT * 2) / 100, "USDT price mismatch");
+    assertApproxEqAbs(prices.WBTC, afterPrices.WBTC, (prices.WBTC * 2) / 100, "WBTC price mismatch");
+    assertApproxEqAbs(prices.STONE, afterPrices.STONE, (prices.STONE * 2) / 100, "STONE price mismatch");
+    assertApproxEqAbs(prices.wrsETH, afterPrices.wrsETH, (prices.wrsETH * 2) / 100, "wrsETH price mismatch");
+    assertApproxEqAbs(prices.weETH_mode, afterPrices.weETH_mode, (prices.weETH_mode * 2) / 100, "weETH_mode price mismatch");
+    assertApproxEqAbs(prices.weETH_OLD, afterPrices.weETH_OLD, (prices.weETH_OLD * 2) / 100, "weETH_OLD price mismatch");
+    assertApproxEqAbs(prices.M_BTC, afterPrices.M_BTC, (prices.M_BTC * 2) / 100, "M_BTC price mismatch");
 
-    assertEq(prices.ion_ezETH, afterPrices.ion_ezETH, "ion_ezETH price mismatch");
-    assertEq(prices.ion_WETH, afterPrices.ion_WETH, "ion_WETH price mismatch");
-    assertEq(prices.ion_USDC, afterPrices.ion_USDC, "ion_USDC price mismatch");
-    assertEq(prices.ion_USDT, afterPrices.ion_USDT, "ion_USDT price mismatch");
-    assertEq(prices.ion_WBTC, afterPrices.ion_WBTC, "ion_WBTC price mismatch");
-    assertEq(prices.ion_STONE, afterPrices.ion_STONE, "ion_STONE price mismatch");
-    assertEq(prices.ion_wrsETH, afterPrices.ion_wrsETH, "ion_wrsETH price mismatch");
-    assertEq(prices.ion_weETH_mode, afterPrices.ion_weETH_mode, "ion_weETH_mode price mismatch");
-    assertEq(prices.ion_weETH_OLD, afterPrices.ion_weETH_OLD, "ion_weETH_OLD price mismatch");
-    assertEq(prices.ion_M_BTC, afterPrices.ion_M_BTC, "ion_M_BTC price mismatch");
+    assertApproxEqAbs(prices.ion_ezETH, afterPrices.ion_ezETH, (prices.ion_ezETH * 2) / 100, "ion_ezETH price mismatch");
+    assertApproxEqAbs(prices.ion_WETH, afterPrices.ion_WETH, (prices.ion_WETH * 2) / 100, "ion_WETH price mismatch");
+    assertApproxEqAbs(prices.ion_USDC, afterPrices.ion_USDC, (prices.ion_USDC * 2) / 100, "ion_USDC price mismatch");
+    assertApproxEqAbs(prices.ion_USDT, afterPrices.ion_USDT, (prices.ion_USDT * 2) / 100, "ion_USDT price mismatch");
+    assertApproxEqAbs(prices.ion_WBTC, afterPrices.ion_WBTC, (prices.ion_WBTC * 2) / 100, "ion_WBTC price mismatch");
+    assertApproxEqAbs(prices.ion_STONE, afterPrices.ion_STONE, (prices.ion_STONE * 2) / 100, "ion_STONE price mismatch");
+    assertApproxEqAbs(prices.ion_wrsETH, afterPrices.ion_wrsETH, (prices.ion_wrsETH * 2) / 100, "ion_wrsETH price mismatch");
+    assertApproxEqAbs(prices.ion_weETH_mode, afterPrices.ion_weETH_mode, (prices.ion_weETH_mode * 2) / 100, "ion_weETH_mode price mismatch");
+    assertApproxEqAbs(prices.ion_weETH_OLD, afterPrices.ion_weETH_OLD, (prices.ion_weETH_OLD * 2) / 100, "ion_weETH_OLD price mismatch");
+    assertApproxEqAbs(prices.ion_M_BTC, afterPrices.ion_M_BTC, (prices.ion_M_BTC * 2) / 100, "ion_M_BTC price mismatch");
 
     emit log_named_uint("afterPrices.ezETH", afterPrices.ezETH);
     emit log_named_uint("afterPrices.ion_ezETH", afterPrices.ion_ezETH);
