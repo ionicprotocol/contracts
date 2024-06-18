@@ -48,8 +48,14 @@ contract MasterPriceOracleTest is BaseTest {
   address redstoneAdapterPriceOracle = 0x63A1531a06F0Ac597a0DfA5A516a37073c3E1e0a;
   address redstoneAdapterPriceOracleWeETH = 0x9c0819E3235c8fF74e79f0caBb51ec477603DE78;
 
+  address cbETHBase = 0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22;
+  address ezETHBase = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+  address ion_cbETHBase = 0x9c201024A62466F9157b2dAaDda9326207ADDd29;
+  address ion_ezETHBase = 0x079f84161642D81aaFb67966123C9949F9284bf5;
+
   struct AssetPrices {
     uint256 ezETH;
+    uint256 cbETH;
     uint256 WETH;
     uint256 USDC;
     uint256 USDT;
@@ -60,6 +66,7 @@ contract MasterPriceOracleTest is BaseTest {
     uint256 weETH_OLD;
     uint256 M_BTC;
     uint256 ion_ezETH;
+    uint256 ion_cbETH;
     uint256 ion_WETH;
     uint256 ion_USDC;
     uint256 ion_USDT;
@@ -136,7 +143,94 @@ contract MasterPriceOracleTest is BaseTest {
     revertingOracle = new MockRevertPriceOracle();
   }
 
-  function testUpgrade() public debuggingOnly forkAtBlock(MODE_MAINNET, 9111409) {
+  function testPrices() public debuggingOnly forkAtBlock(MODE_MAINNET, 9231410) {
+    address mpoAddress = 0x2BAF3A2B667A5027a83101d218A9e8B73577F117;
+    MasterPriceOracle mpoExisting = MasterPriceOracle(mpoAddress);
+    AssetPrices memory prices;
+
+    prices.ezETH = mpoExisting.price(ezETH); // ezETH
+    prices.WETH = mpoExisting.price(WETH); // WETH
+    prices.USDC = mpoExisting.price(USDC); // USDC
+    prices.USDT = mpoExisting.price(USDT); // USDT
+    prices.WBTC = mpoExisting.price(WBTC); // WBTC
+    prices.STONE = mpoExisting.price(STONE); // STONE
+    prices.wrsETH = mpoExisting.price(wrsETH); // wrsETH
+    prices.weETH_mode = mpoExisting.price(weETH_mode); // weETH_mode
+    prices.weETH_OLD = mpoExisting.price(weETH_OLD); // weETH_OLD
+    prices.M_BTC = mpoExisting.price(M_BTC); // M_BTC
+
+    prices.ion_ezETH = mpoExisting.getUnderlyingPrice(ICErc20(ionezETH)); // ionezETH
+    prices.ion_WETH = mpoExisting.getUnderlyingPrice(ICErc20(ionWETH)); // ionWETH
+    prices.ion_USDC = mpoExisting.getUnderlyingPrice(ICErc20(ionUSDC)); // ionUSDC
+    prices.ion_USDT = mpoExisting.getUnderlyingPrice(ICErc20(ionUSDT)); // ionUSDT
+    prices.ion_WBTC = mpoExisting.getUnderlyingPrice(ICErc20(ionWBTC)); // ionWBTC
+    prices.ion_STONE = mpoExisting.getUnderlyingPrice(ICErc20(ionSTONE)); // ionSTONE
+    prices.ion_wrsETH = mpoExisting.getUnderlyingPrice(ICErc20(ionwrsETH)); // ionwrsETH
+    prices.ion_weETH_mode = mpoExisting.getUnderlyingPrice(ICErc20(ionweETH_mode)); // ionweETH_mode
+    prices.ion_weETH_OLD = mpoExisting.getUnderlyingPrice(ICErc20(ionweETH_OLD)); // ionweETH_OLD
+    prices.ion_M_BTC = mpoExisting.getUnderlyingPrice(ICErc20(ionM_BTC)); // ionM_BTC
+
+    emit log_named_uint("afterPrices.ezETH", prices.ezETH);
+    emit log_named_uint("afterPrices.ion_ezETH", prices.ion_ezETH);
+    emit log_named_uint("afterPrices.WETH", prices.WETH);
+    emit log_named_uint("afterPrices.ion_WETH", prices.ion_WETH);
+    emit log_named_uint("afterPrices.USDC", prices.USDC);
+    emit log_named_uint("afterPrices.ion_USDC", prices.ion_USDC);
+    emit log_named_uint("afterPrices.USDT", prices.USDT);
+    emit log_named_uint("afterPrices.ion_USDT", prices.ion_USDT);
+    emit log_named_uint("afterPrices.WBTC", prices.WBTC);
+    emit log_named_uint("afterPrices.ion_WBTC", prices.ion_WBTC);
+    emit log_named_uint("afterPrices.STONE", prices.STONE);
+    emit log_named_uint("afterPrices.ion_STONE", prices.ion_STONE);
+    emit log_named_uint("afterPrices.wrsETH", prices.wrsETH);
+    emit log_named_uint("afterPrices.ion_wrsETH", prices.ion_wrsETH);
+    emit log_named_uint("afterPrices.weETH_mode", prices.weETH_mode);
+    emit log_named_uint("afterPrices.ion_weETH_mode", prices.ion_weETH_mode);
+    emit log_named_uint("afterPrices.weETH_OLD", prices.weETH_OLD);
+    emit log_named_uint("afterPrices.ion_weETH_OLD", prices.ion_weETH_OLD);
+    emit log_named_uint("afterPrices.M_BTC", prices.M_BTC);
+    emit log_named_uint("afterPrices.ion_M_BTC", prices.ion_M_BTC);
+  }
+
+  function testBasePriceFeedsSet() public debuggingOnly forkAtBlock(BASE_MAINNET, 15939123) {
+    address mpoAddress = 0x1D89E5ba287E67AC0046D2218Be5fE1382cE47b4;
+    MasterPriceOracle mpoExisting = MasterPriceOracle(mpoAddress);
+    AssetPrices memory prices;
+    AssetPrices memory afterPrices;
+
+    prices.ezETH = mpoExisting.price(ezETHBase);
+    prices.cbETH = mpoExisting.price(cbETHBase);
+    prices.ion_ezETH = mpoExisting.getUnderlyingPrice(ICErc20(ion_ezETHBase)); // ionM_BTC
+    prices.ion_cbETH = mpoExisting.getUnderlyingPrice(ICErc20(ion_cbETHBase)); // ionweETH_OLD
+
+    vm.startPrank(deployer);
+    ChainlinkPriceOracleV2 chainlinkOracle = ChainlinkPriceOracleV2(0xb0033576a9E444Dd801d5B69e1b63DBC459A6115);
+    address[] memory underlyings = new address[](2);
+    address[] memory feeds = new address[](2);
+    underlyings[0] = ezETHBase;
+    underlyings[1] = cbETHBase;
+    feeds[0] = 0xC4300B7CF0646F0Fe4C5B2ACFCCC4dCA1346f5d8;
+    feeds[1] = 0x806b4Ac04501c29769051e42783cF04dCE41440b;
+    chainlinkOracle.setPriceFeeds(underlyings, feeds, ChainlinkPriceOracleV2.FeedBaseCurrency.ETH);
+    vm.stopPrank();
+
+    afterPrices.ezETH = mpoExisting.price(ezETHBase);
+    afterPrices.cbETH = mpoExisting.price(cbETHBase);
+    afterPrices.ion_ezETH = mpoExisting.getUnderlyingPrice(ICErc20(ion_ezETHBase)); // ionM_BTC
+    afterPrices.ion_cbETH = mpoExisting.getUnderlyingPrice(ICErc20(ion_cbETHBase)); // ionweETH_OLD
+
+    assertEq(prices.ezETH, afterPrices.ezETH, "ezETH price mismatch");
+    assertEq(prices.cbETH, afterPrices.cbETH, "cbETH price mismatch");
+    assertEq(prices.ion_ezETH, afterPrices.ion_ezETH, "ion_ezETH price mismatch");
+    assertEq(prices.ion_cbETH, afterPrices.ion_cbETH, "ion_cbETH price mismatch");
+
+    emit log_named_uint("afterPrices.ezETH", afterPrices.ezETH);
+    emit log_named_uint("afterPrices.ion_ezETH", afterPrices.ion_ezETH);
+    emit log_named_uint("afterPrices.WETH", afterPrices.cbETH);
+    emit log_named_uint("afterPrices.ion_WETH", afterPrices.ion_cbETH);
+  }
+
+  function testUpgrade() public debuggingOnly forkAtBlock(MODE_MAINNET, 9231410) {
     address mpoAddress = 0x2BAF3A2B667A5027a83101d218A9e8B73577F117;
     MasterPriceOracle mpoExisting = MasterPriceOracle(mpoAddress);
     AssetPrices memory prices;
