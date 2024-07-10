@@ -98,7 +98,17 @@ contract API3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
       revert("API3PriceOracle: token price <= 0");
     }
 
-    return (uint256(uint224(tokenUsdPrice)) * 1e18) / nativeTokenUsdPrice;
+    uint256 tokenUsdPriceUint = uint256(uint224(tokenUsdPrice));
+    address MODE_SDAI = 0xd988097fb8612cc24eeC14542bC03424c656005f;
+    if (block.chainid == 34443 && underlying == MODE_SDAI) {
+      // sDAI special case since feed is in DAI
+      IProxy daiUsd = IProxy(0x6c324Bc6043B34a0881c4D4fa3D67aDB73684eE9);
+      (int224 _daiUsdPrice, ) = daiUsd.read();
+      uint256 daiUsdPrice = uint256(uint224(_daiUsdPrice));
+      tokenUsdPriceUint = (daiUsdPrice * tokenUsdPriceUint) / 1e18;
+    }
+
+    return (tokenUsdPriceUint * 1e18) / nativeTokenUsdPrice;
   }
 
   /**
@@ -123,7 +133,7 @@ contract API3PriceOracle is SafeOwnableUpgradeable, BasePriceOracle {
     uint256 underlyingDecimals = uint256(ERC20Upgradeable(underlying).decimals());
     return
       underlyingDecimals <= 18
-        ? uint256(oraclePrice) * (10**(18 - underlyingDecimals))
-        : uint256(oraclePrice) / (10**(underlyingDecimals - 18));
+        ? uint256(oraclePrice) * (10 ** (18 - underlyingDecimals))
+        : uint256(oraclePrice) / (10 ** (underlyingDecimals - 18));
   }
 }
