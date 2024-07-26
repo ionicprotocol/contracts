@@ -108,7 +108,10 @@ const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => 
         encodeFunctionData({
           abi: fuseFeeDistributor.abi,
           functionName: "_setComptrollerExtensions",
-          args: [comptroller.address, [comptroller.address, compFirstExtension.address as Address]]
+          args: [
+            comptroller.address,
+            [comptroller.address, compFirstExtension.address as Address, compPrudentiaExtension.address as Address]
+          ]
         })
       );
     } else {
