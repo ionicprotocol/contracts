@@ -83,7 +83,7 @@ task("flywheel:add-strategy-for-rewards", "Create pool if does not exist")
   .addParam("name", "flywheel contract name", undefined, types.string)
   .setAction(async (taskArgs, { viem }) => {
     const publicClient = await viem.getPublicClient();
-    let flywheelAddress, strategyAddress;
+    let flywheelAddress, strategyAddress, name, contractName;
 
     try {
       flywheelAddress = getAddress(taskArgs.flywheel);
@@ -97,7 +97,17 @@ task("flywheel:add-strategy-for-rewards", "Create pool if does not exist")
       throw `Invalid 'strategy': ${taskArgs.strategy}`;
     }
 
-    const flywheel = await viem.getContractAt(`IonicFlywheelBorrow`, flywheelAddress);
+    try {
+      name = getAddress(taskArgs.name);
+    } catch {
+      throw `Invalid 'name': ${taskArgs.name}`;
+    }
+
+    if (name.includes("Borrow")) {
+      contractName = "IonicFlywheelBorrow";
+    } else contractName = "IonicFlywheel";
+  
+    const flywheel = await viem.getContractAt(`${contractName}`, flywheelAddress);
     const addTx = await flywheel.write.addStrategyForRewards([strategyAddress]);
     await publicClient.waitForTransactionReceipt({ hash: addTx });
     console.log(addTx);
@@ -203,6 +213,7 @@ task("flywheel:deploy-dynamic-rewards", "Deploy dynamic rewards flywheel for LM 
   .setAction(async ({ name, flywheel }, { viem, deployments, getNamedAccounts }) => {
     const publicClient = await viem.getPublicClient();
     const { deployer } = await getNamedAccounts();
+    let contractName;
     const rewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
       contract: "IonicFlywheelDynamicRewards",
       from: deployer,
@@ -213,7 +224,15 @@ task("flywheel:deploy-dynamic-rewards", "Deploy dynamic rewards flywheel for LM 
       ],
       waitConfirmations: 1
     });
-    const flywheelContract = await viem.getContractAt("IonicFlywheelBorrow", flywheel);
+  
+    if (name.includes("Borrow")) {
+      contractName = "IonicFlywheelBorrow";
+    } else contractName = "IonicFlywheel";
+
+    const flywheelContract = await viem.getContractAt(
+      `${contractName}`,
+      (await deployments.get(`${contractName}_${name}`)).address as Address
+    );
     const tx = await flywheelContract.write.setFlywheelRewards([rewards.address as Address]);
     await publicClient.waitForTransactionReceipt({ hash: tx });
     return rewards;
