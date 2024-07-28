@@ -11,6 +11,9 @@
     "AddressesProvider_Proxy": {
       "address": "0xcD4D7c8e2bA627684a9B18F7fe88239341D3ba5c"
     },
+    "AerodromePriceOracle": {
+      "address": "0xD4b0328cd84D978313446D15b0b7FcdCE97f6932"
+    },
     "AuthoritiesRegistry": {
       "address": "0x7DFDd5B55Fe37602B355F7a9Ed0fe00e30C163cb"
     },
@@ -171,10 +174,10 @@
       "address": "0xBbDcA7858ac2417b06636F7BA35e7d9EA39402ea"
     },
     "SolidlySwapLiquidator": {
-      "address": "0x6f307eA8Bcc55A00e46822058a12B8317488E534"
+      "address": "0x88911E638f04b5d25242e8b587B3F8C8054B0d8F"
     },
     "UniswapV3LiquidatorFunder": {
-      "address": "0xeC7D0330E86485474C13A2152Fa867ddd41Bb12B"
+      "address": "0x0cd073083129423799601587f1bD49Fe980f2D9C"
     }
   }
 }
