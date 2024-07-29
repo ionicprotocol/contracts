@@ -16,19 +16,34 @@ export default task("market:unsupport", "Unsupport a market")
 task("market:set:ltv", "Set the LTV (loan to value / collateral factor) of a market")
   .addParam("marketAddress", "Address of the market", undefined, types.string)
   .addParam("ltv", "The LTV as a floating point value between 0 and 1", undefined, types.string)
-  .setAction(async ({ marketAddress, ltv }, { viem }) => {
+  .setAction(async ({ marketAddress, ltv }, { viem, getNamedAccounts }) => {
+    const { deployer } = await getNamedAccounts();
     const publicClient = await viem.getPublicClient();
     const market = await viem.getContractAt("ICErc20", marketAddress);
     const poolAddress = await market.read.comptroller();
     const pool = await viem.getContractAt("IonicComptroller", poolAddress as Address);
-
     const ltvMantissa = parseUnits(ltv, 18);
     console.log(`will set the LTV of market ${marketAddress} to ${ltvMantissa}`);
 
-    const tx = await pool.write._setCollateralFactor([marketAddress, ltvMantissa]);
-    console.log(`_setCollateralFactor tx ${tx}`);
-    await publicClient.waitForTransactionReceipt({ hash: tx });
-    console.log(`mined tx ${tx}`);
+    console.log("(await pool.read.admin(): ", await pool.read.admin());
+    console.log("deployer: ", deployer);
+    if ((await pool.read.admin()).toLowerCase() !== deployer.toLowerCase()) {
+      prepareAndLogTransaction({
+        contractInstance: pool,
+        functionName: "_setCollateralFactor",
+        args: [marketAddress, ltvMantissa],
+        description: "Set Collateral Factor",
+        inputs: [
+          { internalType: "address", name: "cToken", type: "address" },
+          { internalType: "uint256", name: "newCollateralFactorMantissa", type: "uint256" }
+        ]
+      });
+    } else {
+      const tx = await pool.write._setCollateralFactor([marketAddress, ltvMantissa]);
+      console.log(`_setCollateralFactor tx ${tx}`);
+      await publicClient.waitForTransactionReceipt({ hash: tx });
+      console.log(`mined tx ${tx}`);
+    }
   });
 
 task("markets:set:fees", "Set the fees of all markets").setAction(async (_, { viem, deployments, run }) => {
