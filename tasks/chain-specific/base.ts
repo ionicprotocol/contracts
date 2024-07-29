@@ -1,5 +1,22 @@
 import { task } from "hardhat/config";
 import { Address, parseEther, zeroAddress } from "viem";
+import { assets as baseAssets } from "../../chains/base/assets";
+
+task("market:set-cf:base:main", "Sets caps on a market").setAction(async (_, { viem, run }) => {
+  const COMPTROLLER = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
+  for (const asset of baseAssets) {
+    const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
+    const cToken = await pool.read.cTokensByUnderlying([asset.underlying]);
+    console.log("cToken: ", cToken, asset.symbol);
+
+    if (asset.initialCf) {
+      await run("market:set:ltv", {
+        marketAddress: cToken,
+        ltv: asset.initialCf
+      });
+    }
+  }
+});
 
 task("market:base:rsr-ion-rewards", "Sets caps on a market").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {

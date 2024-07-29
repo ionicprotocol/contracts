@@ -110,7 +110,7 @@ export const assets: SupportedAsset[] = [
       aggregator: "0xFC1415403EbB0c693f9a7844b92aD2Ff24775C65",
       feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
     },
-    initialCf: "70"
+    initialCf: "0.70"
   },
   {
     symbol: assetSymbols.eUSD,
@@ -124,7 +124,7 @@ export const assets: SupportedAsset[] = [
     } as ChainlinkSpecificParams,
     initialSupplyCap: parseEther(String(10_000_000)).toString(),
     initialBorrowCap: parseEther(String(8_000_000)).toString(),
-    initialCf: "80"
+    initialCf: "0.80"
   },
   {
     symbol: assetSymbols.bsdETH,
@@ -138,7 +138,7 @@ export const assets: SupportedAsset[] = [
     },
     initialSupplyCap: parseEther(String(6_500)).toString(),
     initialBorrowCap: parseEther(String(5_200)).toString(),
-    initialCf: "70"
+    initialCf: "0.70"
   },
   {
     symbol: assetSymbols.ION,
