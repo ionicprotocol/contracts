@@ -169,6 +169,12 @@ export type ChainlinkDeployFnParams = ChainDeployFnParams & {
   deployConfig: ChainDeployConfig;
 };
 
+export type AerodromeDeployFnParams = ChainDeployFnParams & {
+  assets: SupportedAsset[];
+  pricesContract: Address;
+  deployConfig: ChainDeployConfig;
+};
+
 export type DiaDeployFnParams = ChainDeployFnParams & {
   diaAssets: DiaAsset[];
   deployConfig: ChainDeployConfig;
@@ -282,6 +288,10 @@ export type PythSpecificParams = {
   feed: string;
 };
 
+export type VelodromeSpecificParams = {
+  pricesContract: Address;
+};
+
 export type SupportedAsset = {
   symbol: string;
   underlying: Address;
@@ -292,7 +302,7 @@ export type SupportedAsset = {
   oracle?: OracleTypes;
   simplePriceOracleAssetPrice?: bigint;
   originalSymbol?: string;
-  oracleSpecificParams?: ChainlinkSpecificParams | PythSpecificParams;
+  oracleSpecificParams?: ChainlinkSpecificParams | PythSpecificParams | VelodromeSpecificParams;
   initialCf?: string;
   initialBorrowCap?: string;
   initialSupplyCap?: string;
@@ -310,7 +320,9 @@ export enum OracleTypes {
   ERC4626Oracle = "ERC4626Oracle",
   PythPriceOracle = "PythPriceOracle",
   RedstoneAdapterPriceOracle = "RedstoneAdapterPriceOracle",
-  RedstoneAdapterWrsETHPriceOracle = "RedstoneAdapterWrsETHPriceOracle"
+  RedstoneAdapterWrsETHPriceOracle = "RedstoneAdapterWrsETHPriceOracle",
+  VelodromePriceOracle = "VelodromePriceOracle",
+  AerodromePriceOracle = "AerodromePriceOracle"
 }
 
 export type ChainAddresses = {

@@ -1,7 +1,6 @@
 import { Hash, zeroAddress } from "viem";
 
 import { ChainDeployConfig, deployChainlinkOracle, deployPythPriceOracle } from "../helpers";
-import { writeTransactionsToFile } from "../helpers/logging";
 import { addRedstoneFallbacks } from "../helpers/oracles/redstoneFallbacks";
 import { addRedstoneWeETHFallbacks } from "../helpers/oracles/redstoneWeETHFallbacks";
 import { deployRedStoneWrsETHPriceOracle } from "../helpers/oracles/redstoneWrsETH";
@@ -145,5 +144,4 @@ export const deploy = async ({
     await publicClient.waitForTransactionReceipt({ hash: algebraSwapLiquidator.transactionHash as Hash });
   }
   console.log("AlgebraSwapLiquidator: ", algebraSwapLiquidator.address);
-  await writeTransactionsToFile();
 };
