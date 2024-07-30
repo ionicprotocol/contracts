@@ -222,43 +222,43 @@ task("revenue:admin:withdraw", "Calculate the fees accrued from admin fees")
         console.log("USD FEE VALUE", parseFloat(formatEther(nativeFee)) * priceUsd);
         console.log("USD THRESHOLD VALUE", parseFloat(taskArgs.threshold) * priceUsd);
 
-        if (ionicFee > threshold) {
-          // const accTx = await cToken.accrueInterest();
-          // await accTx.wait();
-          console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
-          console.log("deployer: ", deployer);
-          const tx = await cToken.write._withdrawIonicFees([ionicFee]);
-          await publicClient.waitForTransactionReceipt({ hash: tx });
-          console.log("tx: ", tx);
-          console.log(
-            `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Ionic Fee: ${formatEther(
-              nativeFee
-            )}`
-          );
-        } else {
-          console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
-        }
+        // if (ionicFee > threshold) {
+        // const accTx = await cToken.accrueInterest();
+        // await accTx.wait();
+        console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
+        console.log("deployer: ", deployer);
+        let tx = await cToken.write._withdrawIonicFees([ionicFee]);
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+        console.log("tx: ", tx);
+        console.log(
+          `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Ionic Fee: ${formatEther(
+            nativeFee
+          )}`
+        );
+        // } else {
+        //   console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
+        // }
 
         const adminFee = await cToken.read.totalAdminFees();
         const nativeFeeAdmin = (adminFee * nativePrice) / 10n ** 18n;
 
         console.log("USD FEE VALUE", parseFloat(formatEther(nativeFeeAdmin)) * priceUsd);
         console.log("USD THRESHOLD VALUE", parseFloat(taskArgs.threshold) * priceUsd);
-        if (adminFee > threshold) {
-          // const accTx = await cToken.accrueInterest();
-          // await accTx.wait();
-          console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
-          const tx = await cToken.write._withdrawAdminFees([ionicFee]);
-          await publicClient.waitForTransactionReceipt({ hash: tx });
-          console.log("tx: ", tx);
-          console.log(
-            `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Admin Fee: ${formatEther(
-              nativeFeeAdmin
-            )}`
-          );
-        } else {
-          console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
-        }
+        // if (adminFee > threshold) {
+        // const accTx = await cToken.accrueInterest();
+        // await accTx.wait();
+        console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
+        tx = await cToken.write._withdrawAdminFees([adminFee]);
+         await publicClient.waitForTransactionReceipt({ hash: tx });
+         console.log("tx: ", tx);
+         console.log(
+           `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Admin Fee: ${formatEther(
+             nativeFeeAdmin
+           )}`
+         );
+        // } else {
+        //   console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
+        // }
       }
     }
   });
