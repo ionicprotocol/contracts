@@ -2,19 +2,7 @@ import axios from "axios";
 import { DeploymentsExtension } from "hardhat-deploy/types";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  Address,
-  Chain,
-  formatEther,
-  GetContractReturnType,
-  Hash,
-  HttpTransport,
-  LocalAccount,
-  parseEther,
-  WalletClient,
-  WalletRpcSchema
-} from "viem";
-import { ionicComptrollerAbi } from "../../generated";
+import { Address, formatEther, GetContractReturnType, parseEther } from "viem";
 import { IonicComptroller$Type } from "../../artifacts/contracts/compound/ComptrollerInterface.sol/IonicComptroller";
 
 const LOG = process.env.LOG ? true : false;
@@ -212,18 +200,16 @@ task("revenue:admin:withdraw", "Calculate the fees accrued from admin fees")
   .addParam("threshold", "Threshold for ionic fee seizing denominated in native", "0.01", types.string)
   .setAction(async (taskArgs, hre) => {
     const publicClient = await hre.viem.getPublicClient();
+    const { deployer } = await hre.getNamedAccounts();
     const cgId = "ethereum";
 
     const { pools, mpo } = await setUpFeeCalculation(hre);
     for (const pool of pools) {
       const comptroller = await hre.viem.getContractAt("IonicComptroller", pool.comptroller);
-      // Skip  Polygon Jarvis jFiat
-      if (comptroller === null || comptroller.address === "0xD265ff7e5487E9DD556a4BB900ccA6D087Eb3AD2") {
-        continue;
-      }
       const markets = await comptroller.read.getAllMarkets();
       const threshold = parseEther(taskArgs.threshold);
       const priceUsd = await cgPrice(cgId);
+      console.log("priceUsd: ", priceUsd);
 
       for (const market of markets) {
         const cToken = await hre.viem.getContractAt("ICErc20", market);
@@ -240,15 +226,38 @@ task("revenue:admin:withdraw", "Calculate the fees accrued from admin fees")
           // const accTx = await cToken.accrueInterest();
           // await accTx.wait();
           console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
+          console.log("deployer: ", deployer);
           const tx = await cToken.write._withdrawIonicFees([ionicFee]);
           await publicClient.waitForTransactionReceipt({ hash: tx });
+          console.log("tx: ", tx);
           console.log(
-            `Pool: ${comptroller} - Market: ${market} (underlying: ${underlying}) - Ionic Fee: ${formatEther(
+            `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Ionic Fee: ${formatEther(
               nativeFee
             )}`
           );
         } else {
-          console.log(`Pool: ${comptroller} - Market: ${market} - No Ionic Fees`);
+          console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
+        }
+
+        const adminFee = await cToken.read.totalAdminFees();
+        const nativeFeeAdmin = (adminFee * nativePrice) / 10n ** 18n;
+
+        console.log("USD FEE VALUE", parseFloat(formatEther(nativeFeeAdmin)) * priceUsd);
+        console.log("USD THRESHOLD VALUE", parseFloat(taskArgs.threshold) * priceUsd);
+        if (adminFee > threshold) {
+          // const accTx = await cToken.accrueInterest();
+          // await accTx.wait();
+          console.log(`Withdrawing fee from ${await cToken.read.symbol()} (underlying: ${underlying})`);
+          const tx = await cToken.write._withdrawAdminFees([ionicFee]);
+          await publicClient.waitForTransactionReceipt({ hash: tx });
+          console.log("tx: ", tx);
+          console.log(
+            `Pool: ${comptroller.address} - Market: ${market} (underlying: ${underlying}) - Admin Fee: ${formatEther(
+              nativeFeeAdmin
+            )}`
+          );
+        } else {
+          console.log(`Pool: ${comptroller.address} - Market: ${market} - No Ionic Fees: ${ionicFee}`);
         }
       }
     }
