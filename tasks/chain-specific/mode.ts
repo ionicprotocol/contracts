@@ -55,6 +55,7 @@ task("prudentia:config", "Sets prudentia config").setAction(async (_, { viem, ge
   const pool = await viem.getContractAt("ComptrollerPrudentiaCapsExt", COMPTROLLER);
   const admin = await pool.read.admin();
   console.log("admin: ", admin);
+  // set supply cap config
   let tx = await pool.write._setSupplyCapConfig([
     { controller: "0x425Ed58c3B836B1c5a073ab5dae3ee6c94336B21", offset: 0, decimalShift: -4 }
   ]);
@@ -64,6 +65,7 @@ task("prudentia:config", "Sets prudentia config").setAction(async (_, { viem, ge
   tx = await pool.write._setBorrowCapConfig([
     { controller: "0x3060759F0D0BF60c373f9057BB1269c28Bd5Bb66", offset: 0, decimalShift: -4 }
   ]);
+  console.log("set borrow cap config tx: ", tx);
 
   // set ionusdc IRM
   const ionUSDC = "0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038";
