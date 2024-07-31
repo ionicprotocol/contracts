@@ -48,10 +48,10 @@
       "address": "0xACea9bfBD6A1DA56a27bada1a8D0e5bb35bFF4E7"
     },
     "Comptroller": {
-      "address": "0xA3E43A78Cc3B82aaa059Fa5Ba4F3C8387b4234E9"
+      "address": "0xa855F8697D82F840c511433A36f7c60efF6c6BE7"
     },
     "ComptrollerFirstExtension": {
-      "address": "0x6393228b6909AB12413816679Ec992778e35f3a0"
+      "address": "0xdc4aBE2cd9a276b187200d4896d4B219c0B8920A"
     },
     "ComptrollerPrudentiaCapsExt": {
       "address": "0x0A183B983E395BeBfa344389Ef08250Ae987bEe4"
