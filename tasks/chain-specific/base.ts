@@ -56,12 +56,12 @@ task("market:base:rsr-ion-rewards", "Sets caps on a market").setAction(
     // STEP 2: send reward tokens to strategies 
     const rsrToken = await viem.getContractAt("EIP20Interface", RSR);
     const balance = await rsrToken.read.balanceOf([ionbsdETH]);
-    if (balance < parseEther("170484.026388")) {
-      await rsrToken.write.transfer([ionbsdETH, parseEther("170484.026388")]);
+    if (balance < parseEther("127863.019791")) {
+      await rsrToken.write.transfer([ionbsdETH, parseEther("127863.019791")]);
     }
     const balanceUSD = await rsrToken.read.balanceOf([ioneUSD]);
-    if (balanceUSD < parseEther("185308.724335")) {
-      await rsrToken.write.transfer([ioneUSD, parseEther("185308.724335")]);
+    if (balanceUSD < parseEther("138981.543251")) {
+      await rsrToken.write.transfer([ioneUSD, parseEther("138981.543251")]);
     }
 
     
