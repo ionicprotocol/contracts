@@ -9,6 +9,10 @@ import "./tasks";
 
 dotenv();
 
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: { default: 0 },

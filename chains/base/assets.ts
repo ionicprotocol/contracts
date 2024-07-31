@@ -14,6 +14,7 @@ export const weETH = "0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A";
 export const eUSD = "0xcfa3ef56d303ae4faaba0592388f19d7c3399fb4";
 export const bsdETH = "0xcb327b99ff831bf8223cced12b1338ff3aa322ff";
 export const RSR = "0xaB36452DbAC151bE02b16Ca17d8919826072f64a";
+export const ION = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
 
 export const assets: SupportedAsset[] = [
   {
@@ -110,7 +111,7 @@ export const assets: SupportedAsset[] = [
       aggregator: "0xFC1415403EbB0c693f9a7844b92aD2Ff24775C65",
       feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
     },
-    initialCf: "70"
+    initialCf: "0.70"
   },
   {
     symbol: assetSymbols.eUSD,
@@ -124,7 +125,7 @@ export const assets: SupportedAsset[] = [
     } as ChainlinkSpecificParams,
     initialSupplyCap: parseEther(String(10_000_000)).toString(),
     initialBorrowCap: parseEther(String(8_000_000)).toString(),
-    initialCf: "80"
+    initialCf: "0.80"
   },
   {
     symbol: assetSymbols.bsdETH,
@@ -138,7 +139,7 @@ export const assets: SupportedAsset[] = [
     },
     initialSupplyCap: parseEther(String(6_500)).toString(),
     initialBorrowCap: parseEther(String(5_200)).toString(),
-    initialCf: "70"
+    initialCf: "0.70"
   },
   {
     symbol: assetSymbols.RSR,
@@ -150,6 +151,13 @@ export const assets: SupportedAsset[] = [
       aggregator: "0xAa98aE504658766Dfe11F31c5D95a0bdcABDe0b1",
       feedBaseCurrency: ChainlinkFeedBaseCurrency.USD
     }
+  },
+  {
+    symbol: assetSymbols.ION,
+    underlying: ION,
+    name: "Ionic",
+    decimals: 18,
+    oracle: OracleTypes.AerodromePriceOracle
   }
 ];
 

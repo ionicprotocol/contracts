@@ -17,6 +17,7 @@ export const mBTC = "0x59889b7021243dB5B1e065385F918316cD90D46c";
 export const MODE = "0xDfc7C877a950e49D2610114102175A06C2e3167a";
 // export const ION = "0x18470019bf0e94611f15852f7e93cf5d65bc34ca";
 export const KIM = "0x6863fb62Ed27A9DdF458105B507C15b5d741d62e";
+export const STONE = "0x80137510979822322193fc997d400d5a6c747bf7";
 
 export const assets: SupportedAsset[] = [
   {
@@ -52,21 +53,32 @@ export const assets: SupportedAsset[] = [
     underlying: ezETH,
     name: "Renzo Restaked ETH",
     decimals: 18,
-    oracle: OracleTypes.RedstoneAdapterPriceOracle
+    oracle: OracleTypes.RedstoneAdapterPriceOracle,
+    initialCf: "0.8"
   },
   {
     symbol: "weETH",
     underlying: weETH,
     name: "Wrapped eETH",
     decimals: 18,
-    oracle: OracleTypes.RedstoneAdapterPriceOracle
+    oracle: OracleTypes.RedstoneAdapterPriceOracle,
+    initialCf: "0.8"
+  },
+  {
+    symbol: "STONE",
+    underlying: STONE,
+    name: "StakeStone Ether",
+    decimals: 18,
+    oracle: OracleTypes.RedstoneAdapterPriceOracle,
+    initialCf: "0.775"
   },
   {
     symbol: "wrsETH",
     underlying: wrsETH,
     name: "rsETHWrapper",
     decimals: 18,
-    oracle: OracleTypes.RedstoneAdapterWrsETHPriceOracle
+    oracle: OracleTypes.RedstoneAdapterWrsETHPriceOracle,
+    initialCf: "0.775"
   },
   {
     symbol: "MODE",
