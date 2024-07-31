@@ -13,6 +13,7 @@ export const WBTC = "0x1ceA84203673764244E05693e42E6Ace62bE9BA5";
 export const weETH = "0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A";
 export const eUSD = "0xcfa3ef56d303ae4faaba0592388f19d7c3399fb4";
 export const bsdETH = "0xcb327b99ff831bf8223cced12b1338ff3aa322ff";
+export const RSR = "0xaB36452DbAC151bE02b16Ca17d8919826072f64a";
 
 export const assets: SupportedAsset[] = [
   {
@@ -138,6 +139,17 @@ export const assets: SupportedAsset[] = [
     initialSupplyCap: parseEther(String(6_500)).toString(),
     initialBorrowCap: parseEther(String(5_200)).toString(),
     initialCf: "70"
+  },
+  {
+    symbol: assetSymbols.RSR,
+    underlying: RSR,
+    name: "Reserve Rights",
+    decimals: 18,
+    oracle: OracleTypes.ChainlinkPriceOracleV2,
+    oracleSpecificParams: {
+      aggregator: "0xAa98aE504658766Dfe11F31c5D95a0bdcABDe0b1",
+      feedBaseCurrency: ChainlinkFeedBaseCurrency.USD
+    }
   }
 ];
 
