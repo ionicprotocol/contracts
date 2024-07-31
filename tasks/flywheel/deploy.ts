@@ -97,13 +97,7 @@ task("flywheel:add-strategy-for-rewards", "Create pool if does not exist")
       throw `Invalid 'strategy': ${taskArgs.strategy}`;
     }
 
-    try {
-      name = getAddress(taskArgs.name);
-    } catch {
-      throw `Invalid 'name': ${taskArgs.name}`;
-    }
-
-    if (name.includes("Borrow")) {
+    if (taskArgs.name.includes("Borrow")) {
       contractName = "IonicFlywheelBorrow";
     } else contractName = "IonicFlywheel";
   
