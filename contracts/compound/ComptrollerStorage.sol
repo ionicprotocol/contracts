@@ -137,13 +137,16 @@ contract ComptrollerV2Storage is ComptrollerV1Storage {
 
 contract ComptrollerV3Storage is ComptrollerV2Storage {
   /// @notice The borrowCapGuardian can set borrowCaps to any number for any market. Lowering the borrow cap could disable borrowing on the given market.
+  /// @dev If Adrastia Prudentia is enabled, the values the borrow cap guardian sets are ignored.
   address public borrowCapGuardian;
 
   /// @notice Borrow caps enforced by borrowAllowed for each cToken address. Defaults to zero which corresponds to unlimited borrowing.
-  mapping(address => uint256) public borrowCaps;
+  /// @dev If Adrastia Prudentia is enabled, this value is ignored.
+  mapping(address => uint256) public _borrowCaps;
 
   /// @notice Supply caps enforced by mintAllowed for each cToken address. Defaults to zero which corresponds to unlimited supplying.
-  mapping(address => uint256) public supplyCaps;
+  /// @dev If Adrastia Prudentia is enabled, this value is ignored.
+  mapping(address => uint256) public _supplyCaps;
 
   /// @notice RewardsDistributor contracts to notify of flywheel changes.
   address[] public rewardsDistributors;

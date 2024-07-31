@@ -140,10 +140,12 @@ contract ComptrollerFirstExtension is
       }
     }
 
+    uint256 supplyCap = supplyCaps(address(collateral));
+
     // if there is any supply cap, don't allow donations to the market/plugin to go around it
-    if (supplyCaps[address(collateral)] > 0 && !supplyCapWhitelist[address(collateral)].contains(account)) {
+    if (supplyCap > 0 && !supplyCapWhitelist[address(collateral)].contains(account)) {
       uint256 collateralAssetPrice = oracle.getUnderlyingPrice(collateral);
-      uint256 supplyCapValue = (supplyCaps[address(collateral)] * collateralAssetPrice) / 1e18;
+      uint256 supplyCapValue = (supplyCap * collateralAssetPrice) / 1e18;
       supplyCapValue = (supplyCapValue * markets[address(collateral)].collateralFactorMantissa) / 1e18;
       if (supplyCapValue < assetAsCollateralValueCap) assetAsCollateralValueCap = supplyCapValue;
     }
@@ -166,7 +168,7 @@ contract ComptrollerFirstExtension is
     require(numMarkets != 0 && numMarkets == numSupplyCaps, "!input");
 
     for (uint256 i = 0; i < numMarkets; i++) {
-      supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
+      _supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
       emit NewSupplyCap(cTokens[i], newSupplyCaps[i]);
     }
   }
@@ -186,7 +188,7 @@ contract ComptrollerFirstExtension is
     require(numMarkets != 0 && numMarkets == numBorrowCaps, "!input");
 
     for (uint256 i = 0; i < numMarkets; i++) {
-      borrowCaps[address(cTokens[i])] = newBorrowCaps[i];
+      _borrowCaps[address(cTokens[i])] = newBorrowCaps[i];
       emit NewBorrowCap(cTokens[i], newBorrowCaps[i]);
     }
   }
@@ -313,11 +315,7 @@ contract ComptrollerFirstExtension is
     return uint256(Error.NO_ERROR);
   }
 
-  function _setBorrowCapForCollateral(
-    address cTokenBorrow,
-    address cTokenCollateral,
-    uint256 borrowCap
-  ) public {
+  function _setBorrowCapForCollateral(address cTokenBorrow, address cTokenCollateral, uint256 borrowCap) public {
     require(hasAdminRights(), "!admin");
     borrowCapForCollateral[cTokenBorrow][cTokenCollateral] = borrowCap;
   }
@@ -371,11 +369,7 @@ contract ComptrollerFirstExtension is
     return borrowingAgainstCollateralBlacklistWhitelist[cTokenBorrow][cTokenCollateral].contains(account);
   }
 
-  function _supplyCapWhitelist(
-    address cToken,
-    address account,
-    bool whitelisted
-  ) public {
+  function _supplyCapWhitelist(address cToken, address account, bool whitelisted) public {
     require(hasAdminRights(), "!admin");
 
     if (whitelisted) supplyCapWhitelist[cToken].add(account);
@@ -393,11 +387,7 @@ contract ComptrollerFirstExtension is
     }
   }
 
-  function _borrowCapWhitelist(
-    address cToken,
-    address account,
-    bool whitelisted
-  ) public {
+  function _borrowCapWhitelist(address cToken, address account, bool whitelisted) public {
     require(hasAdminRights(), "!admin");
 
     if (whitelisted) borrowCapWhitelist[cToken].add(account);
@@ -437,11 +427,10 @@ contract ComptrollerFirstExtension is
     return allBorrowers.length;
   }
 
-  function getPaginatedBorrowers(uint256 page, uint256 pageSize)
-    public
-    view
-    returns (uint256 _totalPages, address[] memory _pageOfBorrowers)
-  {
+  function getPaginatedBorrowers(
+    uint256 page,
+    uint256 pageSize
+  ) public view returns (uint256 _totalPages, address[] memory _pageOfBorrowers) {
     uint256 allBorrowersCount = allBorrowers.length;
     if (allBorrowersCount == 0) {
       return (0, new address[](0));

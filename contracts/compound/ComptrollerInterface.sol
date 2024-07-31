@@ -6,6 +6,7 @@ import { ICErc20 } from "./CTokenInterfaces.sol";
 import { DiamondExtension } from "../ionic/DiamondExtension.sol";
 import { ComptrollerV4Storage } from "../compound/ComptrollerStorage.sol";
 import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
+import { IHistoricalRates } from "adrastia-periphery/rates/IHistoricalRates.sol";
 
 interface ComptrollerInterface {
   function isDeprecated(ICErc20 cToken) external view returns (bool);
@@ -43,21 +44,9 @@ interface ComptrollerInterface {
     uint256 redeemTokens,
     uint256 borrowAmount,
     uint256 repayAmount
-  )
-    external
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
-    );
+  ) external view returns (uint256, uint256, uint256, uint256);
 
-  function getMaxRedeemOrBorrow(
-    address account,
-    ICErc20 cToken,
-    bool isBorrow
-  ) external view returns (uint256);
+  function getMaxRedeemOrBorrow(address account, ICErc20 cToken, bool isBorrow) external view returns (uint256);
 
   /*** Assets You Are In ***/
 
@@ -67,30 +56,13 @@ interface ComptrollerInterface {
 
   /*** Policy Hooks ***/
 
-  function mintAllowed(
-    address cToken,
-    address minter,
-    uint256 mintAmount
-  ) external returns (uint256);
+  function mintAllowed(address cToken, address minter, uint256 mintAmount) external returns (uint256);
 
-  function redeemAllowed(
-    address cToken,
-    address redeemer,
-    uint256 redeemTokens
-  ) external returns (uint256);
+  function redeemAllowed(address cToken, address redeemer, uint256 redeemTokens) external returns (uint256);
 
-  function redeemVerify(
-    address cToken,
-    address redeemer,
-    uint256 redeemAmount,
-    uint256 redeemTokens
-  ) external;
+  function redeemVerify(address cToken, address redeemer, uint256 redeemAmount, uint256 redeemTokens) external;
 
-  function borrowAllowed(
-    address cToken,
-    address borrower,
-    uint256 borrowAmount
-  ) external returns (uint256);
+  function borrowAllowed(address cToken, address borrower, uint256 borrowAmount) external returns (uint256);
 
   function borrowWithinLimits(address cToken, uint256 accountBorrowsNew) external view returns (uint256);
 
@@ -117,31 +89,15 @@ interface ComptrollerInterface {
     uint256 seizeTokens
   ) external returns (uint256);
 
-  function transferAllowed(
-    address cToken,
-    address src,
-    address dst,
-    uint256 transferTokens
-  ) external returns (uint256);
+  function transferAllowed(address cToken, address src, address dst, uint256 transferTokens) external returns (uint256);
 
-  function mintVerify(
-    address cToken,
-    address minter,
-    uint256 actualMintAmount,
-    uint256 mintTokens
-  ) external;
+  function mintVerify(address cToken, address minter, uint256 actualMintAmount, uint256 mintTokens) external;
 
   /*** Liquidity/Liquidation Calculations ***/
 
-  function getAccountLiquidity(address account)
-    external
-    view
-    returns (
-      uint256 error,
-      uint256 collateralValue,
-      uint256 liquidity,
-      uint256 shortfall
-    );
+  function getAccountLiquidity(
+    address account
+  ) external view returns (uint256 error, uint256 collateralValue, uint256 liquidity, uint256 shortfall);
 
   function liquidateCalculateSeizeTokens(
     address cTokenBorrowed,
@@ -219,26 +175,18 @@ interface ComptrollerExtensionInterface {
 
   function getAllBorrowersCount() external view returns (uint256);
 
-  function getPaginatedBorrowers(uint256 page, uint256 pageSize)
-    external
-    view
-    returns (uint256 _totalPages, address[] memory _pageOfBorrowers);
+  function getPaginatedBorrowers(
+    uint256 page,
+    uint256 pageSize
+  ) external view returns (uint256 _totalPages, address[] memory _pageOfBorrowers);
 
   function getRewardsDistributors() external view returns (address[] memory);
 
   function getAccruingFlywheels() external view returns (address[] memory);
 
-  function _supplyCapWhitelist(
-    address cToken,
-    address account,
-    bool whitelisted
-  ) external;
+  function _supplyCapWhitelist(address cToken, address account, bool whitelisted) external;
 
-  function _setBorrowCapForCollateral(
-    address cTokenBorrow,
-    address cTokenCollateral,
-    uint256 borrowCap
-  ) external;
+  function _setBorrowCapForCollateral(address cTokenBorrow, address cTokenCollateral, uint256 borrowCap) external;
 
   function _setBorrowCapForCollateralWhitelist(
     address cTokenBorrow,
@@ -274,11 +222,7 @@ interface ComptrollerExtensionInterface {
 
   function isSupplyCapWhitelisted(address cToken, address account) external view returns (bool);
 
-  function _borrowCapWhitelist(
-    address cToken,
-    address account,
-    bool whitelisted
-  ) external;
+  function _borrowCapWhitelist(address cToken, address account, bool whitelisted) external;
 
   function isBorrowCapWhitelisted(address cToken, address account) external view returns (bool);
 
@@ -372,4 +316,88 @@ interface IonicComptroller is
 abstract contract ComptrollerBase is ComptrollerV4Storage {
   /// @notice Indicator that this is a Comptroller contract (for inspection)
   bool public constant isComptroller = true;
+
+  /**
+   * @notice Gets the supply cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function supplyCaps(address cToken) public view returns (uint256 supplyCap) {
+    PrudentiaLib.PrudentiaConfig memory capConfig = supplyCapConfig;
+
+    // Check if we're using Adrastia Prudentia for the supply cap
+    if (capConfig.controller != address(0)) {
+      // We have a controller, so we're using Adrastia Prudentia
+
+      address underlyingToken = ICErc20(cToken).underlying();
+
+      // Get the supply cap from Adrastia Prudentia
+      supplyCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
+
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
+
+      int256 scaleByDecimals = 18;
+      // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
+      (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
+      if (success && data.length == 32) {
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
+      }
+
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        supplyCap *= 10 ** uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        supplyCap /= 10 ** uint256(-scaleByDecimals);
+      }
+    } else {
+      // We don't have a controller, so we're using the local supply cap
+
+      // Get the supply cap from the local supply cap
+      supplyCap = _supplyCaps[cToken];
+    }
+  }
+
+  /**
+   * @notice Gets the borrow cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function borrowCaps(address cToken) public view returns (uint256 borrowCap) {
+    PrudentiaLib.PrudentiaConfig memory capConfig = borrowCapConfig;
+
+    // Check if we're using Adrastia Prudentia for the borrow cap
+    if (capConfig.controller != address(0)) {
+      // We have a controller, so we're using Adrastia Prudentia
+
+      address underlyingToken = ICErc20(cToken).underlying();
+
+      // Get the borrow cap from Adrastia Prudentia
+      borrowCap = IHistoricalRates(capConfig.controller).getRateAt(underlyingToken, capConfig.offset).current;
+
+      // Prudentia trims decimal points from amounts while our code requires the mantissa amount, so we
+      // must scale the supply cap to get the correct amount
+
+      int256 scaleByDecimals = 18;
+      // Not all ERC20s implement decimals(), so we use a staticcall and check the return data
+      (bool success, bytes memory data) = underlyingToken.staticcall(abi.encodeWithSignature("decimals()"));
+      if (success && data.length == 32) {
+        scaleByDecimals = int256(uint256(abi.decode(data, (uint8))));
+      }
+
+      scaleByDecimals += capConfig.decimalShift;
+
+      if (scaleByDecimals >= 0) {
+        // We're scaling up, so we need to multiply
+        borrowCap *= 10 ** uint256(scaleByDecimals);
+      } else {
+        // We're scaling down, so we need to divide
+        borrowCap /= 10 ** uint256(-scaleByDecimals);
+      }
+    } else {
+      // We don't have a controller, so we're using the local borrow cap
+      borrowCap = _borrowCaps[cToken];
+    }
+  }
 }

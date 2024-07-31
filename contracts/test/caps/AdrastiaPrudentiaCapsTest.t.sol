@@ -439,6 +439,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
   }
 
   function test_NativeCaps_UnrestrictedSupply() public {
+    assertEq(comptroller.supplyCaps(address(cToken1)), 0); // No supply cap set (unrestricted)
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(10000e18); // Mint 10,000 cToken1
@@ -455,6 +457,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     supplyCaps[0] = cap;
     comptroller._setMarketSupplyCaps(cTokens, supplyCaps);
 
+    assertEq(comptroller.supplyCaps(address(cTokens[0])), supplyCaps[0]);
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     vm.expectRevert();
@@ -462,6 +466,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
   }
 
   function test_NativeCaps_UnrestrictedBorrow() public {
+    assertEq(comptroller.borrowCaps(address(cToken1)), 0); // No borrow cap set (unrestricted)
+
     // Mint cToken1 and cToken2
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(10000e18); // Mint 10,000 cToken1
@@ -487,6 +493,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     uint256[] memory borrowCaps = new uint256[](1);
     borrowCaps[0] = cap;
     comptroller._setMarketBorrowCaps(cTokens, borrowCaps);
+
+    assertEq(comptroller.borrowCaps(address(cTokens[0])), borrowCaps[0]);
 
     // Mint cToken1 and cToken2
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -528,6 +536,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), cap); // Unrestricted
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -550,6 +560,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     );
 
     // Note: Prudentia doesn't have a supply cap for cToken1
+
+    vm.expectRevert();
+    comptroller.supplyCaps(address(cToken1)); // FAIL: Supply cap
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -575,6 +588,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken2
     prudentia.stubPush(address(underlyingToken2), 0); // Unrestricted supply cap for cToken2
+
+    assertEq(comptroller.supplyCaps(address(cToken2)), 0); // Unrestricted
 
     // Note: Prudentia doesn't have a supply cap for cToken1
 
@@ -604,6 +619,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e18);
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -628,6 +645,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e18);
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -666,6 +685,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e18);
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -701,6 +722,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), cap); // Unrestricted
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -732,6 +755,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     ComptrollerPrudentiaCapsExt(address(comptroller))._setBorrowCapConfig(
       PrudentiaLib.PrudentiaConfig({ controller: address(prudentia), offset: 0, decimalShift: 0 })
     );
+
+    vm.expectRevert();
+    comptroller.borrowCaps(address(cToken2)); // FAIL: Missing rate
 
     // Note: Prudentia doesn't have a borrow cap for cToken2
 
@@ -770,7 +796,12 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken1
     prudentia.stubPush(address(underlyingToken1), 0); // Unrestricted borrow cap for cToken1
 
+    assertEq(comptroller.borrowCaps(address(cToken1)), 0); // Unrestricted
+
     // Note: Prudentia doesn't have a borrow cap for cToken2
+
+    vm.expectRevert();
+    comptroller.borrowCaps(address(cToken2)); // FAIL: Missing rate
 
     // Borrow
     vm.expectRevert();
@@ -808,6 +839,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e18);
+
     // Borrow
     vm.expectRevert();
     cToken2.borrow(borrowAmount); // FAIL: Borrow
@@ -837,6 +870,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), cap); // Unrestricted
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -859,6 +894,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     );
 
     // Note: Prudentia doesn't have a supply cap for cToken1
+
+    vm.expectRevert();
+    comptroller.supplyCaps(address(cToken1)); // FAIL: Missing rate
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -886,6 +924,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e19);
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -910,6 +950,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e19);
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -948,6 +990,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e19);
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -983,6 +1027,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), cap); // Unrestricted
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -1016,6 +1062,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     );
 
     // Note: Prudentia doesn't have a borrow cap for cToken2
+
+    vm.expectRevert();
+    comptroller.borrowCaps(address(cToken2)); // FAIL: Missing rate
 
     // Borrow
     vm.expectRevert();
@@ -1053,6 +1102,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e19);
+
     // Borrow
     vm.expectRevert();
     cToken2.borrow(borrowAmount); // FAIL: Borrow
@@ -1082,6 +1133,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), cap); // Unrestricted
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -1104,6 +1157,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     );
 
     // Note: Prudentia doesn't have a supply cap for cToken1
+
+    vm.expectRevert();
+    comptroller.supplyCaps(address(cToken1)); // FAIL: Missing rate
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -1131,6 +1187,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e17);
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -1155,6 +1213,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e17);
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -1193,6 +1253,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e17);
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -1228,6 +1290,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), cap); // Unrestricted
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -1261,6 +1325,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     );
 
     // Note: Prudentia doesn't have a borrow cap for cToken2
+
+    vm.expectRevert();
+    comptroller.borrowCaps(address(cToken2)); // FAIL: Missing rate
 
     // Borrow
     vm.expectRevert();
@@ -1298,6 +1365,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e17);
+
     // Borrow
     vm.expectRevert();
     cToken2.borrow(borrowAmount); // FAIL: Borrow
@@ -1327,6 +1396,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), cap); // Unrestricted
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1354,6 +1425,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e6);
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1380,6 +1453,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e6);
 
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
@@ -1420,6 +1495,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e6);
+
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
 
@@ -1456,6 +1533,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.borrowCaps(address(cToken3)), cap); // Unrestricted
 
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
@@ -1494,6 +1573,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e6);
+
     // Borrow
     vm.expectRevert();
     cToken3.borrow(borrowAmount); // FAIL: Borrow
@@ -1526,6 +1607,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), cap); // Unrestricted
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1553,6 +1636,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e7);
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1579,6 +1664,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e7);
 
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
@@ -1619,6 +1706,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e7);
+
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
 
@@ -1655,6 +1744,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.borrowCaps(address(cToken3)), cap); // Unrestricted
 
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
@@ -1693,6 +1784,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e7);
+
     // Borrow
     vm.expectRevert();
     cToken3.borrow(borrowAmount); // FAIL: Borrow
@@ -1725,6 +1818,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), cap); // Unrestricted
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1752,6 +1847,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e5);
+
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
     cToken3.mint(mintAmount); // Mint
@@ -1778,6 +1875,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia supply cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.supplyCaps(address(cToken3)), uint256(cap) * 1e5);
 
     // Mint
     underlyingToken3.approve(address(cToken3), type(uint256).max); // Approve max
@@ -1818,6 +1917,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e5);
+
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
 
@@ -1854,6 +1955,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
+
+    assertEq(comptroller.borrowCaps(address(cToken3)), cap); // Unrestricted
 
     // Borrow
     cToken3.borrow(borrowAmount); // Borrow
@@ -1892,6 +1995,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken3
     prudentia.stubPush(address(underlyingToken3), cap);
 
+    assertEq(comptroller.borrowCaps(address(cToken3)), uint256(cap) * 1e5);
+
     // Borrow
     vm.expectRevert();
     cToken3.borrow(borrowAmount); // FAIL: Borrow
@@ -1924,6 +2029,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     prudentia.stubPush(address(underlyingToken1), cap); // Unrestricted cap at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken1), 1); // Highly restrictive cap at index 0. If this cap is used, the test should fail.
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), cap); // Unrestricted
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -1947,6 +2054,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Note: Prudentia doesn't have a supply cap for cToken1 at index 1 (the offset)
     prudentia.stubPush(address(underlyingToken1), 0); // Unrestricted cap at index 0. If this cap is used, the test should fail.
+
+    vm.expectRevert();
+    comptroller.supplyCaps(address(cToken1)); // FAIL: Missing rate
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -1975,6 +2085,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     prudentia.stubPush(address(underlyingToken1), cap); // The cap we're using at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken1), 1); // Highly restrictive cap at index 0. If this cap is used, the test should fail.
 
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e18);
+
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
     cToken1.mint(mintAmount); // Mint
@@ -2000,6 +2112,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia supply cap for cToken1
     prudentia.stubPush(address(underlyingToken1), cap); // The cap we're using at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken1), 0); // Unrestricted cap at index 0. If this cap is used, the test should fail.
+
+    assertEq(comptroller.supplyCaps(address(cToken1)), uint256(cap) * 1e18);
 
     // Mint
     underlyingToken1.approve(address(cToken1), type(uint256).max); // Approve max
@@ -2039,6 +2153,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     prudentia.stubPush(address(underlyingToken2), cap); // The cap we're using at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken2), 1); // Highly restrictive cap at index 0. If this cap is used, the test should fail.
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e18);
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -2075,6 +2191,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     prudentia.stubPush(address(underlyingToken2), cap); // The cap we're using at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken2), 1); // Highly restrictive cap at index 0. If this cap is used, the test should fail.
 
+    assertEq(comptroller.borrowCaps(address(cToken2)), cap); // Unrestricted
+
     // Borrow
     cToken2.borrow(borrowAmount); // Borrow
   }
@@ -2108,6 +2226,9 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
 
     // Note: Prudentia doesn't have a borrow cap for cToken2 at index 1 (the offset)
     prudentia.stubPush(address(underlyingToken2), 0); // Unrestricted cap at index 0. If this cap is used, the test should fail.
+
+    vm.expectRevert();
+    comptroller.borrowCaps(address(cToken2)); // FAIL: Missing rate
 
     // Borrow
     vm.expectRevert();
@@ -2145,6 +2266,8 @@ contract AdrastiaPrudentiaCapsTest is BaseTest {
     // Set Prudentia borrow cap for cToken2
     prudentia.stubPush(address(underlyingToken2), cap); // The cap we're using at index 1 (this should be used)
     prudentia.stubPush(address(underlyingToken2), 0); // Unrestricted cap at index 0. If this cap is used, the test should fail.
+
+    assertEq(comptroller.borrowCaps(address(cToken2)), uint256(cap) * 1e18);
 
     // Borrow
     vm.expectRevert();
