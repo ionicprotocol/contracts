@@ -51,6 +51,7 @@ task("market:base:rsr-ion-rewards", "Sets caps on a market").setAction(
     // await publicClient.waitForTransactionReceipt({ hash: tx });
 
     // STEP 1: upgrade markets to the new implementation
+    /*
     console.log(`Upgrading market: ${ionbsdETH} to CErc20RewardsDelegate`);
     await run("market:upgrade", {
       comptroller,
@@ -67,6 +68,7 @@ task("market:base:rsr-ion-rewards", "Sets caps on a market").setAction(
       signer: deployer
     });
     console.log("Market upgraded");
+    */
     // STEP 2: send reward tokens to strategies
     const rsrToken = await viem.getContractAt("EIP20Interface", RSR);
     const balance = await rsrToken.read.balanceOf([ionbsdETH]);
@@ -80,16 +82,16 @@ task("market:base:rsr-ion-rewards", "Sets caps on a market").setAction(
 
     // NOTE: change name and reward token
     await run("flywheel:deploy-dynamic-rewards-fw", {
-      name: "RSR",
+      name: "Borrow_RSR",
       rewardToken: RSR,
-      booster: "",
+      booster: "IonicFlywheelBorrowBooster_ION",
       strategies: markets,
       pool
     });
 
     const flywheel = await viem.getContractAt(
-      "IonicFlywheel",
-      (await deployments.get("IonicFlywheel_RSR")).address as Address
+      "IonicFlywheelBorrow",
+      (await deployments.get("IonicFlywheelBorrow_Borrow_RSR")).address as Address
     );
     await run("approve-market-flywheel", {
       fwAddress: flywheel.address,
