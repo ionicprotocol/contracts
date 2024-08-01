@@ -140,7 +140,7 @@ contract ComptrollerFirstExtension is
       }
     }
 
-    uint256 supplyCap = supplyCaps(address(collateral));
+    uint256 supplyCap = effectiveSupplyCaps(address(collateral));
 
     // if there is any supply cap, don't allow donations to the market/plugin to go around it
     if (supplyCap > 0 && !supplyCapWhitelist[address(collateral)].contains(account)) {
@@ -168,7 +168,7 @@ contract ComptrollerFirstExtension is
     require(numMarkets != 0 && numMarkets == numSupplyCaps, "!input");
 
     for (uint256 i = 0; i < numMarkets; i++) {
-      _supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
+      supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
       emit NewSupplyCap(cTokens[i], newSupplyCaps[i]);
     }
   }
@@ -188,7 +188,7 @@ contract ComptrollerFirstExtension is
     require(numMarkets != 0 && numMarkets == numBorrowCaps, "!input");
 
     for (uint256 i = 0; i < numMarkets; i++) {
-      _borrowCaps[address(cTokens[i])] = newBorrowCaps[i];
+      borrowCaps[address(cTokens[i])] = newBorrowCaps[i];
       emit NewBorrowCap(cTokens[i], newBorrowCaps[i]);
     }
   }

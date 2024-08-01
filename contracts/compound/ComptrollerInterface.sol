@@ -110,6 +110,20 @@ interface ComptrollerInterface {
   function _beforeNonReentrant() external;
 
   function _afterNonReentrant() external;
+
+  /*** New supply and borrow cap view functions ***/
+
+  /**
+   * @notice Gets the supply cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveSupplyCaps(address cToken) external view returns (uint256 supplyCap);
+
+  /**
+   * @notice Gets the borrow cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveBorrowCaps(address cToken) external view returns (uint256 borrowCap);
 }
 
 interface ComptrollerStorageInterface {
@@ -145,8 +159,22 @@ interface ComptrollerStorageInterface {
 
   function cTokensByUnderlying(address) external view returns (address);
 
+  /**
+   * Gets the supply cap of a cToken in the units of the underlying asset.
+   * @dev WARNING: This function is misleading if Adrastia Prudentia is being used for the supply cap. Instead, use
+   * `effectiveSupplyCaps` to get the correct supply cap.
+   * @param cToken The address of the cToken.
+   * @return The supply cap in the units of the underlying asset.
+   */
   function supplyCaps(address cToken) external view returns (uint256);
 
+  /**
+   * Gets the borrow cap of a cToken in the units of the underlying asset.
+   * @dev WARNING: This function is misleading if Adrastia Prudentia is being used for the borrow cap. Instead, use
+   * `effectiveBorrowCaps` to get the correct borrow cap.
+   * @param cToken The address of the cToken.
+   * @return The borrow cap in the units of the underlying asset.
+   */
   function borrowCaps(address cToken) external view returns (uint256);
 
   function markets(address cToken) external view returns (bool, uint256);
@@ -321,7 +349,7 @@ abstract contract ComptrollerBase is ComptrollerV4Storage {
    * @notice Gets the supply cap of a cToken in the units of the underlying asset.
    * @param cToken The address of the cToken.
    */
-  function supplyCaps(address cToken) public view returns (uint256 supplyCap) {
+  function effectiveSupplyCaps(address cToken) public view virtual returns (uint256 supplyCap) {
     PrudentiaLib.PrudentiaConfig memory capConfig = supplyCapConfig;
 
     // Check if we're using Adrastia Prudentia for the supply cap
@@ -356,7 +384,7 @@ abstract contract ComptrollerBase is ComptrollerV4Storage {
       // We don't have a controller, so we're using the local supply cap
 
       // Get the supply cap from the local supply cap
-      supplyCap = _supplyCaps[cToken];
+      supplyCap = supplyCaps[cToken];
     }
   }
 
@@ -364,7 +392,7 @@ abstract contract ComptrollerBase is ComptrollerV4Storage {
    * @notice Gets the borrow cap of a cToken in the units of the underlying asset.
    * @param cToken The address of the cToken.
    */
-  function borrowCaps(address cToken) public view returns (uint256 borrowCap) {
+  function effectiveBorrowCaps(address cToken) public view virtual returns (uint256 borrowCap) {
     PrudentiaLib.PrudentiaConfig memory capConfig = borrowCapConfig;
 
     // Check if we're using Adrastia Prudentia for the borrow cap
@@ -397,7 +425,7 @@ abstract contract ComptrollerBase is ComptrollerV4Storage {
       }
     } else {
       // We don't have a controller, so we're using the local borrow cap
-      borrowCap = _borrowCaps[cToken];
+      borrowCap = borrowCaps[cToken];
     }
   }
 }

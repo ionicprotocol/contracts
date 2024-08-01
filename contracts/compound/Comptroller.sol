@@ -10,7 +10,6 @@ import { IFeeDistributor } from "./IFeeDistributor.sol";
 import { IIonicFlywheel } from "../ionic/strategies/flywheel/IIonicFlywheel.sol";
 import { DiamondExtension, DiamondBase, LibDiamond } from "../ionic/DiamondExtension.sol";
 import { ComptrollerExtensionInterface, ComptrollerBase, ComptrollerInterface } from "./ComptrollerInterface.sol";
-import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -67,6 +66,26 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
   modifier isAuthorized() {
     require(IFeeDistributor(ionicAdmin).canCall(address(this), msg.sender, address(this), msg.sig), "not authorized");
     _;
+  }
+
+  /**
+   * @notice Gets the supply cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveSupplyCaps(
+    address cToken
+  ) public view override(ComptrollerBase, ComptrollerInterface) returns (uint256 supplyCap) {
+    return ComptrollerBase.effectiveSupplyCaps(cToken);
+  }
+
+  /**
+   * @notice Gets the borrow cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveBorrowCaps(
+    address cToken
+  ) public view override(ComptrollerBase, ComptrollerInterface) returns (uint256 borrowCap) {
+    return ComptrollerBase.effectiveBorrowCaps(cToken);
   }
 
   /*** Assets You Are In ***/
@@ -243,7 +262,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.SUPPLIER_NOT_WHITELISTED);
     }
 
-    uint256 supplyCap = supplyCaps(cTokenAddress);
+    uint256 supplyCap = effectiveSupplyCaps(cTokenAddress);
 
     // Supply cap of 0 corresponds to unlimited supplying
     if (supplyCap != 0 && !supplyCapWhitelist[cTokenAddress].contains(minter)) {
@@ -451,7 +470,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.SUPPLIER_NOT_WHITELISTED);
     }
 
-    uint256 borrowCap = borrowCaps(cToken);
+    uint256 borrowCap = effectiveBorrowCaps(cToken);
 
     // Borrow cap of 0 corresponds to unlimited borrowing
     if (borrowCap != 0 && !borrowCapWhitelist[cToken].contains(borrower)) {
@@ -1266,8 +1285,8 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     functionSelectors[--fnsCount] = this._beforeNonReentrant.selector;
     functionSelectors[--fnsCount] = this._afterNonReentrant.selector;
     functionSelectors[--fnsCount] = this._becomeImplementation.selector;
-    functionSelectors[--fnsCount] = this.supplyCaps.selector;
-    functionSelectors[--fnsCount] = this.borrowCaps.selector;
+    functionSelectors[--fnsCount] = this.effectiveSupplyCaps.selector;
+    functionSelectors[--fnsCount] = this.effectiveBorrowCaps.selector;
 
     require(fnsCount == 0, "use the correct array length");
   }
