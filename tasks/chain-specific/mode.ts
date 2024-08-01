@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import { assets as modeAssets } from "../../chains/mode/assets";
-import { Address } from "viem";
+import { Address, formatUnits } from "viem";
 
 task("market:set-cf:mode:main", "Sets caps on a market").setAction(async (_, { viem, run }) => {
   const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
@@ -83,4 +83,48 @@ task("prudentia:config", "Sets prudentia config").setAction(async (_, { viem, ge
   tx = await cToken2.write._setInterestRateModel([ionUSDTirm]);
   await publicClient.waitForTransactionReceipt({ hash: tx });
   console.log(`Set IRM of ${await cToken2.read.symbol()} to ${ionUSDTirm}`);
+});
+
+task("prudentia:print-supply-cap-config", "Prints supply cap config").setAction(async (_, { viem }) => {
+  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+  const pool = await viem.getContractAt("ComptrollerPrudentiaCapsExt", COMPTROLLER);
+  const supplyCapConfig = await pool.read.getSupplyCapConfig();
+  console.log("supply cap config: ", supplyCapConfig);
+});
+
+task("prudentia:print-borrow-cap-config", "Prints borrow cap config").setAction(async (_, { viem }) => {
+  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+  const pool = await viem.getContractAt("ComptrollerPrudentiaCapsExt", COMPTROLLER);
+  const borrowCapConfig = await pool.read.getBorrowCapConfig();
+  console.log("supply cap config: ", borrowCapConfig);
+});
+
+task("prudentia:print-supply-cap", "Prints supply cap").addParam("cToken", "The address of the cToken").setAction(async (taskArgs, { viem }) => {
+  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+  const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
+
+  // Get underlying token
+  const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
+  const underlyingToken = await cTokenContract.read.underlying();
+  // Get underlying decimals
+  const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
+  const underlyingDecimals = await underlyingTokenContract.read.decimals();
+
+  const supplyCaps = await pool.read.effectiveSupplyCaps([taskArgs.cToken]);
+  console.log("Supply cap for " + taskArgs.cToken + ": ", supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals));
+});
+
+task("prudentia:print-borrow-cap", "Prints supply cap").addParam("cToken", "The address of the cToken").setAction(async (taskArgs, { viem }) => {
+  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+  const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
+
+  // Get underlying token
+  const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
+  const underlyingToken = await cTokenContract.read.underlying();
+  // Get underlying decimals
+  const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
+  const underlyingDecimals = await underlyingTokenContract.read.decimals();
+
+  const supplyCaps = await pool.read.effectiveBorrowCaps([taskArgs.cToken]);
+  console.log("Supply cap for " + taskArgs.cToken + ": ", supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals));
 });
