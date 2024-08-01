@@ -1,5 +1,5 @@
-import { ChainDeployConfig } from "../helpers";
-import { OracleTypes, SupportedAsset } from "../../chains/types";
+import { ChainDeployConfig, deployChainlinkOracle } from "../helpers";
+import { ChainlinkAsset, ChainlinkSpecificParams, OracleTypes, SupportedAsset } from "../../chains/types";
 import { base } from "../../chains";
 import { deployAerodromeOracle } from "../helpers/oracles/aerodrome";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -32,10 +32,15 @@ const aerodromeAssets: SupportedAsset[] = base.assets.filter(
   (asset) => asset.oracle === OracleTypes.AerodromePriceOracle
 );
 
-export const deploy = async ({ run, viem, getNamedAccounts, deployments }: HardhatRuntimeEnvironment): Promise<void> => {
+export const deploy = async ({
+  run,
+  viem,
+  getNamedAccounts,
+  deployments
+}: HardhatRuntimeEnvironment): Promise<void> => {
   const { deployer } = await getNamedAccounts();
 
-  //// ChainLinkV2 Oracle
+  //// Aerodrome Oracle
   await deployAerodromeOracle({
     run,
     viem,
@@ -44,6 +49,27 @@ export const deploy = async ({ run, viem, getNamedAccounts, deployments }: Hardh
     deployConfig,
     assets: aerodromeAssets,
     pricesContract
+  });
+
+  //// ChainlinkV2 Oracle
+  const chainlinkAssets = assets
+    .filter((asset) => asset.oracle === OracleTypes.ChainlinkPriceOracleV2)
+    .map(
+      (asset) =>
+        ({
+          aggregator: (asset.oracleSpecificParams as ChainlinkSpecificParams).aggregator,
+          feedBaseCurrency: (asset.oracleSpecificParams as ChainlinkSpecificParams).feedBaseCurrency,
+          symbol: asset.symbol
+        }) as ChainlinkAsset
+    );
+  await deployChainlinkOracle({
+    run,
+    viem,
+    getNamedAccounts,
+    deployments,
+    deployConfig,
+    assets: base.assets,
+    chainlinkAssets
   });
 
   //// Uniswap V3 Liquidator Funder

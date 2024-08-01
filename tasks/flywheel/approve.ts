@@ -12,7 +12,7 @@ task("approve-market-flywheel")
 
     const flywheel = await viem.getContractAt("IonicFlywheel", flywheelAddress);
     for (const marketAddress of marketAddresses) {
-      const market = await viem.getContractAt("CErc20PluginRewardsDelegate", marketAddress);
+      const market = await viem.getContractAt("CErc20RewardsDelegate", marketAddress);
       const fwRewards = await flywheel.read.flywheelRewards();
       const rewardToken = await flywheel.read.rewardToken();
       const tx = await market.write.approve([rewardToken, fwRewards]);

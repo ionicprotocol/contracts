@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.DEPLOYER!]
     },
     base: {
-      url: process.env.OVERRIDE_RPC_URL ?? "https://mainnet.base.org",
+      url: process.env.OVERRIDE_RPC_URL ?? "https://base.meowrpc.com",
       accounts: [process.env.DEPLOYER!],
       verify: {
         etherscan: {
