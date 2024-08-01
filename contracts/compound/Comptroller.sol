@@ -243,9 +243,6 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.SUPPLIER_NOT_WHITELISTED);
     }
 
-    // Check supply cap
-    PrudentiaLib.PrudentiaConfig memory capConfig = supplyCapConfig;
-
     uint256 supplyCap = supplyCaps(cTokenAddress);
 
     // Supply cap of 0 corresponds to unlimited supplying
