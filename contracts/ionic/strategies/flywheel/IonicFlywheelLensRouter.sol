@@ -148,7 +148,10 @@ contract IonicFlywheelLensRouter {
     uint256 assetSpeedPerYearPerCTokenScaled = assetSpeedPerYearPerCToken * 1e18; // scaled to 1e36
     uint256 apr = assetSpeedPerYearPerCTokenScaled;
     if (!isBorrow) {
+      // if not borrowing, use exchange rate to scale
       apr = assetSpeedPerYearPerCTokenScaled / exchangeRate; // scaled to 1e18
+    } else {
+      apr = assetSpeedPerYearPerCTokenScaled / 1e18; // scaled to 1e18
     }
     return apr;
   }
