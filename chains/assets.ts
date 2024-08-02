@@ -18,5 +18,6 @@ export enum assetSymbols {
   SOV = "SOV",
   tBTC = "tBTC",
   RSR = "RSR",
-  ION = "ION"
+  ION = "ION",
+  hyUSD = "hyUSD"
 }

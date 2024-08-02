@@ -102,10 +102,10 @@ task("auth:pool:borrow", "Set ability to borrow for a pool")
 
     let tx;
     if (open === true) {
-      tx = await poolAuth!.write.openPoolBorrowerCapabilities(pool);
+      tx = await poolAuth!.write.openPoolBorrowerCapabilities([pool]);
       await publicClient.waitForTransactionReceipt({ hash: tx });
     } else {
-      tx = await poolAuth!.write.closePoolBorrowerCapabilities(pool);
+      tx = await poolAuth!.write.closePoolBorrowerCapabilities([pool]);
       await publicClient.waitForTransactionReceipt({ hash: tx });
     }
     console.log(`Set ability to borrow for pool ${pool} to ${open}: ${tx}`);

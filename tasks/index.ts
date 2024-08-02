@@ -7,3 +7,4 @@ import "./plugin";
 import "./pool";
 import "./market";
 import "./chain-specific";
+import "./oracle";
