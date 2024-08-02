@@ -15,6 +15,7 @@ export const eUSD = "0xcfa3ef56d303ae4faaba0592388f19d7c3399fb4";
 export const bsdETH = "0xcb327b99ff831bf8223cced12b1338ff3aa322ff";
 export const RSR = "0xaB36452DbAC151bE02b16Ca17d8919826072f64a";
 export const ION = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
+export const hyUSD = "0xCc7FF230365bD730eE4B352cC2492CEdAC49383e";
 
 export const assets: SupportedAsset[] = [
   {
@@ -150,15 +151,34 @@ export const assets: SupportedAsset[] = [
     oracleSpecificParams: {
       aggregator: "0xAa98aE504658766Dfe11F31c5D95a0bdcABDe0b1",
       feedBaseCurrency: ChainlinkFeedBaseCurrency.USD
-    }
+    },
+    initialSupplyCap: parseEther(String(180_000_000)).toString(),
+    initialBorrowCap: parseEther(String(144_000_000)).toString(),
+    initialCf: "0.70"
   },
   {
-    symbol: assetSymbols.ION,
-    underlying: ION,
-    name: "Ionic",
+    symbol: assetSymbols.hyUSD,
+    underlying: hyUSD,
+    name: "High Yield USD",
     decimals: 18,
-    oracle: OracleTypes.AerodromePriceOracle
+    oracle: OracleTypes.ChainlinkPriceOracleV2,
+    oracleSpecificParams: {
+      aggregator: "0x834c4f996B8a6411AEC0f8a0cF6fAfd4423dBEe2",
+      feedBaseCurrency: ChainlinkFeedBaseCurrency.USD
+    } as ChainlinkSpecificParams,
+    initialSupplyCap: parseEther(String(200_000)).toString(),
+    initialBorrowCap: parseEther(String(160_000)).toString(),
+    initialCf: "0.70"
   }
+  // DO NOT ADD TO MARKET UNLESS PROPER ORACLE IS DEPLOYED
+  // {
+  //   symbol: assetSymbols.ION,
+  //   underlying: ION,
+  //   name: "Ionic",
+  //   decimals: 18,
+  //   oracle: OracleTypes.AerodromePriceOracle
+  // },
+  //////////////////////////////////////////
 ];
 
 export default assets;
