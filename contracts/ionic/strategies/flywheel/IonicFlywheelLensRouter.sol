@@ -91,7 +91,13 @@ contract IonicFlywheelLensRouter {
           market,
           rewardTokenDecimals[j]
         );
-        uint256 apr = getApr(rewardSpeedPerSecondPerToken, rewardTokenPrices[j], price, market.exchangeRateCurrent());
+        uint256 apr = getApr(
+          rewardSpeedPerSecondPerToken,
+          rewardTokenPrices[j],
+          price, 
+          market.exchangeRateCurrent(),
+          flywheel.flywheelBooster.address != address(0)
+        );
 
         rewardsInfo[j] = RewardsInfo({
           rewardSpeedPerSecondPerToken: rewardSpeedPerSecondPerToken, // scaled in 1e18
@@ -132,14 +138,21 @@ contract IonicFlywheelLensRouter {
     uint256 rewardSpeedPerSecondPerToken,
     uint256 rewardTokenPrice,
     uint256 underlyingPrice,
-    uint256 exchangeRate
+    uint256 exchangeRate,
+    bool isBorrow
   ) internal pure returns (uint256) {
     if (rewardSpeedPerSecondPerToken == 0) return 0;
     uint256 nativeSpeedPerSecondPerCToken = rewardSpeedPerSecondPerToken * rewardTokenPrice; // scaled to 1e36
     uint256 nativeSpeedPerYearPerCToken = nativeSpeedPerSecondPerCToken * 365.25 days; // scaled to 1e36
     uint256 assetSpeedPerYearPerCToken = nativeSpeedPerYearPerCToken / underlyingPrice; // scaled to 1e18
     uint256 assetSpeedPerYearPerCTokenScaled = assetSpeedPerYearPerCToken * 1e18; // scaled to 1e36
-    uint256 apr = assetSpeedPerYearPerCTokenScaled / exchangeRate; // scaled to 1e18
+    uint256 apr = assetSpeedPerYearPerCTokenScaled;
+    if (!isBorrow) {
+      // if not borrowing, use exchange rate to scale
+      apr = assetSpeedPerYearPerCTokenScaled / exchangeRate; // scaled to 1e18
+    } else {
+      apr = assetSpeedPerYearPerCTokenScaled / 1e18; // scaled to 1e18
+    }
     return apr;
   }
 
@@ -163,7 +176,8 @@ contract IonicFlywheelLensRouter {
         rewardSpeedPerSecondPerToken,
         oracle.price(address(rewardToken)),
         underlyingPrice,
-        market.exchangeRateCurrent()
+        market.exchangeRateCurrent(),
+        flywheel.flywheelBooster.address != address(0)
       );
 
       totalMarketRewardsApr += int256(marketApr);
