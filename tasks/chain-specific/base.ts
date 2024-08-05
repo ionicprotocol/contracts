@@ -42,12 +42,12 @@ task("base:set-caps-hyusd", "one time setup").setAction(async (_, { viem, run })
 
   await run("market:set-supply-cap", {
     market: cToken,
-    maxSupply: "1"
+    maxSupply: hyUsd.initialSupplyCap
   });
 
   await run("market:set-borrow-cap", {
     market: cToken,
-    maxBorrow: "1"
+    maxBorrow: hyUsd.initialBorrowCap
   });
 });
 
