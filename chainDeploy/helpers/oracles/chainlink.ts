@@ -1,9 +1,10 @@
 import { addTransaction } from "../logging";
-import { ChainlinkAsset, ChainlinkDeployFnParams, ChainlinkFeedBaseCurrency } from "../../../chains/types";
 
 import { addUnderlyingsToMpo } from "./utils";
 import { Address, encodeFunctionData } from "viem";
 import { underlying } from "../utils";
+import { ChainlinkFeedBaseCurrency } from "../../../../monorepo/packages/types";
+import { ChainlinkDeployFnParams } from "../../types";
 
 export const deployChainlinkOracle = async ({
   viem,
@@ -46,7 +47,7 @@ export const deployChainlinkOracle = async ({
     (await deployments.get("ChainlinkPriceOracleV2")).address as Address
   );
 
-  const chainlinkAssetsToChange: ChainlinkAsset[] = [];
+  const chainlinkAssetsToChange = [];
   for (const asset of chainlinkAssets) {
     const underlyingAsset = underlying(assets, asset.symbol);
     const currentPriceFeed = await chainLinkv2.read.priceFeeds([underlyingAsset]);

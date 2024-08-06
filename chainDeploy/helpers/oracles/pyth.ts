@@ -1,10 +1,10 @@
 import { Address, encodeFunctionData, GetContractReturnType, WalletClient } from "viem";
 
 import { addTransaction } from "../logging";
-import { PythAsset, PythDeployFnParams } from "../../../chains/types";
 import { pythPriceOracleAbi } from "../../../generated";
 
 import { addUnderlyingsToMpo } from "./utils";
+import { PythAsset, PythDeployFnParams } from "../../types";
 
 export const deployPythPriceOracle = async ({
   viem,

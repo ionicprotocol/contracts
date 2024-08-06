@@ -1,6 +1,6 @@
 import { zeroAddress, Hash, Address } from "viem";
+import { FuseFlywheelDeployFnParams } from "../types";
 
-import { FuseFlywheelDeployFnParams } from "..";
 
 export const deployFlywheelWithDynamicRewards = async ({
   viem,

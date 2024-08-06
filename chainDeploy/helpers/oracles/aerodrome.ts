@@ -1,15 +1,10 @@
-import { addTransaction, prepareAndLogTransaction } from "../logging";
-import {
-  AerodromeDeployFnParams,
-  ChainlinkAsset,
-  ChainlinkDeployFnParams,
-  ChainlinkFeedBaseCurrency
-} from "../../../chains/types";
+import { prepareAndLogTransaction } from "../logging";
+import { DeployResult } from "hardhat-deploy/types";
+import { Address } from "viem";
 
 import { addUnderlyingsToMpo } from "./utils";
-import { Address, encodeFunctionData } from "viem";
 import { underlying } from "../utils";
-import { DeployResult } from "hardhat-deploy/types";
+import { AerodromeDeployFnParams } from "../../types";
 
 export const deployAerodromeOracle = async ({
   viem,

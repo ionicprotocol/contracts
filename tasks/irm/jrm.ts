@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { Address, Hash, parseEther } from "viem";
-import { mode } from "../../chains";
+import { mode } from "../../../monorepo/packages/chains/src";
 
 //
 export default task("irm:deploy:custom-jrm", "deploys custom JRM")

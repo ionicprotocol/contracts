@@ -1,17 +1,17 @@
+import { base, fraxtal, mode } from "viem/chains";
 import { ChainDeployConfig } from "./helpers";
-import { deploy as deploy8453, deployConfig as deployConfig8453 } from "./mainnets/base";
-import { deploy as deploy34443, deployConfig as deployConfig34443 } from "./mainnets/mode";
-import { deploy as deploy10, deployConfig as deployConfig10 } from "./mainnets/optimism";
-import { deploy as deploy11155420, deployConfig as deployConfig11155420 } from "./testnets/sepolia";
+import { deploy as deployBase, deployConfig as deployConfigBase } from "./mainnets/base";
+import { deploy as deployMode, deployConfig as deployConfigMode } from "./mainnets/mode";
+import { deploy as deployFrax, deployConfig as deployConfigFrax } from "./mainnets/fraxtal";
+// import { deploy as deploy10, deployConfig as deployConfig10 } from "./mainnets/optimism";
 
 export const chainDeployConfig: Record<number, { config: ChainDeployConfig; deployFunc: any }> = {
   // mainnets
-  34443: { config: deployConfig34443, deployFunc: deploy34443 },
-  8453: { config: deployConfig8453, deployFunc: deploy8453 },
-  10: { config: deployConfig10, deployFunc: deploy10 },
+  [mode.id]: { config: deployConfigMode, deployFunc: deployMode },
+  [base.id]: { config: deployConfigBase, deployFunc: deployBase },
+  [fraxtal.id]: { config: deployConfigFrax, deployFunc: deployFrax }
   // testnets
-  11155420: { config: deployConfig11155420, deployFunc: deploy11155420 }
   // local
 };
 
-export * from "../chains/types";
+export * from "./types";

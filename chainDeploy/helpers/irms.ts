@@ -1,5 +1,5 @@
 import { Hash, parseEther } from "viem";
-import { IrmDeployFnParams } from "../../chains/types";
+import { IrmDeployFnParams } from "../types";
 
 export const deployIRMs = async ({
   viem,

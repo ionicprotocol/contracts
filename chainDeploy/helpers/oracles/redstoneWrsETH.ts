@@ -1,7 +1,7 @@
-import { RedStoneDeployFnParams } from "../../../chains/types";
-
-import { addUnderlyingsToMpo } from "./utils";
 import { Address } from "viem";
+
+import { RedStoneDeployFnParams } from "../../types";
+import { addUnderlyingsToMpo } from "./utils";
 
 export const deployRedStoneWrsETHPriceOracle = async ({
   viem,

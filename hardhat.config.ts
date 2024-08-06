@@ -68,6 +68,16 @@ const config: HardhatUserConfig = {
     bob: {
       url: process.env.OVERRIDE_RPC_URL ?? "https://rpc.gobob.xyz",
       accounts: [process.env.DEPLOYER!]
+    },
+    fraxtal: {
+      url: process.env.OVERRIDE_RPC_URL ?? "https://rpc.frax.com",
+      accounts: [process.env.DEPLOYER!],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.fraxscan.com/api?",
+          apiKey: process.env.ETHERSCAN_API_KEY_FRAXTAL
+        }
+      }
     }
   },
   etherscan: {

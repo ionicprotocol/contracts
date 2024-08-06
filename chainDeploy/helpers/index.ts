@@ -1,4 +1,4 @@
-export { ChainDeployConfig, ChainlinkFeedBaseCurrency } from "../../chains/types";
+export { ChainDeployConfig, ChainlinkFeedBaseCurrency } from "../types";
 export { deployIRMs } from "./irms";
 export { deployChainlinkOracle } from "./oracles/chainlink";
 export { deployFlywheelWithDynamicRewards } from "./dynamicFlywheels";

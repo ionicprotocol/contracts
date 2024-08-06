@@ -1,8 +1,9 @@
 import { ChainDeployConfig, deployChainlinkOracle } from "../helpers";
-import { ChainlinkAsset, ChainlinkSpecificParams, OracleTypes, SupportedAsset } from "../../chains/types";
-import { base } from "../../chains";
+import { base } from "../../../monorepo/packages/chains/src";
 import { deployAerodromeOracle } from "../helpers/oracles/aerodrome";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { Address } from "viem";
+import { ChainlinkSpecificParams, OracleTypes } from "../types";
 
 const assets = base.assets;
 
@@ -13,7 +14,7 @@ export const deployConfig: ChainDeployConfig = {
   cgId: base.specificParams.cgId,
   nativeTokenName: "Base",
   nativeTokenSymbol: "ETH",
-  stableToken: base.chainAddresses.STABLE_TOKEN,
+  stableToken: base.chainAddresses.STABLE_TOKEN as Address,
   uniswap: {
     flashSwapFee: 30, // TODO set the correct fee
     hardcoded: [],
@@ -24,13 +25,11 @@ export const deployConfig: ChainDeployConfig = {
     uniswapV3SwapRouter: "0x2626664c2603336E57B271c5C0b26F421741e481",
     uniswapV3Quoter: "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a"
   },
-  wtoken: base.chainAddresses.W_TOKEN,
-  nativeTokenUsdChainlinkFeed: base.chainAddresses.W_TOKEN_USD_CHAINLINK_PRICE_FEED
+  wtoken: base.chainAddresses.W_TOKEN as Address,
+  nativeTokenUsdChainlinkFeed: base.chainAddresses.W_TOKEN_USD_CHAINLINK_PRICE_FEED as Address
 };
 
-const aerodromeAssets: SupportedAsset[] = base.assets.filter(
-  (asset) => asset.oracle === OracleTypes.AerodromePriceOracle
-);
+const aerodromeAssets = base.assets.filter((asset) => asset.oracle === OracleTypes.AerodromePriceOracle);
 
 export const deploy = async ({
   run,
@@ -54,14 +53,11 @@ export const deploy = async ({
   //// ChainlinkV2 Oracle
   const chainlinkAssets = assets
     .filter((asset) => asset.oracle === OracleTypes.ChainlinkPriceOracleV2)
-    .map(
-      (asset) =>
-        ({
-          aggregator: (asset.oracleSpecificParams as ChainlinkSpecificParams).aggregator,
-          feedBaseCurrency: (asset.oracleSpecificParams as ChainlinkSpecificParams).feedBaseCurrency,
-          symbol: asset.symbol
-        }) as ChainlinkAsset
-    );
+    .map((asset) => ({
+      aggregator: (asset.oracleSpecificParams as ChainlinkSpecificParams).aggregator,
+      feedBaseCurrency: (asset.oracleSpecificParams as ChainlinkSpecificParams).feedBaseCurrency,
+      symbol: asset.symbol
+    }));
   await deployChainlinkOracle({
     run,
     viem,

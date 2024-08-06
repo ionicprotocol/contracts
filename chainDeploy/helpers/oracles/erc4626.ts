@@ -1,5 +1,5 @@
 import { Address } from "viem";
-import { Erc4626OracleFnParams } from "../../../chains/types";
+import { Erc4626OracleFnParams } from "../../types";
 
 import { addUnderlyingsToMpo } from "./utils";
 

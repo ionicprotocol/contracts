@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
-import { chainIdToConfig } from "../../chains";
 import { Address, encodeFunctionData } from "viem";
 import { addTransaction } from "../../chainDeploy/helpers/logging";
+import { chainIdToConfig } from "../../../monorepo/packages/chains/src";
 
 export default task("levered-positions:configure-pairs").setAction(
   async ({}, { viem, getChainId, deployments, getNamedAccounts }) => {
