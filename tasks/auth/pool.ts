@@ -76,7 +76,8 @@ task("auth:pool:supply", "Set ability to supply for a pool")
   .setAction(async ({ pool, open }, hre) => {
     const publicClient = await hre.viem.getPublicClient();
     const poolAuth = await setUpAuth(hre, pool);
-    if (poolAuth === null) {
+    console.log("poolAuth: ", poolAuth?.address);
+    if (!poolAuth) {
       return;
     }
     let tx;
@@ -96,8 +97,9 @@ task("auth:pool:borrow", "Set ability to borrow for a pool")
   .setAction(async ({ pool, open }, hre) => {
     const publicClient = await hre.viem.getPublicClient();
     const poolAuth = await setUpAuth(hre, pool);
-    if (poolAuth === null) {
-      return;
+    console.log("poolAuth: ", poolAuth?.address);
+    if (!poolAuth) {
+      throw new Error("Pool authority not found");
     }
 
     let tx;

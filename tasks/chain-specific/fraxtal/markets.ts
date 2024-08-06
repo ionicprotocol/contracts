@@ -38,3 +38,25 @@ task("markets:deploy:fraxtal:main", "deploy base market").setAction(async (_, { 
     }
   }
 });
+
+task("markets:fraxtal:set-caps", "Set supply and borrow caps for markets").setAction(async (_, { viem, run }) => {
+  const asset = assets.find((asset) => asset.symbol === assetSymbols.WETH);
+  if (!asset) {
+    throw new Error("Asset not found");
+  }
+  const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
+  const cToken = await pool.read.cTokensByUnderlying([asset.underlying]);
+  if (asset.initialSupplyCap) {
+    await run("market:set-supply-cap", {
+      market: cToken,
+      maxSupply: asset.initialSupplyCap
+    });
+  }
+
+  if (asset.initialBorrowCap) {
+    await run("market:set-borrow-cap", {
+      market: cToken,
+      maxBorrow: asset.initialBorrowCap
+    });
+  }
+});
