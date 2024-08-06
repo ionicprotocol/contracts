@@ -36,13 +36,13 @@
       "address": "0xA7B9F9B18587A3854aE41C80a08291eca149bCB7"
     },
     "ChainlinkPriceOracleV2": {
-      "address": "0x1D7669b6BDfdb83066dd7C0aDa4B630b25cBc28a"
+      "address": "0xe1C55b57fCB86819B6b50668DEDD33A203BEfaEf"
     },
     "ChainlinkPriceOracleV2_Implementation": {
-      "address": "0x1D89E5ba287E67AC0046D2218Be5fE1382cE47b4"
+      "address": "0x515B45c30dA768482d3ec8A9E1E73eDf14047a2d"
     },
     "ChainlinkPriceOracleV2_Proxy": {
-      "address": "0x1D7669b6BDfdb83066dd7C0aDa4B630b25cBc28a"
+      "address": "0xe1C55b57fCB86819B6b50668DEDD33A203BEfaEf"
     },
     "Comptroller": {
       "address": "0x9a0aF901CAE82f309F1047e1026F66A08C6FCEEC"
