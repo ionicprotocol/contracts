@@ -1,10 +1,12 @@
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { Address, formatUnits } from "viem";
 
-import { assets as modeAssets } from "../../../monorepo/packages/chains/src/mode/assets";
+import { assets as modeAssets } from "../../../../monorepo/packages/chains/src/mode/assets";
+import { assetSymbols } from "../../../../monorepo/packages/types/dist";
+import { prepareAndLogTransaction } from "../../../chainDeploy/helpers/logging";
 
+const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
 task("market:set-cf:mode:main", "Sets caps on a market").setAction(async (_, { viem, run }) => {
-  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
   for (const asset of modeAssets) {
     const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
     const cToken = await pool.read.cTokensByUnderlying([asset.underlying]);
@@ -18,6 +20,55 @@ task("market:set-cf:mode:main", "Sets caps on a market").setAction(async (_, { v
     }
   }
 });
+
+task("mode:irm:set-prudentia", "Set new IRM to ctoken").setAction(
+  async (_, { viem, deployments, getNamedAccounts }) => {
+    const { deployer } = await getNamedAccounts();
+    const toSet: { symbol: string; irm: string }[] = [
+      { symbol: assetSymbols.USDC, irm: "PrudentiaInterestRateModel_USDC" },
+      { symbol: assetSymbols.USDT, irm: "PrudentiaInterestRateModel_USDT" },
+      { symbol: assetSymbols.WETH, irm: "PrudentiaInterestRateModel_WETH" }
+    ];
+    const assets = modeAssets.filter((a) => toSet.map((a) => a.symbol).includes(a.symbol));
+    console.log(
+      "assets: ",
+      assets.map((a) => a.symbol)
+    );
+    const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
+    const ffd = await viem.getContractAt(
+      "FeeDistributor",
+      (await deployments.get("FeeDistributor")).address as Address
+    );
+    const admin = await ffd.read.owner();
+    for (const asset of assets) {
+      const cTokenAddress = await pool.read.cTokensByUnderlying([asset.underlying]);
+      console.log("cToken: ", cTokenAddress);
+      const publicClient = await viem.getPublicClient();
+
+      const cToken = await viem.getContractAt("ICErc20", cTokenAddress);
+      const irm = toSet.find((a) => a.symbol === asset.symbol)?.irm;
+      if (!irm) {
+        throw new Error(`IRM not found for ${asset.symbol}`);
+      }
+      const irmDeployment = await deployments.get(irm);
+      console.log("admin.toLowerCase(): ", admin.toLowerCase());
+      console.log("deployer.toLowerCase(): ", deployer.toLowerCase());
+      if (admin.toLowerCase() !== deployer.toLowerCase()) {
+        await prepareAndLogTransaction({
+          contractInstance: cToken,
+          functionName: "_setInterestRateModel",
+          args: [irmDeployment.address],
+          description: `Set IRM of ${await cToken.read.underlying()} to ${irmDeployment.address}`,
+          inputs: [{ internalType: "address", name: "newInterestRateModel", type: "address" }]
+        });
+      } else {
+        const tx = await cToken.write._setInterestRateModel([irmDeployment.address as Address]);
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+        console.log(`Set IRM of ${await cToken.read.underlying()} to ${irmDeployment.address}`);
+      }
+    }
+  }
+);
 
 task("prudentia:upgrade:pool", "Upgrades a pool to the latest comptroller implementation").setAction(
   async (_, { viem, deployments, getNamedAccounts }) => {

@@ -1,7 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { Address, encodeFunctionData, Hash, zeroAddress } from "viem";
 
-import { logTransaction } from "../chainDeploy/helpers/logging";
+import { logTransaction, prepareAndLogTransaction } from "../chainDeploy/helpers/logging";
 
 const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => {
   const { deployer, multisig } = await getNamedAccounts();
@@ -55,14 +55,16 @@ const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => 
     ]);
     if (latestComptrollerImplementation === zeroAddress || latestComptrollerImplementation !== comptroller.address) {
       if ((await fuseFeeDistributor.read.owner()).toLowerCase() !== deployer.toLowerCase()) {
-        logTransaction(
-          "Set Latest Comptroller Implementation",
-          encodeFunctionData({
-            abi: fuseFeeDistributor.abi,
-            functionName: "_setLatestComptrollerImplementation",
-            args: [oldComptroller.address as Address, comptroller.address]
-          })
-        );
+        await prepareAndLogTransaction({
+          contractInstance: fuseFeeDistributor,
+          functionName: "_setLatestComptrollerImplementation",
+          args: [oldComptroller.address as Address, comptroller.address],
+          description: "Set Latest Comptroller Implementation",
+          inputs: [
+            { internalType: "address", name: "oldImplementation", type: "address" },
+            { internalType: "address", name: "newImplementation", type: "address" }
+          ]
+        });
       } else {
         tx = await fuseFeeDistributor.write._setLatestComptrollerImplementation([
           oldComptroller.address as Address,

@@ -173,6 +173,9 @@
     "PrudentiaInterestRateModel_USDT": {
       "address": "0xC58DCC0cbc02355cF1aD6b5398dE49152ae72E2E"
     },
+    "PrudentiaInterestRateModel_WETH": {
+      "address": "0xb0a9B9F6FD960108df5B508DA5abe476d8e37F09"
+    },
     "PythPriceOracle": {
       "address": "0x52Ee6E740C1785412e51A381B0d87fb1692a7b23"
     },

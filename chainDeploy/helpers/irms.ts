@@ -29,6 +29,12 @@ const prudentiaParams: Record<number, PrudentiaConfig[]> = {
       blocksPerYear: 15768000,
       underlying: underlying(assets, assetSymbols.USDT),
       rateController: PRUDENTIA_RATE_CONTROLLER_MODE
+    },
+    {
+      symbol: assetSymbols.WETH,
+      blocksPerYear: 15768000,
+      underlying: underlying(assets, assetSymbols.WETH),
+      rateController: PRUDENTIA_RATE_CONTROLLER_MODE
     }
   ]
 };
