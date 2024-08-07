@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { assets as bobAssets } from "../../chains/bob/assets";
+import { assets as bobAssets } from "../../../monorepo/packages/chains/src/bob/assets";
 
 task("market:set-cf:bob:main", "Sets caps on a market").setAction(async (_, { viem, run }) => {
   const COMPTROLLER = "0x9cFEe81970AA10CC593B83fB96eAA9880a6DF715";

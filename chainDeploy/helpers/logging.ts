@@ -33,7 +33,7 @@ const writeSingleTransactionToFile = async (tx: any) => {
       const fileContent = await fs.readFile(filePath, "utf8");
       batch = JSON.parse(fileContent);
     } catch (error) {
-      if (error.code === "ENOENT" || error.message === "Unexpected end of JSON input") {
+      if ((error as any).code === "ENOENT" || (error as any).message === "Unexpected end of JSON input") {
         batch = {
           version: "1.0",
           chainId: "34443",

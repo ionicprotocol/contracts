@@ -99,6 +99,10 @@ task("pool:create", "Create pool if does not exist")
     }
     const feeDistributorAddress = (await deployments.get("FeeDistributor")).address as Address;
 
+    throw new Error("FIX POOL EVENTS");
+
+    const events = await poolDirectory.createEventFilter.PoolRegistered();
+
     const deployTx = await poolDirectory.write.deployPool([
       taskArgs.name as string,
       (await deployments.get("Comptroller")).address as Address,

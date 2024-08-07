@@ -1,12 +1,6 @@
-import { Address, GetContractReturnType, Hash, parseEther, PublicClient, WalletClient, zeroAddress } from "viem";
-import {
-  AddressesProviderConfigFnParams,
-  BalancerSwapTokenLiquidatorData,
-  LiquidatorConfigFnParams,
-  LiquidatorDeployFnParams
-} from "../../../chains/types";
-import { chainIdToConfig } from "../../../chains";
-import { addressesProviderAbi } from "../../../generated";
+import { Address, Hash, parseEther, PublicClient, zeroAddress } from "viem";
+import { AddressesProviderConfigFnParams, LiquidatorConfigFnParams, LiquidatorDeployFnParams } from "../../types";
+import { chainIdToConfig } from "../../../../monorepo/packages/chains/src";
 
 export const deployIonicLiquidator = async ({
   viem,
@@ -138,7 +132,7 @@ export const configureIonicLiquidator = async ({
   for (const fundingStrategy of chainIdToConfig[chainId].fundingStrategies) {
     const { strategy } = fundingStrategy;
     const fundingStrategyContract = await viem.getContractAt(
-      strategy,
+      strategy as string,
       (await deployments.get(strategy)).address as Address
     );
 
