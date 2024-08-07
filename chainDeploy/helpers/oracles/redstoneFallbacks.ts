@@ -1,7 +1,7 @@
 import { Address } from "viem";
+import { RedStoneDeployFnParams } from "../../types";
 
 import { addUnderlyingsToMpoFallback } from "./utils";
-import { RedStoneDeployFnParams } from "../../../chains/types";
 
 export const addRedstoneFallbacks = async ({
   viem,

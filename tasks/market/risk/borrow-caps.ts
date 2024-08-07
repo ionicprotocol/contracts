@@ -1,35 +1,30 @@
-import { providers } from "ethers";
 import { task, types } from "hardhat/config";
 
 export default task("market:set-borrow-cap", "Set borrow cap on market")
   .addParam("admin", "Named account from which to set the borrow caps", "deployer", types.string)
   .addParam("market", "The address of the CToken", undefined, types.string)
   .addParam("maxBorrow", "Maximum amount of tokens that can be borrowed", undefined, types.string)
-  .setAction(async ({ admin, market, maxBorrow }, { ethers }) => {
-    const signer = await ethers.getNamedSigner(admin);
-    console.log("signer: ", signer.address);
+  .setAction(async ({ market, maxBorrow }, { viem }) => {
+    const publicClient = await viem.getPublicClient();
+    const cToken = await viem.getContractAt("ICErc20", market);
+    const comptroller = await cToken.read.comptroller();
+    const pool = await viem.getContractAt("IonicComptroller", comptroller);
 
-    const ionicSdkModule = await import("../../ionicSdk");
-    const sdk = await ionicSdkModule.getOrCreateIonic(signer);
-
-    const cToken = sdk.createICErc20(market, signer);
-    const comptroller = await cToken.callStatic.comptroller();
-    const pool = sdk.createComptroller(comptroller, signer);
-
-    const currentBorrowCap = await pool.callStatic.borrowCaps(cToken.address);
+    const currentBorrowCap = await pool.read.borrowCaps([cToken.address]);
     console.log(`Current borrow cap is ${currentBorrowCap}`);
+    const newBorrowCap = BigInt(maxBorrow);
+    console.log("newBorrowCap: ", newBorrowCap);
 
-    const newBorrowCap = ethers.BigNumber.from(maxBorrow);
-    if (currentBorrowCap.eq(newBorrowCap)) {
+    if (currentBorrowCap === newBorrowCap) {
       console.log("Borrow cap is already set to this value");
       return;
     }
 
-    const tx: providers.TransactionResponse = await pool._setMarketBorrowCaps([cToken.address], [newBorrowCap]);
-    await tx.wait();
-
-    const newBorrowCapset = await pool.callStatic.borrowCaps(cToken.address);
-    console.log(`New borrow cap set: ${newBorrowCapset.toString()}`);
+    const tx = await pool.write._setMarketBorrowCaps([[cToken.address], [newBorrowCap]]);
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+    console.log("tx: ", tx);
+    const newBorrowCapSet = await pool.read.borrowCaps([cToken.address]);
+    console.log(`New borrow cap set: ${newBorrowCapSet.toString()}`);
   });
 
 task("market:set-borrow-cap-whitelist", "Pauses borrowing on a market")

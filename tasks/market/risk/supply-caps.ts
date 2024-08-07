@@ -1,33 +1,28 @@
-import { providers } from "ethers";
 import { task, types } from "hardhat/config";
 
 export default task("market:set-supply-cap", "Sets supply cap on a market")
   .addParam("admin", "Deployer account", "deployer", types.string)
   .addParam("market", "The address of the CToken", undefined, types.string)
   .addParam("maxSupply", "Maximum amount of tokens that can be supplied", undefined, types.string)
-  .setAction(async ({ admin, market, maxSupply }, { ethers }) => {
-    const signer = await ethers.getNamedSigner(admin);
+  .setAction(async ({ market, maxSupply }, { viem }) => {
+    const publicClient = await viem.getPublicClient();
+    const cToken = await viem.getContractAt("ICErc20", market);
+    const comptroller = await cToken.read.comptroller();
+    const pool = await viem.getContractAt("IonicComptroller", comptroller);
 
-    const ionicSdkModule = await import("../../ionicSdk");
-    const sdk = await ionicSdkModule.getOrCreateIonic(signer);
-
-    const cToken = sdk.createICErc20(market, signer);
-    const comptroller = await cToken.callStatic.comptroller();
-    const pool = sdk.createComptroller(comptroller, signer);
-
-    const currentSupplyCap = await pool.callStatic.supplyCaps(cToken.address);
+    const currentSupplyCap = await pool.read.supplyCaps([cToken.address]);
     console.log(`Current supply cap is ${currentSupplyCap}`);
-    const newSupplyCap = ethers.BigNumber.from(maxSupply);
+    const newSupplyCap = BigInt(maxSupply);
 
-    if (currentSupplyCap.eq(newSupplyCap)) {
+    if (currentSupplyCap === newSupplyCap) {
       console.log("Supply cap is already set to this value");
       return;
     }
 
-    const tx: providers.TransactionResponse = await pool._setMarketSupplyCaps([cToken.address], [newSupplyCap]);
-    await tx.wait();
-
-    const newSupplyCapSet = await pool.callStatic.supplyCaps(cToken.address);
+    const tx = await pool.write._setMarketSupplyCaps([[cToken.address], [newSupplyCap]]);
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+    console.log("tx: ", tx);
+    const newSupplyCapSet = await pool.read.supplyCaps([cToken.address]);
     console.log(`New supply cap set: ${newSupplyCapSet.toString()}`);
   });
 
@@ -36,27 +31,23 @@ task("market:set-supply-cap-whitelist", "Sets supply whitelist on a market")
   .addParam("market", "The address of the CToken", undefined, types.string)
   .addParam("account", "Account to be whitelisted / removed from whitelist", undefined, types.string)
   .addOptionalParam("whitelist", "Set whitelist to true ot false", true, types.boolean)
-  .setAction(async ({ admin, market, account, whitelist }, { ethers }) => {
-    const signer = await ethers.getNamedSigner(admin);
+  .setAction(async ({ market, account, whitelist }, { viem }) => {
+    const publicClient = await viem.getPublicClient();
+    const cToken = await viem.getContractAt("ICErc20", market);
+    const comptroller = await cToken.read.comptroller();
+    const pool = await viem.getContractAt("IonicComptroller", comptroller);
 
-    const ionicSdkModule = await import("../../ionicSdk");
-    const sdk = await ionicSdkModule.getOrCreateIonic(signer);
-
-    const cToken = sdk.createICErc20(market, signer);
-    const comptroller = await cToken.callStatic.comptroller();
-    const pool = sdk.createComptroller(comptroller, signer);
-
-    const currentSupplyCap = await pool.callStatic.supplyCaps(market);
+    const currentSupplyCap = await pool.read.supplyCaps([market]);
     console.log(`Current supply cap is ${currentSupplyCap}`);
 
-    const whitelistStatus = await pool.callStatic.supplyCapWhitelist(market, account);
+    const whitelistStatus = await pool.read.isSupplyCapWhitelisted([market, account]);
     if (whitelistStatus == whitelist) {
       console.log(`Whitelist status is already ${whitelist}`);
       return;
     } else {
       console.log(`Whitelist status is ${whitelistStatus}, setting to ${whitelist}`);
-      const tx = await pool._supplyCapWhitelist(market, account, whitelist);
-      await tx.wait();
-      console.log(`Whitelist status for ${account} set: ${await pool.callStatic.supplyCapWhitelist(market, account)}`);
+      const tx = await pool.write._supplyCapWhitelist([market, account, whitelist]);
+      await publicClient.waitForTransactionReceipt({ hash: tx });
+      console.log(`Whitelist status for ${account} set: ${await pool.read.isSupplyCapWhitelisted([market, account])}`);
     }
   });

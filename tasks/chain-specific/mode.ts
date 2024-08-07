@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
-import { assets as modeAssets } from "../../chains/mode/assets";
 import { Address, formatUnits } from "viem";
+
+import { assets as modeAssets } from "../../../monorepo/packages/chains/src/mode/assets";
 
 task("market:set-cf:mode:main", "Sets caps on a market").setAction(async (_, { viem, run }) => {
   const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
@@ -99,32 +100,42 @@ task("prudentia:print-borrow-cap-config", "Prints borrow cap config").setAction(
   console.log("supply cap config: ", borrowCapConfig);
 });
 
-task("prudentia:print-supply-cap", "Prints supply cap").addParam("cToken", "The address of the cToken").setAction(async (taskArgs, { viem }) => {
-  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
-  const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
+task("prudentia:print-supply-cap", "Prints supply cap")
+  .addParam("cToken", "The address of the cToken")
+  .setAction(async (taskArgs, { viem }) => {
+    const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+    const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
 
-  // Get underlying token
-  const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
-  const underlyingToken = await cTokenContract.read.underlying();
-  // Get underlying decimals
-  const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
-  const underlyingDecimals = await underlyingTokenContract.read.decimals();
+    // Get underlying token
+    const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
+    const underlyingToken = await cTokenContract.read.underlying();
+    // Get underlying decimals
+    const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
+    const underlyingDecimals = await underlyingTokenContract.read.decimals();
 
-  const supplyCaps = await pool.read.effectiveSupplyCaps([taskArgs.cToken]);
-  console.log("Supply cap for " + taskArgs.cToken + ": ", supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals));
-});
+    const supplyCaps = await pool.read.effectiveSupplyCaps([taskArgs.cToken]);
+    console.log(
+      "Supply cap for " + taskArgs.cToken + ": ",
+      supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals)
+    );
+  });
 
-task("prudentia:print-borrow-cap", "Prints supply cap").addParam("cToken", "The address of the cToken").setAction(async (taskArgs, { viem }) => {
-  const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
-  const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
+task("prudentia:print-borrow-cap", "Prints supply cap")
+  .addParam("cToken", "The address of the cToken")
+  .setAction(async (taskArgs, { viem }) => {
+    const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
+    const pool = await viem.getContractAt("Comptroller", COMPTROLLER);
 
-  // Get underlying token
-  const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
-  const underlyingToken = await cTokenContract.read.underlying();
-  // Get underlying decimals
-  const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
-  const underlyingDecimals = await underlyingTokenContract.read.decimals();
+    // Get underlying token
+    const cTokenContract = await viem.getContractAt("CErc20", taskArgs.cToken);
+    const underlyingToken = await cTokenContract.read.underlying();
+    // Get underlying decimals
+    const underlyingTokenContract = await viem.getContractAt("ERC20", underlyingToken);
+    const underlyingDecimals = await underlyingTokenContract.read.decimals();
 
-  const supplyCaps = await pool.read.effectiveBorrowCaps([taskArgs.cToken]);
-  console.log("Supply cap for " + taskArgs.cToken + ": ", supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals));
-});
+    const supplyCaps = await pool.read.effectiveBorrowCaps([taskArgs.cToken]);
+    console.log(
+      "Supply cap for " + taskArgs.cToken + ": ",
+      supplyCaps + " = " + formatUnits(supplyCaps, underlyingDecimals)
+    );
+  });

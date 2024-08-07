@@ -1,14 +1,13 @@
 import { task } from "hardhat/config";
-import { chainIdToConfig } from "../../chains";
 import { Address, encodeFunctionData } from "viem";
-import { addTransaction, writeTransactionsToFile } from "../../chainDeploy/helpers/logging";
+import { addTransaction } from "../../chainDeploy/helpers/logging";
+import { chainIdToConfig } from "../../../monorepo/packages/chains/src";
 
 export default task("levered-positions:configure-pairs").setAction(
   async ({}, { viem, getChainId, deployments, getNamedAccounts }) => {
     const { deployer } = await getNamedAccounts();
     console.log("deployer: ", deployer);
     const publicClient = await viem.getPublicClient();
-    const walletClient = await viem.getWalletClient(deployer as Address);
     const chainId = parseInt(await getChainId());
     const leveredPairsConfig = chainIdToConfig[chainId].leveragePairs;
 
@@ -66,15 +65,13 @@ export default task("levered-positions:configure-pairs").setAction(
             });
           } else {
             const tx = await factory.write._setPairWhitelisted([collateral, borrow, true]);
-            await publicClient.waitForTransactionReceipt({ hash: tx });
+            await publicClient.waitForTransactionReceipt({ hash: tx, confirmations: 2 });
             console.log(
-              `configured the markets pair:\n - BORROW (market: ${borrow}, underlying: ${borrowToken})\n - COLLATERAL: (market: ${collateral}, underlying: ${collateralToken}) as whitelisted for levered positions`
+              `configured the markets pair:\n - BORROW (market: ${borrow}, underlying: ${borrowToken})\n - COLLATERAL: (market: ${collateral}, underlying: ${collateralToken}) as whitelisted for levered positions: ${tx}`
             );
           }
         }
       }
     }
-
-    await writeTransactionsToFile();
   }
 );

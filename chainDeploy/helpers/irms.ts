@@ -1,10 +1,11 @@
 import { Address, Hash, parseEther } from "viem";
 import { mode } from "viem/chains";
 
-import { IrmDeployFnParams } from "../../chains/types";
+import { assetSymbols } from "../../../monorepo/packages/types";
+import assets from "../../../monorepo/packages/chains/src/mode/assets";
+import { IrmDeployFnParams } from "../types";
+
 import { underlying } from "./utils";
-import assets from "../../chains/mode/assets";
-import { assetSymbols } from "../../chains/assets";
 
 const PRUDENTIA_RATE_CONTROLLER_MODE = "0xC40753877CfeF6f50E13695395c58357505719F8";
 

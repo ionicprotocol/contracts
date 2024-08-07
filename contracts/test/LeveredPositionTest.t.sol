@@ -11,6 +11,7 @@ import { BalancerSwapLiquidator } from "../liquidators/BalancerSwapLiquidator.so
 import { AlgebraSwapLiquidator } from "../liquidators/AlgebraSwapLiquidator.sol";
 import { SolidlyLpTokenLiquidator, SolidlyLpTokenWrapper } from "../liquidators/SolidlyLpTokenLiquidator.sol";
 import { SolidlySwapLiquidator } from "../liquidators/SolidlySwapLiquidator.sol";
+import { UniswapV3LiquidatorFunder } from "../liquidators/UniswapV3LiquidatorFunder.sol";
 
 import { CurveLpTokenLiquidatorNoRegistry } from "../liquidators/CurveLpTokenLiquidatorNoRegistry.sol";
 import { LeveredPositionFactoryFirstExtension } from "../ionic/levered/LeveredPositionFactoryFirstExtension.sol";
@@ -97,6 +98,46 @@ contract LeveredPositionLensTest is BaseTest {
       emit log_named_array("positions", positions);
       //emit log_named_array("closed", closed);
     }
+  }
+
+  function testScenarioLeverageFailed() public debuggingOnly forkAtBlock(MODE_MAINNET, 10672173) {
+    address USER = 0x95Ce459B20586cf44ee6d295C4f28e1a134CF529;
+    // IERC20Upgradeable(0x4200000000000000000000000000000000000006).approve(
+    //   address(factory),
+    //   100000 ether
+    // );
+    vm.prank(ap.owner());
+    ap.setAddress("IUniswapV2Router02", 0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45);
+    vm.startPrank(USER);
+    LeveredPosition position = factory.createAndFundPositionAtRatio(
+      ICErc20(0x71ef7EDa2Be775E5A7aa8afD02C45F059833e9d2),
+      ICErc20(0x2BE717340023C9e14C1Bb12cb3ecBcfd3c3fB038),
+      IERC20Upgradeable(0x4200000000000000000000000000000000000006),
+      16754252276537996590,
+      3000000000000000000
+    );
+    emit log_named_address("position", address(position));
+
+    // vm.stopPrank();
+    // ILiquidatorsRegistry registry = factory.liquidatorsRegistry();
+    // vm.startPrank(registry.owner());
+    // registry._setRedemptionStrategy(
+    //   new UniswapV3LiquidatorFunder(),
+    //   IERC20Upgradeable(0xd988097fb8612cc24eeC14542bC03424c656005f),
+    //   IERC20Upgradeable(0x4200000000000000000000000000000000000006)
+    // );
+    // vm.stopPrank();
+    // vm.startPrank(USER);
+
+    vm.roll(10673509);
+    position.adjustLeverageRatio(3000000000000000000);
+
+    // vm.roll(10852409);
+    // position.adjustLeverageRatio(3000000000000000000);
+
+    // vm.roll(11268772);
+    // position.adjustLeverageRatio(3000000000000000000);
+    vm.stopPrank();
   }
 }
 
@@ -203,11 +244,7 @@ abstract contract LeveredPositionTest is MarketsTest {
     vm.stopPrank();
   }
 
-  function _configurePairAndLiquidator(
-    address _collat,
-    address _stable,
-    IRedemptionStrategy _liquidator
-  ) internal {
+  function _configurePairAndLiquidator(address _collat, address _stable, IRedemptionStrategy _liquidator) internal {
     _configurePair(_collat, _stable);
     _configureTwoWayLiquidator(_collat, _stable, _liquidator);
   }
@@ -289,14 +326,10 @@ abstract contract LeveredPositionTest is MarketsTest {
     }
   }
 
-  function _openLeveredPosition(address _positionOwner, uint256 _depositAmount)
-    internal
-    returns (
-      LeveredPosition _position,
-      uint256 _maxRatio,
-      uint256 _minRatio
-    )
-  {
+  function _openLeveredPosition(
+    address _positionOwner,
+    uint256 _depositAmount
+  ) internal returns (LeveredPosition _position, uint256 _maxRatio, uint256 _minRatio) {
     IERC20Upgradeable collateralToken = IERC20Upgradeable(collateralMarket.underlying());
     collateralToken.transfer(_positionOwner, _depositAmount);
 

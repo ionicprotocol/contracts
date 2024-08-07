@@ -1,6 +1,6 @@
-import { RedStoneDeployFnParams } from "../../../chains/types";
-
+import { RedStoneDeployFnParams } from "../../types";
 import { addUnderlyingsToMpo } from "./utils";
+
 import { Address } from "viem";
 
 export const deployRedStonePriceOracle = async ({

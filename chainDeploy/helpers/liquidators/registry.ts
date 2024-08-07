@@ -1,10 +1,9 @@
 import { Address } from "viem";
-import { LiquidatorsRegistryConfigFnParams } from "../../../chains/types";
-import { chainIdToConfig } from "../../../chains";
+import { LiquidatorsRegistryConfigFnParams } from "../../types";
+import { chainIdToConfig } from "../../../../monorepo/packages/chains/src";
 
 export const configureLiquidatorsRegistry = async ({
   viem,
-  getNamedAccounts,
   chainId,
   deployments
 }: LiquidatorsRegistryConfigFnParams): Promise<void> => {
@@ -24,7 +23,7 @@ export const configureLiquidatorsRegistry = async ({
     for (const redemptionStrategy of chainIdToConfig[chainId].redemptionStrategies) {
       const { strategy, outputToken, inputToken } = redemptionStrategy;
       const redemptionStrategyContract = await viem.getContractAt(
-        strategy,
+        strategy as string,
         (await deployments.get(strategy)).address as Address
       );
 
@@ -33,12 +32,16 @@ export const configureLiquidatorsRegistry = async ({
       outputTokens.push(outputToken);
     }
     const matchingStrategies = await liquidatorsRegistry.read.pairsStrategiesMatch([
-      strategies,
-      inputTokens,
-      outputTokens
+      strategies as Address[],
+      inputTokens as Address[],
+      outputTokens as Address[]
     ]);
     if (!matchingStrategies) {
-      const hash = await liquidatorsRegistry.write._resetRedemptionStrategies([strategies, inputTokens, outputTokens]);
+      const hash = await liquidatorsRegistry.write._resetRedemptionStrategies([
+        strategies as Address[],
+        inputTokens as Address[],
+        outputTokens as Address[]
+      ]);
       console.log("waiting for tx ", hash);
       await publicClient.waitForTransactionReceipt({ hash });
       console.log("_resetRedemptionStrategies: ", hash);
@@ -61,10 +64,18 @@ export const configureLiquidatorsRegistry = async ({
       }
     }
 
-    const matchingFees = await liquidatorsRegistry.read.uniswapPairsFeesMatch([inputTokens, outputTokens, fees]);
+    const matchingFees = await liquidatorsRegistry.read.uniswapPairsFeesMatch([
+      inputTokens as Address[],
+      outputTokens as Address[],
+      fees.map((f) => BigInt(f))
+    ]);
 
     if (!matchingFees) {
-      const hash = await liquidatorsRegistry.write._setUniswapV3Fees([inputTokens, outputTokens, fees]);
+      const hash = await liquidatorsRegistry.write._setUniswapV3Fees([
+        inputTokens as Address[],
+        outputTokens as Address[],
+        fees
+      ]);
       console.log("waiting for tx ", hash);
       await publicClient.waitForTransactionReceipt({ hash });
       console.log("_setUniswapV3Fees: ", hash);
@@ -91,13 +102,17 @@ export const configureLiquidatorsRegistry = async ({
     }
 
     const matchingRouters = await liquidatorsRegistry.read.uniswapPairsRoutersMatch([
-      inputTokens,
-      outputTokens,
-      routers
+      inputTokens as Address[],
+      outputTokens as Address[],
+      routers as Address[]
     ]);
 
     if (!matchingRouters) {
-      const hash = await liquidatorsRegistry.write._setUniswapV3Routers([inputTokens, outputTokens, routers]);
+      const hash = await liquidatorsRegistry.write._setUniswapV3Routers([
+        inputTokens as Address[],
+        outputTokens as Address[],
+        routers as Address[]
+      ]);
       console.log("waiting for tx ", hash);
       await publicClient.waitForTransactionReceipt({ hash });
       console.log("_setUniswapV3Router: ", hash);
