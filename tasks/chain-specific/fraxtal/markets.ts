@@ -2,6 +2,7 @@ import { task } from "hardhat/config";
 import { assets } from "../../../../monorepo/packages/chains/src/fraxtal/assets";
 import { assetSymbols } from "../../../../monorepo/packages/types";
 import { COMPTROLLER } from ".";
+import { zeroAddress } from "viem";
 
 task("markets:deploy:fraxtal:main", "deploy base market").setAction(async (_, { viem, run }) => {
   const assetsToDeploy: string[] = [
@@ -34,6 +35,20 @@ task("markets:deploy:fraxtal:main", "deploy base market").setAction(async (_, { 
       await run("market:set-borrow-cap", {
         market: cToken,
         maxBorrow: asset.initialBorrowCap
+      });
+    }
+  }
+});
+
+task("markets:fraxtal:set-cf", "deploy base market").setAction(async (_, { viem, run }) => {
+  for (const asset of assets) {
+    const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
+    const cToken = await pool.read.cTokensByUnderlying([asset.underlying]);
+    console.log("cToken: ", cToken, asset.symbol);
+    if (cToken !== zeroAddress) {
+      await run("market:set:ltv", {
+        marketAddress: cToken,
+        ltv: asset.initialCf
       });
     }
   }
