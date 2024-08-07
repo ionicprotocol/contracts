@@ -161,6 +161,7 @@ export type LiquidatorsRegistryConfigFnParams = {
 
 export type IrmDeployFnParams = ChainDeployFnParams & {
   deployConfig: ChainDeployConfig;
+  chainId: number;
 };
 
 export type ChainlinkDeployFnParams = ChainDeployFnParams & {

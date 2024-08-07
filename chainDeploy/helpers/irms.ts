@@ -1,11 +1,50 @@
-import { Hash, parseEther } from "viem";
+import { Address, Hash, parseEther } from "viem";
+import { mode } from "viem/chains";
+
+import { assetSymbols } from "../../../monorepo/packages/types";
+import assets from "../../../monorepo/packages/chains/src/mode/assets";
 import { IrmDeployFnParams } from "../types";
 
+import { underlying } from "./utils";
+
+const PRUDENTIA_RATE_CONTROLLER_MODE = "0xC40753877CfeF6f50E13695395c58357505719F8";
+
+type PrudentiaConfig = {
+  blocksPerYear: number;
+  underlying: Address;
+  rateController: Address;
+  symbol: string;
+};
+
+const prudentiaParams: Record<number, PrudentiaConfig[]> = {
+  [mode.id]: [
+    {
+      symbol: assetSymbols.USDC,
+      blocksPerYear: 15768000,
+      underlying: underlying(assets, assetSymbols.USDC),
+      rateController: PRUDENTIA_RATE_CONTROLLER_MODE
+    },
+    {
+      symbol: assetSymbols.USDT,
+      blocksPerYear: 15768000,
+      underlying: underlying(assets, assetSymbols.USDT),
+      rateController: PRUDENTIA_RATE_CONTROLLER_MODE
+    },
+    {
+      symbol: assetSymbols.WETH,
+      blocksPerYear: 15768000,
+      underlying: underlying(assets, assetSymbols.WETH),
+      rateController: PRUDENTIA_RATE_CONTROLLER_MODE
+    }
+  ]
+};
+
 export const deployIRMs = async ({
-  viem,
-  getNamedAccounts,
+  deployConfig,
   deployments,
-  deployConfig
+  getNamedAccounts,
+  viem,
+  chainId
 }: IrmDeployFnParams): Promise<void> => {
   const publicClient = await viem.getPublicClient();
   const { deployer } = await getNamedAccounts();
@@ -23,4 +62,16 @@ export const deployIRMs = async ({
   });
   if (jrm.transactionHash) await publicClient.waitForTransactionReceipt({ hash: jrm.transactionHash as Hash });
   console.log("JumpRateModel: ", jrm.address);
+
+  const prudentiaConfig = prudentiaParams[+chainId] ?? [];
+  for (const config of prudentiaConfig) {
+    const irm = await deployments.deploy(`PrudentiaInterestRateModel_${config.symbol}`, {
+      contract: "PrudentiaInterestRateModel",
+      from: deployer,
+      args: [config.blocksPerYear, config.underlying, config.rateController],
+      log: true
+    });
+    if (irm.transactionHash) await publicClient.waitForTransactionReceipt({ hash: irm.transactionHash as Hash });
+    console.log("PrudentiaInterestRateModel: ", config.symbol, irm.address);
+  }
 };

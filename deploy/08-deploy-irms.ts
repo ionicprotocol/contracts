@@ -13,7 +13,7 @@ const func: DeployFunction = async ({ run, viem, getNamedAccounts, deployments, 
 
   ///
   //// IRM MODELS
-  await deployIRMs({ run, viem, getNamedAccounts, deployments, deployConfig: chainDeployParams });
+  await deployIRMs({ run, viem, getNamedAccounts, deployments, deployConfig: chainDeployParams, chainId });
 };
 
 func.tags = ["prod", "deploy-irms"];

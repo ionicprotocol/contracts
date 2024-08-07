@@ -68,6 +68,26 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     _;
   }
 
+  /**
+   * @notice Gets the supply cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveSupplyCaps(
+    address cToken
+  ) public view override(ComptrollerBase, ComptrollerInterface) returns (uint256 supplyCap) {
+    return ComptrollerBase.effectiveSupplyCaps(cToken);
+  }
+
+  /**
+   * @notice Gets the borrow cap of a cToken in the units of the underlying asset.
+   * @param cToken The address of the cToken.
+   */
+  function effectiveBorrowCaps(
+    address cToken
+  ) public view override(ComptrollerBase, ComptrollerInterface) returns (uint256 borrowCap) {
+    return ComptrollerBase.effectiveBorrowCaps(cToken);
+  }
+
   /*** Assets You Are In ***/
 
   /**
@@ -228,11 +248,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    * @param mintAmount The amount of underlying being supplied to the market in exchange for tokens
    * @return 0 if the mint is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
    */
-  function mintAllowed(
-    address cTokenAddress,
-    address minter,
-    uint256 mintAmount
-  ) external override returns (uint256) {
+  function mintAllowed(address cTokenAddress, address minter, uint256 mintAmount) external override returns (uint256) {
     // Pausing is a very serious situation - we revert to sound the alarms
     require(!mintGuardianPaused[cTokenAddress], "!mint:paused");
 
@@ -246,8 +262,8 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.SUPPLIER_NOT_WHITELISTED);
     }
 
-    // Check supply cap
-    uint256 supplyCap = supplyCaps[cTokenAddress];
+    uint256 supplyCap = effectiveSupplyCaps(cTokenAddress);
+
     // Supply cap of 0 corresponds to unlimited supplying
     if (supplyCap != 0 && !supplyCapWhitelist[cTokenAddress].contains(minter)) {
       uint256 totalUnderlyingSupply = ICErc20(cTokenAddress).getTotalUnderlyingSupplied();
@@ -272,11 +288,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    * @param redeemTokens The number of cTokens to exchange for the underlying asset in the market
    * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
    */
-  function redeemAllowed(
-    address cToken,
-    address redeemer,
-    uint256 redeemTokens
-  ) external override returns (uint256) {
+  function redeemAllowed(address cToken, address redeemer, uint256 redeemTokens) external override returns (uint256) {
     uint256 allowed = redeemAllowedInternal(cToken, redeemer, redeemTokens);
     if (allowed != uint256(Error.NO_ERROR)) {
       return allowed;
@@ -327,12 +339,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    * @param actualMintAmount The amount of the underlying asset being minted
    * @param mintTokens The number of tokens being minted
    */
-  function mintVerify(
-    address cToken,
-    address minter,
-    uint256 actualMintAmount,
-    uint256 mintTokens
-  ) external {
+  function mintVerify(address cToken, address minter, uint256 actualMintAmount, uint256 mintTokens) external {
     // Add minter to suppliers mapping
     suppliers[minter] = true;
   }
@@ -430,11 +437,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    * @param borrowAmount The amount of underlying the account would borrow
    * @return 0 if the borrow is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
    */
-  function borrowAllowed(
-    address cToken,
-    address borrower,
-    uint256 borrowAmount
-  ) external override returns (uint256) {
+  function borrowAllowed(address cToken, address borrower, uint256 borrowAmount) external override returns (uint256) {
     // Pausing is a very serious situation - we revert to sound the alarms
     require(!borrowGuardianPaused[cToken], "!borrow:paused");
 
@@ -467,8 +470,8 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
       return uint256(Error.SUPPLIER_NOT_WHITELISTED);
     }
 
-    // Check borrow cap
-    uint256 borrowCap = borrowCaps[cToken];
+    uint256 borrowCap = effectiveBorrowCaps(cToken);
+
     // Borrow cap of 0 corresponds to unlimited borrowing
     if (borrowCap != 0 && !borrowCapWhitelist[cToken].contains(borrower)) {
       uint256 totalBorrows = ICErc20(cToken).totalBorrowsCurrent();
@@ -692,11 +695,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
    * @param src The account which sources the tokens
    * @param dst The account which receives the tokens
    */
-  function flywheelPreTransferAction(
-    address cToken,
-    address src,
-    address dst
-  ) internal {
+  function flywheelPreTransferAction(address cToken, address src, address dst) internal {
     for (uint256 i = 0; i < rewardsDistributors.length; i++)
       IIonicFlywheel(rewardsDistributors[i]).flywheelPreTransferAction(cToken, src, dst);
   }
@@ -725,17 +724,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     uint256 assetAsCollateralValueCap;
   }
 
-  function getAccountLiquidity(address account)
-    public
-    view
-    override
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
-    )
-  {
+  function getAccountLiquidity(address account) public view override returns (uint256, uint256, uint256, uint256) {
     (
       Error err,
       uint256 collateralValue,
@@ -761,16 +750,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     uint256 redeemTokens,
     uint256 borrowAmount,
     uint256 repayAmount
-  )
-    public
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
-    )
-  {
+  ) public view returns (uint256, uint256, uint256, uint256) {
     (
       Error err,
       uint256 collateralValue,
@@ -803,16 +783,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     uint256 redeemTokens,
     uint256 borrowAmount,
     uint256 repayAmount
-  )
-    internal
-    view
-    returns (
-      Error,
-      uint256,
-      uint256,
-      uint256
-    )
-  {
+  ) internal view returns (Error, uint256, uint256, uint256) {
     AccountLiquidityLocalVars memory vars; // Holds all our calculation results
 
     if (address(cTokenModify) != address(0)) {
@@ -1280,7 +1251,7 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
   }
 
   function _getExtensionFunctions() external pure virtual override returns (bytes4[] memory functionSelectors) {
-    uint8 fnsCount = 30;
+    uint8 fnsCount = 32;
 
     functionSelectors = new bytes4[](fnsCount);
 
@@ -1314,6 +1285,8 @@ contract Comptroller is ComptrollerBase, ComptrollerInterface, ComptrollerErrorR
     functionSelectors[--fnsCount] = this._beforeNonReentrant.selector;
     functionSelectors[--fnsCount] = this._afterNonReentrant.selector;
     functionSelectors[--fnsCount] = this._becomeImplementation.selector;
+    functionSelectors[--fnsCount] = this.effectiveSupplyCaps.selector;
+    functionSelectors[--fnsCount] = this.effectiveBorrowCaps.selector;
 
     require(fnsCount == 0, "use the correct array length");
   }

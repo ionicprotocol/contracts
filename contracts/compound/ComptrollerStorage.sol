@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 import "./IFeeDistributor.sol";
 import "../oracles/BasePriceOracle.sol";
 import { ICErc20 } from "./CTokenInterfaces.sol";
+import { PrudentiaLib } from "../adrastia/PrudentiaLib.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -136,12 +137,15 @@ contract ComptrollerV2Storage is ComptrollerV1Storage {
 
 contract ComptrollerV3Storage is ComptrollerV2Storage {
   /// @notice The borrowCapGuardian can set borrowCaps to any number for any market. Lowering the borrow cap could disable borrowing on the given market.
+  /// @dev If Adrastia Prudentia is enabled, the values the borrow cap guardian sets are ignored.
   address public borrowCapGuardian;
 
   /// @notice Borrow caps enforced by borrowAllowed for each cToken address. Defaults to zero which corresponds to unlimited borrowing.
+  /// @dev If Adrastia Prudentia is enabled, this value is ignored. Use `effectiveBorrowCaps` instead.
   mapping(address => uint256) public borrowCaps;
 
   /// @notice Supply caps enforced by mintAllowed for each cToken address. Defaults to zero which corresponds to unlimited supplying.
+  /// @dev If Adrastia Prudentia is enabled, this value is ignored. Use `effectiveSupplyCaps` instead.
   mapping(address => uint256) public supplyCaps;
 
   /// @notice RewardsDistributor contracts to notify of flywheel changes.
@@ -174,4 +178,12 @@ contract ComptrollerV3Storage is ComptrollerV2Storage {
 
   /// @dev set of whitelisted accounts that are allowed to bypass the borrow cap
   mapping(address => EnumerableSet.AddressSet) internal borrowCapWhitelist;
+}
+
+contract ComptrollerV4Storage is ComptrollerV3Storage {
+  /// @dev Adrastia Prudentia config for controlling borrow caps.
+  PrudentiaLib.PrudentiaConfig internal borrowCapConfig;
+
+  /// @dev Adrastia Prudentia config for controlling supply caps.
+  PrudentiaLib.PrudentiaConfig internal supplyCapConfig;
 }

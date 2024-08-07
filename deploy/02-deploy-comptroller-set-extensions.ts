@@ -1,7 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { Address, encodeFunctionData, Hash, zeroAddress } from "viem";
 
-import { logTransaction } from "../chainDeploy/helpers/logging";
+import { logTransaction, prepareAndLogTransaction } from "../chainDeploy/helpers/logging";
 
 const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => {
   const { deployer, multisig } = await getNamedAccounts();
@@ -32,6 +32,16 @@ const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => 
     await publicClient.waitForTransactionReceipt({ hash: compFirstExtension.transactionHash as Hash });
   console.log("ComptrollerFirstExtension", compFirstExtension.address);
 
+  const compPrudentiaExtension = await deployments.deploy("ComptrollerPrudentiaCapsExt", {
+    contract: "ComptrollerPrudentiaCapsExt",
+    from: deployer,
+    args: [],
+    log: true
+  });
+  if (compPrudentiaExtension.transactionHash)
+    await publicClient.waitForTransactionReceipt({ hash: compPrudentiaExtension.transactionHash as Hash });
+  console.log("ComptrollerPrudentiaCapsExt", compPrudentiaExtension.address);
+
   const comptroller = await viem.getContractAt(
     "Comptroller",
     (await deployments.get("Comptroller")).address as Address
@@ -45,14 +55,16 @@ const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => 
     ]);
     if (latestComptrollerImplementation === zeroAddress || latestComptrollerImplementation !== comptroller.address) {
       if ((await fuseFeeDistributor.read.owner()).toLowerCase() !== deployer.toLowerCase()) {
-        logTransaction(
-          "Set Latest Comptroller Implementation",
-          encodeFunctionData({
-            abi: fuseFeeDistributor.abi,
-            functionName: "_setLatestComptrollerImplementation",
-            args: [oldComptroller.address as Address, comptroller.address]
-          })
-        );
+        await prepareAndLogTransaction({
+          contractInstance: fuseFeeDistributor,
+          functionName: "_setLatestComptrollerImplementation",
+          args: [oldComptroller.address as Address, comptroller.address],
+          description: "Set Latest Comptroller Implementation",
+          inputs: [
+            { internalType: "address", name: "oldImplementation", type: "address" },
+            { internalType: "address", name: "newImplementation", type: "address" }
+          ]
+        });
       } else {
         tx = await fuseFeeDistributor.write._setLatestComptrollerImplementation([
           oldComptroller.address as Address,
@@ -87,20 +99,27 @@ const func: DeployFunction = async ({ viem, getNamedAccounts, deployments }) => 
   }
 
   const comptrollerExtensions = await fuseFeeDistributor.read.getComptrollerExtensions([comptroller.address]);
-  if (comptrollerExtensions.length == 0 || comptrollerExtensions[1] != compFirstExtension.address) {
+  if (
+    comptrollerExtensions.length == 0 ||
+    comptrollerExtensions[1].toLowerCase() !== compFirstExtension.address.toLowerCase() ||
+    comptrollerExtensions[2].toLowerCase() !== compPrudentiaExtension.address.toLowerCase()
+  ) {
     if (multisig && (await fuseFeeDistributor.read.owner()).toLowerCase() !== deployer.toLowerCase()) {
       logTransaction(
         "Set Comptroller Extensions",
         encodeFunctionData({
           abi: fuseFeeDistributor.abi,
           functionName: "_setComptrollerExtensions",
-          args: [comptroller.address, [comptroller.address, compFirstExtension.address as Address]]
+          args: [
+            comptroller.address,
+            [comptroller.address, compFirstExtension.address as Address, compPrudentiaExtension.address as Address]
+          ]
         })
       );
     } else {
       tx = await fuseFeeDistributor.write._setComptrollerExtensions([
         comptroller.address,
-        [comptroller.address, compFirstExtension.address as Address]
+        [comptroller.address, compFirstExtension.address as Address, compPrudentiaExtension.address as Address]
       ]);
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`configured the extensions for comptroller ${comptroller.address}`);
