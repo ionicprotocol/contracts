@@ -2,6 +2,7 @@ import { task, types } from "hardhat/config";
 import { Address, encodeAbiParameters, parseAbiParameters, parseEther } from "viem";
 
 import { MarketConfig } from "../../chainDeploy";
+import { prepareAndLogTransaction } from "../../chainDeploy/helpers/logging";
 
 task("market:deploy", "deploy market")
   .addParam("signer", "Named account to use for tx", "deployer", types.string)
@@ -12,7 +13,8 @@ task("market:deploy", "deploy market")
   .addParam("name", "CToken name", undefined, types.string)
   .addOptionalParam("initialSupplyCap", "Initial supply cap", undefined, types.string)
   .addOptionalParam("initialBorrowCap", "Initial borrow cap", undefined, types.string)
-  .setAction(async (taskArgs, { viem, deployments }) => {
+  .setAction(async (taskArgs, { viem, deployments, getNamedAccounts }) => {
+    const { deployer } = await getNamedAccounts();
     const publicClient = await viem.getPublicClient();
     const comptroller = await viem.getContractAt("IonicComptroller", taskArgs.comptroller as Address);
 
@@ -51,28 +53,43 @@ task("market:deploy", "deploy market")
       ]
     );
 
+    const feeDistributor = await viem.getContractAt("FeeDistributor", config.feeDistributor);
+    const owner = await feeDistributor.read.owner();
     // Test Transaction
-    const errorCode = await comptroller.simulate._deployMarket([
-      delegateType,
-      constructorData,
-      implementationData,
-      collateralFactorBN
-    ]);
+    const errorCode = await comptroller.simulate._deployMarket(
+      [delegateType, constructorData, implementationData, collateralFactorBN],
+      { account: owner }
+    );
     if (errorCode.result !== 0n) {
       throw `Unable to _deployMarket: ${errorCode.result}`;
     }
-    // Make actual Transaction
-    const tx = await comptroller.write._deployMarket([
-      delegateType,
-      constructorData,
-      implementationData,
-      collateralFactorBN
-    ]);
-    console.log("tx", tx);
+    if (owner.toLowerCase() !== deployer.toLowerCase()) {
+      await prepareAndLogTransaction({
+        contractInstance: comptroller,
+        functionName: "_deployMarket",
+        args: [delegateType, constructorData, implementationData, collateralFactorBN],
+        description: `Deploy market for ${config.underlying}`,
+        inputs: [
+          { internalType: "uint8", name: "delegateType", type: "uint8" },
+          { internalType: "bytes", name: "constructorData", type: "bytes" },
+          { internalType: "bytes", name: "implementationData", type: "bytes" },
+          { internalType: "uint256", name: "collateralFactor", type: "uint256" }
+        ]
+      });
+    } else {
+      // Make actual Transaction
+      const tx = await comptroller.write._deployMarket([
+        delegateType,
+        constructorData,
+        implementationData,
+        collateralFactorBN
+      ]);
+      console.log("tx", tx);
 
-    // Recreate Address of Deployed Market
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
-    if (receipt.status !== "success") {
-      throw `Failed to deploy market for ${config.underlying}`;
+      // Recreate Address of Deployed Market
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+      if (receipt.status !== "success") {
+        throw `Failed to deploy market for ${config.underlying}`;
+      }
     }
   });

@@ -8,7 +8,7 @@ import { prepareAndLogTransaction } from "../../../chainDeploy/helpers/logging";
 const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
 
 task("markets:deploy:mode:new", "deploy new mode assets").setAction(async (_, { viem, run }) => {
-  const assetsToDeploy: string[] = [assetSymbols.USDe, assetSymbols.sUSDe];
+  const assetsToDeploy: string[] = [assetSymbols.USDe];
   for (const asset of modeAssets.filter((asset) => assetsToDeploy.includes(asset.symbol))) {
     await run("market:deploy", {
       signer: "deployer",
