@@ -168,6 +168,7 @@ export type ChainlinkDeployFnParams = ChainDeployFnParams & {
   assets: SupportedAsset[];
   chainlinkAssets: ChainlinkAsset[];
   deployConfig: ChainDeployConfig;
+  namePostfix?: string;
 };
 
 export type AerodromeDeployFnParams = ChainDeployFnParams & {

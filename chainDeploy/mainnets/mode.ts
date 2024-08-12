@@ -1,4 +1,4 @@
-import { Address, Hash, zeroAddress } from "viem";
+import { Address, Hash, Hex, zeroAddress } from "viem";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { ChainDeployConfig, deployChainlinkOracle, deployPythPriceOracle } from "../helpers";
@@ -7,7 +7,13 @@ import { addRedstoneWeETHFallbacks } from "../helpers/oracles/redstoneWeETHFallb
 import { deployRedStoneWrsETHPriceOracle } from "../helpers/oracles/redstoneWrsETH";
 import { underlying } from "../helpers/utils";
 import { mode } from "../../../monorepo/packages/chains/src";
-import { assetSymbols, ChainlinkFeedBaseCurrency } from "../../../monorepo/packages/types";
+import {
+  assetSymbols,
+  OracleTypes,
+  ChainlinkSpecificParams,
+  PythSpecificParams
+} from "../../../monorepo/packages/types";
+import { ChainlinkAsset, PythAsset } from "../types";
 
 export const deployConfig: ChainDeployConfig = {
   blocksPerYear: 30 * 60 * 24 * 365, // 30 blocks per minute = 2 sec block time
@@ -30,64 +36,56 @@ export const deployConfig: ChainDeployConfig = {
 };
 
 // TODO add more assets https://pyth.network/developers/price-feed-ids
-const pythAssets = [
-  {
-    underlying: underlying(mode.assets, assetSymbols.USDC),
-    feed: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"
-  },
-  {
-    underlying: underlying(mode.assets, assetSymbols.USDT),
-    feed: "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
-  },
-  {
-    underlying: underlying(mode.assets, assetSymbols.WBTC),
-    feed: "0xc9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33"
-  },
-  {
-    underlying: underlying(mode.assets, assetSymbols.mBTC),
-    feed: "0xc9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33"
-  }
-];
+const newAssets = ["USDe", "sUSDe"];
+const pythAssets: PythAsset[] = mode.assets
+  .filter((a) => a.oracle === OracleTypes.PythPriceOracle)
+  .filter((a) => newAssets.includes(a.symbol as assetSymbols))
+  .map((a) => ({
+    feed: (a.oracleSpecificParams as PythSpecificParams).feed as Hex,
+    underlying: underlying(mode.assets, a.symbol)
+  }));
 
-const api3Assets = [
-  {
-    symbol: assetSymbols.ezETH,
-    aggregator: "0x85baF4a3d1494576d0941a146E24a8690Efa87D5",
-    feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
-  },
-  {
-    symbol: assetSymbols.weETH,
-    aggregator: "0x95a02CBb3f19D88b228858A48cFade87fd337c22",
-    feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
-  }
-];
+const chainlinkAssets: ChainlinkAsset[] = mode.assets
+  .filter((a) => a.oracle === OracleTypes.ChainlinkPriceOracleV2)
+  .filter((a) => a.symbol === assetSymbols.USDe)
+  .map((a) => ({
+    aggregator: (a.oracleSpecificParams as ChainlinkSpecificParams).aggregator as Hex,
+    feedBaseCurrency: (a.oracleSpecificParams as ChainlinkSpecificParams).feedBaseCurrency,
+    symbol: a.symbol as assetSymbols
+  }));
 
-const redStoneWrsETHAssets = [
-  {
-    underlying: underlying(mode.assets, assetSymbols.wrsETH)
-  }
-];
+// const api3Assets = [
+//   {
+//     symbol: assetSymbols.ezETH,
+//     aggregator: "0x85baF4a3d1494576d0941a146E24a8690Efa87D5",
+//     feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
+//   },
+//   {
+//     symbol: assetSymbols.weETH,
+//     aggregator: "0x95a02CBb3f19D88b228858A48cFade87fd337c22",
+//     feedBaseCurrency: ChainlinkFeedBaseCurrency.ETH
+//   }
+// ];
 
-const convertedApi3Assets = api3Assets.map((asset) => ({
-  underlying: underlying(mode.assets, asset.symbol),
-  feed: asset.aggregator
-}));
+// const redStoneWrsETHAssets = [
+//   {
+//     underlying: underlying(mode.assets, assetSymbols.wrsETH)
+//   }
+// ];
 
-export const deploy = async ({
-  run,
-  viem,
-  getNamedAccounts,
-  deployments
-}: HardhatRuntimeEnvironment): Promise<void> => {
-  const { deployer } = await getNamedAccounts();
-  const publicClient = await viem.getPublicClient();
+// const convertedApi3Assets = api3Assets.map((asset) => ({
+//   underlying: underlying(mode.assets, asset.symbol),
+//   feed: asset.aggregator
+// }));
+
+export const deploy = async ({ run, viem, getNamedAccounts, deployments }: HardhatRuntimeEnvironment): Promise<void> => {
   await deployPythPriceOracle({
     run,
     deployConfig,
     viem,
     getNamedAccounts,
     deployments,
-    usdToken: mode.chainAddresses.STABLE_TOKEN,
+    usdToken: mode.chainAddresses.STABLE_TOKEN as Address,
     pythAddress: "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729",
     pythAssets,
     nativeTokenUsdFeed: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
@@ -100,47 +98,48 @@ export const deploy = async ({
     deployments,
     deployConfig,
     assets: mode.assets,
-    chainlinkAssets: api3Assets
+    chainlinkAssets,
+    namePostfix: "Redstone"
   });
 
-  await addRedstoneFallbacks({
-    viem,
-    getNamedAccounts,
-    deployments,
-    redStoneAssets: [...pythAssets, convertedApi3Assets[0]],
-    redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
-    run,
-    deployConfig
-  });
+  // await addRedstoneFallbacks({
+  //   viem,
+  //   getNamedAccounts,
+  //   deployments,
+  //   redStoneAssets: [...pythAssets, convertedApi3Assets[0]],
+  //   redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
+  //   run,
+  //   deployConfig
+  // });
 
-  await addRedstoneWeETHFallbacks({
-    viem,
-    getNamedAccounts,
-    deployments,
-    redStoneAssets: [convertedApi3Assets[1]],
-    redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
-    run,
-    deployConfig
-  });
+  // await addRedstoneWeETHFallbacks({
+  //   viem,
+  //   getNamedAccounts,
+  //   deployments,
+  //   redStoneAssets: [convertedApi3Assets[1]],
+  //   redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
+  //   run,
+  //   deployConfig
+  // });
 
-  await deployRedStoneWrsETHPriceOracle({
-    run,
-    deployConfig,
-    viem,
-    getNamedAccounts,
-    deployments,
-    redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
-    redStoneAssets: redStoneWrsETHAssets
-  });
+  // await deployRedStoneWrsETHPriceOracle({
+  //   run,
+  //   deployConfig,
+  //   viem,
+  //   getNamedAccounts,
+  //   deployments,
+  //   redStoneAddress: "0x7C1DAAE7BB0688C9bfE3A918A4224041c7177256",
+  //   redStoneAssets: redStoneWrsETHAssets
+  // });
 
-  const algebraSwapLiquidator = await deployments.deploy("AlgebraSwapLiquidator", {
-    from: deployer,
-    args: [],
-    log: true,
-    waitConfirmations: 1
-  });
-  if (algebraSwapLiquidator.transactionHash) {
-    await publicClient.waitForTransactionReceipt({ hash: algebraSwapLiquidator.transactionHash as Hash });
-  }
-  console.log("AlgebraSwapLiquidator: ", algebraSwapLiquidator.address);
+  // const algebraSwapLiquidator = await deployments.deploy("AlgebraSwapLiquidator", {
+  //   from: deployer,
+  //   args: [],
+  //   log: true,
+  //   waitConfirmations: 1
+  // });
+  // if (algebraSwapLiquidator.transactionHash) {
+  //   await publicClient.waitForTransactionReceipt({ hash: algebraSwapLiquidator.transactionHash as Hash });
+  // }
+  // console.log("AlgebraSwapLiquidator: ", algebraSwapLiquidator.address);
 };
