@@ -1,24 +1,14 @@
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { Address, parseEther, zeroAddress } from "viem";
 
-task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").setAction(
-  async (_, { viem, run, deployments, getNamedAccounts }) => {
+task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing flywheel")
+.addParam("market", "market address", undefined, types.string)
+.addParam("rewardAmount", "the amount of tokens streamed to first epoch", undefined, types.string)
+.addParam("reward", "token address of reward token", undefined, types.string)
+.setAction(
+  async ({market, rewardAmount, reward}, { viem, run, deployments, getNamedAccounts }) => {
     const { deployer } = await getNamedAccounts();
     const publicClient = await viem.getPublicClient();
-
-    const ionbsdETH = "0x3d9669de9e3e98db41a1cbf6dc23446109945e3c";
-    const bsdETH = "0xCb327b99fF831bF8223cCEd12B1338FF3aA322Ff";
-    const ioneUSD = "0x9c2a4f9c5471fd36be3bbd8437a33935107215a1";
-    const eUSD = "0xCfA3Ef56d303AE4fAabA0592388F19d7C3399FB4";
-    const hyUSD = "0xCc7FF230365bD730eE4B352cC2492CEdAC49383e"
-    const ionhyUSD = "0x751911bDa88eFcF412326ABE649B7A3b28c4dEDe"
-    const ION = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
-    const RSR = "0xab36452dbac151be02b16ca17d8919826072f64a";
-    const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const comptrollerAddress = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const markets = `${ionbsdETH}`;
-    const reward = "2500"; // epoch will start 3 days so 25000 / 30 * 3
-
     /*
     // Upgrade markets to the new implementation
     console.log(`Upgrading market: ${ionhyUSD} to CErc20RewardsDelegate`);
@@ -73,10 +63,10 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
     */
 
     // Sending tokens
-    const ionToken = await viem.getContractAt("EIP20Interface", ION);
-    const balance = await ionToken.read.balanceOf([ionbsdETH]);
-    if (balance < parseEther(reward)) {
-      await ionToken.write.transfer([ionbsdETH, parseEther(reward)]);
+    const ionToken = await viem.getContractAt("EIP20Interface", reward);
+    const balance = await ionToken.read.balanceOf([market]);
+    if (balance < parseEther(rewardAmount)) {
+      await ionToken.write.transfer([market, parseEther(rewardAmount)]);
     }
 
     // Approving token sepening for fwRewards contract
@@ -85,47 +75,35 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
       (await deployments.get("IonicFlywheel_ION")).address as Address
     );
 
-    const marketAddresses = markets.split(",");
-    for (const marketAddress of marketAddresses) {
-      const market = await viem.getContractAt("CErc20RewardsDelegate", marketAddress);
-      const fwRewards = await flywheel.read.flywheelRewards();
-      const rewardToken = await flywheel.read.rewardToken();
-      const tx = await market.write.approve([rewardToken, fwRewards]);
-      console.log(`mining tx ${tx}`);
-      await publicClient.waitForTransactionReceipt({ hash: tx });
-      console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${marketAddress}`);
-    }
+    const _market = await viem.getContractAt("CErc20RewardsDelegate", market);
+    const fwRewards = await flywheel.read.flywheelRewards();
+    const rewardToken = await flywheel.read.rewardToken();
+    const tx = await _market.write.approve([rewardToken, fwRewards]);
+    console.log(`mining tx ${tx}`);
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+    console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${market}`);
 
     // Adding strategies to flywheel
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
-    for (const strategy of marketAddresses) {
-      if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(strategy.toLowerCase())) {
-        console.log(`Adding strategy ${strategy} to flywheel ${flywheel.address}`);
-        const addTx = await flywheel.write.addStrategyForRewards([strategy]);
-        await publicClient.waitForTransactionReceipt({ hash: addTx });
-        console.log(`Added strategy (${strategy}) to flywheel (${flywheel.address})`);
-      } else console.log(`Strategy (${strategy}) was already added to flywheel (${flywheel.address})`);
-    }
+    if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(market.toLowerCase())) {
+      console.log(`Adding strategy ${market} to flywheel ${flywheel.address}`);
+      const addTx = await flywheel.write.addStrategyForRewards([market]);
+      await publicClient.waitForTransactionReceipt({ hash: addTx });
+      console.log(`Added strategy (${market}) to flywheel (${flywheel.address})`);
+    } else console.log(`Strategy (${market}) was already added to flywheel (${flywheel.address})`);
   }
 );
 
-task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").setAction(
-  async (_, { viem, run, deployments, getNamedAccounts }) => {
+task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
+.addParam("market", "market address", undefined, types.string)
+.addParam("rewardAmount", "the amount of tokens streamed to first epoch", undefined, types.string)
+.addParam("reward", "token address of reward token", undefined, types.string)
+.addParam("epochDuration", "default duration of epoch", undefined, types.string)
+.addParam("name", "name of deployment", undefined, types.string)
+.setAction(
+  async ({market, rewardAmount, reward, epochDuration, name}, { viem, run, deployments, getNamedAccounts }) => {
     const { deployer } = await getNamedAccounts();
     const publicClient = await viem.getPublicClient();
-
-    const ionbsdETH = "0x3d9669de9e3e98db41a1cbf6dc23446109945e3c";
-    const bsdETH = "0xCb327b99fF831bF8223cCEd12B1338FF3aA322Ff";
-    const ioneUSD = "0x9c2a4f9c5471fd36be3bbd8437a33935107215a1";
-    const eUSD = "0xCfA3Ef56d303AE4fAabA0592388F19d7C3399FB4";
-    const hyUSD = "0xCc7FF230365bD730eE4B352cC2492CEdAC49383e"
-    const ionhyUSD = "0x751911bDa88eFcF412326ABE649B7A3b28c4dEDe"
-    const ION = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
-    const RSR = "0xab36452dbac151be02b16ca17d8919826072f64a";
-    const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const comptrollerAddress = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const markets = `${ionhyUSD}`;
-    const reward = "1500"; // epoch will start 3 days so 15000 / 30 * 3
 
     /*
     // Upgrade markets to the new implementation
@@ -181,27 +159,29 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
     */
 
     // Sending tokens
-    const ionToken = await viem.getContractAt("EIP20Interface", ION);
-    const balance = await ionToken.read.balanceOf([ionhyUSD]);
-    if (balance < parseEther(reward)) {
-      await ionToken.write.transfer([ionhyUSD, parseEther(reward)]);
+    const ionToken = await viem.getContractAt("EIP20Interface", reward);
+    const balance = await ionToken.read.balanceOf([market]);
+    if (balance < parseEther(rewardAmount)) {
+      await ionToken.write.transfer([market, parseEther(rewardAmount)]);
     }
 
     // Deploying flywheel 
-    let name = "ION";
     let booster = "";
-    let rewardToken = ION;
-    let epochDuration = 2588400; //30*(24*60*60)-60*60 29days 23 hours
     let flywheelBoosterAddress;
     let contractName;
-
+    const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
+    if (name.includes("Borrow")) {
+      contractName = "IonicFlywheelBorrow";
+      booster = "0x0e47b0fF7b5571047bb1A8b18C9444D25516e7F9";
+    } else {
+      contractName = "IonicFlywheel";
+    }
+  
     if (booster != "") {
       flywheelBoosterAddress = (await deployments.get(booster)).address as Address;
     } else flywheelBoosterAddress = zeroAddress;
 
-    if (name.includes("Borrow")) {
-      contractName = "IonicFlywheelBorrow";
-    } else contractName = "IonicFlywheel";
+
 
     const _flywheel = await deployments.deploy(`${contractName}_${name}`, {
       contract: contractName,
@@ -212,7 +192,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
         execute: {
           init: {
             methodName: "initialize",
-            args: [rewardToken, zeroAddress, flywheelBoosterAddress, deployer]
+            args: [reward, zeroAddress, flywheelBoosterAddress, deployer]
           }
         },
         owner: deployer
@@ -223,39 +203,35 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
     console.log(`Deployed flywheel: ${_flywheel.address}`);
     
     // Deploying flywheel rewards
-    const rewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
-      contract: "IonicFlywheelDynamicRewards",
-      from: deployer,
-      log: true,
-      args: [
-        _flywheel.address, // flywheel
-        epochDuration // epoch duration
-      ],
-      waitConfirmations: 1
-    });
-    console.log(`Deployed flywheel rewards: ${rewards.address}`);
-
     const flywheel = await viem.getContractAt(
       `${contractName}`,
       (await deployments.get(`${contractName}_${name}`)).address as Address
     );
 
-    const tx = await flywheel.write.setFlywheelRewards([rewards.address as Address]);
-    await publicClient.waitForTransactionReceipt({ hash: tx });
-    console.log(`Set rewards (${rewards.address}) to flywheel (${flywheel.address})`);
+    const flywheelRewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
+      contract: "IonicFlywheelDynamicRewards",
+      from: deployer,
+      log: true,
+      args: [
+        flywheel.address, // flywheel
+        epochDuration // epoch duration
+      ],
+      waitConfirmations: 1
+    });
+    console.log(`Deployed flywheel rewards: ${flywheelRewards.address}`);
+
+    const txFlywheel = await flywheel.write.setFlywheelRewards([flywheelRewards.address as Address]);
+    await publicClient.waitForTransactionReceipt({ hash: txFlywheel });
+    console.log(`Set rewards (${flywheelRewards.address}) to flywheel (${flywheel.address})`);
 
     // Adding strategies to flywheel
-    const marketAddresses = markets.split(",");
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
-    for (const strategy of marketAddresses) {
-      if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(strategy.toLowerCase())) {
-        console.log(`Adding strategy ${strategy} to flywheel ${flywheel.address}`);
-        const addTx = await flywheel.write.addStrategyForRewards([strategy]);
-        await publicClient.waitForTransactionReceipt({ hash: addTx });
-
-        console.log(`Added strategy (${strategy}) to flywheel (${flywheel.address})`);
-      } else console.log(`Strategy (${strategy}) was already added to flywheel (${flywheel.address})`);
-    }
+    if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(market.toLowerCase())) {
+      console.log(`Adding strategy ${market} to flywheel ${flywheel.address}`);
+      const addTx = await flywheel.write.addStrategyForRewards([market]);
+      await publicClient.waitForTransactionReceipt({ hash: addTx });
+      console.log(`Added strategy (${market}) to flywheel (${flywheel.address})`);
+    } else console.log(`Strategy (${market}) was already added to flywheel (${flywheel.address})`);
 
     // Adding flywheel to comptroller
     const comptroller = await viem.getContractAt("IonicComptroller", pool);
@@ -270,14 +246,47 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
     console.log(`Added flywheel (${flywheel.address}) to pool (${pool})`);
 
     // Approving token sepening for fwRewards contract
-    for (const marketAddress of marketAddresses) {
-      const market = await viem.getContractAt("CErc20RewardsDelegate", marketAddress);
-      const fwRewards = await flywheel.read.flywheelRewards();
-      const rewardToken = await flywheel.read.rewardToken();
-      const tx = await market.write.approve([rewardToken, fwRewards]);
-      console.log(`mining tx ${tx}`);
-      await publicClient.waitForTransactionReceipt({ hash: tx });
-      console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${marketAddress}`);
-    }
+    const _market = await viem.getContractAt("CErc20RewardsDelegate", market);
+    const fwRewards = await flywheel.read.flywheelRewards();
+    const rewardToken = await flywheel.read.rewardToken();
+    const tx = await _market.write.approve([rewardToken, fwRewards]);
+    console.log(`mining tx ${tx}`);
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+    console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${market}`);
   }
 );
+
+task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to existing flywheel")
+.setAction(
+  async (_, { viem, run, deployments, getNamedAccounts }) => {
+  const markets = "0x3d9669de9e3e98db41a1cbf6dc23446109945e3c"; // ionbsdETH
+  const rewardAmount = "2500"; // epoch will start 3 days so 25000 / 30 * 3
+  const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
+  await run("market:base:add-rewards-to-existing-flywheel", 
+    { 
+      markets: markets,
+      rewardAmount: rewardAmount,
+      reward : ion
+    }
+  );
+});
+
+task("market:base:deploy-flywheel-and-add-ION-rewards-to-ionhyUSD", "Deploys flywheel and adds rewards")
+.setAction(
+  async (_, { viem, run, deployments, getNamedAccounts }) => {
+  const markets = "0x751911bDa88eFcF412326ABE649B7A3b28c4dEDe"; // ionhyUSD
+  const rewardAmount = "1500"; // epoch will start 3 days so 15000 / 30 * 3
+  const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
+  const name = "ION"; // For borrow flywheel use Borrow_ION for supply flywheel just ION
+  // NOTE: Make sure that epoch duration for supply and borrow are not the same
+  const epochDuration = 2588400; // 30*(24*60*60)-60*60 29days 23 hours
+  await run("market:base:deploy-flywheel-and-add-rewards", 
+    { 
+      markets: markets,
+      rewardAmount: rewardAmount,
+      reward : ion,
+      epochDuration : epochDuration,
+      name : name
+    }
+  );
+});
