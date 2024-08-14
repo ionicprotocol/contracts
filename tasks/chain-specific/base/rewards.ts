@@ -170,7 +170,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       let contractName;
       if (name.includes("Borrow")) {
         contractName = "IonicFlywheelBorrow";
-        booster = (await deployments.get("IonicFlywheelBoosterBorrow_ION")).address;
+        booster = (await deployments.get("IonicFlywheelBorrowBooster_ION")).address;
       } else {
         contractName = "IonicFlywheel";
       }
