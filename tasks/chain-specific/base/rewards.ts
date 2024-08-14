@@ -16,8 +16,8 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
     const RSR = "0xab36452dbac151be02b16ca17d8919826072f64a";
     const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
     const comptrollerAddress = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const markets = `${ionhyUSD}`;
-    const reward = "35000";
+    const markets = `${ionbsdETH}`;
+    const reward = "2500"; // epoch will start 3 days so 25000 / 30 * 3
 
     /*
     // Upgrade markets to the new implementation
@@ -74,15 +74,15 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
 
     // Sending tokens
     const ionToken = await viem.getContractAt("EIP20Interface", ION);
-    const balance = await ionToken.read.balanceOf([ionhyUSD]);
+    const balance = await ionToken.read.balanceOf([ionbsdETH]);
     if (balance < parseEther(reward)) {
-      await ionToken.write.transfer([ionhyUSD, parseEther(reward)]);
+      await ionToken.write.transfer([ionbsdETH, parseEther(reward)]);
     }
 
     // Approving token sepening for fwRewards contract
     const flywheel = await viem.getContractAt(
-      "IonicFlywheelBorrow",
-      (await deployments.get("IonicFlywheelBorrow_Borrow_ION")).address as Address
+      "IonicFlywheel",
+      (await deployments.get("IonicFlywheel_ION")).address as Address
     );
 
     const marketAddresses = markets.split(",");
@@ -95,7 +95,7 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${marketAddress}`);
     }
-    
+
     // Adding strategies to flywheel
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
     for (const strategy of marketAddresses) {
