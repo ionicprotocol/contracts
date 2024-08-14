@@ -1,6 +1,6 @@
 import { Address, encodeFunctionData, GetContractReturnType, WalletClient } from "viem";
 
-import { addTransaction } from "../logging";
+import { addTransaction, prepareAndLogTransaction } from "../logging";
 import { pythPriceOracleAbi } from "../../../generated";
 
 import { addUnderlyingsToMpo } from "./utils";
@@ -24,30 +24,30 @@ export const deployPythPriceOracle = async ({
     (await deployments.get("MasterPriceOracle")).address as Address
   );
 
-  //// Pyth Oracle
-  const pyth = await deployments.deploy("PythPriceOracle", {
-    from: deployer,
-    args: [],
-    log: true,
-    proxy: {
-      execute: {
-        init: {
-          methodName: "initialize",
-          args: [pythAddress, nativeTokenUsdFeed, usdToken]
-        },
-        onUpgrade: {
-          methodName: "reinitialize",
-          args: [pythAddress, nativeTokenUsdFeed, usdToken]
-        }
-      },
-      owner: deployer,
-      proxyContract: "OpenZeppelinTransparentProxy"
-    },
-    waitConfirmations: 1
-  });
+  // //// Pyth Oracle
+  // const pyth = await deployments.deploy("PythPriceOracle", {
+  //   from: deployer,
+  //   args: [],
+  //   log: true,
+  //   proxy: {
+  //     execute: {
+  //       init: {
+  //         methodName: "initialize",
+  //         args: [pythAddress, nativeTokenUsdFeed, usdToken]
+  //       },
+  //       onUpgrade: {
+  //         methodName: "reinitialize",
+  //         args: [pythAddress, nativeTokenUsdFeed, usdToken]
+  //       }
+  //     },
+  //     owner: deployer,
+  //     proxyContract: "OpenZeppelinTransparentProxy"
+  //   },
+  //   waitConfirmations: 1
+  // });
 
-  if (pyth.transactionHash) publicClient.waitForTransactionReceipt({ hash: pyth.transactionHash as Address });
-  console.log("PythPriceOracle: ", pyth.address);
+  // if (pyth.transactionHash) publicClient.waitForTransactionReceipt({ hash: pyth.transactionHash as Address });
+  // console.log("PythPriceOracle: ", pyth.address);
 
   const pythOracle = await viem.getContractAt(
     "PythPriceOracle",
@@ -70,31 +70,15 @@ export const deployPythPriceOracle = async ({
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`Set ${pythAssetsToChange.length} price feeds for PythPriceOracle at ${tx}`);
     } else {
-      const tx = await walletClient.prepareTransactionRequest({
-        account: (await pythOracle.read.owner()) as Address,
-        to: pythOracle.address,
-        data: encodeFunctionData({
-          abi: pythOracle.abi,
-          functionName: "setPriceFeeds",
-          args: [pythAssetsToChange.map((f) => f.underlying), pythAssetsToChange.map((f) => f.feed)]
-        })
-      });
-      addTransaction({
-        to: tx.to,
-        value: tx.value ? tx.value.toString() : "0",
-        data: null,
-        contractMethod: {
-          inputs: [
-            { internalType: "address[]", name: "underlyings", type: "address[]" },
-            { internalType: "bytes32[]", name: "feeds", type: "bytes32[]" }
-          ],
-          name: "setPriceFeeds",
-          payable: false
-        },
-        contractInputsValues: {
-          underlyings: pythAssetsToChange.map((f) => f.underlying),
-          feeds: pythAssetsToChange.map((f) => f.feed)
-        }
+      await prepareAndLogTransaction({
+        contractInstance: pythOracle,
+        args: [pythAssetsToChange.map((f) => f.underlying), pythAssetsToChange.map((f) => f.feed)],
+        description: `Set ${pythAssetsToChange.length} price feeds for PythPriceOracle`,
+        functionName: "setPriceFeeds",
+        inputs: [
+          { internalType: "address[]", name: "underlyings", type: "address[]" },
+          { internalType: "bytes32[]", name: "feeds", type: "bytes32[]" }
+        ]
       });
       console.log(`Logged Transaction to set ${pythAssetsToChange.length} price feeds for PythPriceOracle `);
     }

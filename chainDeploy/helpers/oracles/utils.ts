@@ -1,5 +1,5 @@
 import { Address, encodeFunctionData, PublicClient, WalletClient, zeroAddress } from "viem";
-import { addTransaction } from "../logging";
+import { addTransaction, prepareAndLogTransaction } from "../logging";
 import { masterPriceOracleAbi } from "../../../generated";
 import type { GetContractReturnType } from "@nomicfoundation/hardhat-viem/types.js";
 
@@ -8,8 +8,7 @@ export async function addUnderlyingsToMpo(
   underlyingsToCheck: Address[],
   oracleAddress: Address,
   deployer: string,
-  publicClient: PublicClient,
-  walletClient: WalletClient
+  publicClient: PublicClient
 ) {
   const oracles: Address[] = [];
   const underlyings: Address[] = [];
@@ -28,32 +27,15 @@ export async function addUnderlyingsToMpo(
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`Master Price Oracle updated oracles for tokens ${underlyings.join(",")} at ${tx}`);
     } else {
-      const tx = await walletClient.prepareTransactionRequest({
-        chain: walletClient.chain,
-        account: await mpo.read.admin(),
-        to: mpo.address,
-        data: encodeFunctionData({
-          abi: mpo.abi,
-          functionName: "add",
-          args: [underlyings, oracles]
-        })
-      });
-      addTransaction({
-        to: tx.to,
-        value: tx.value ? tx.value.toString() : "0",
-        data: null,
-        contractMethod: {
-          inputs: [
-            { internalType: "address[]", name: "underlyings", type: "address[]" },
-            { internalType: "address[]", name: "_oracles", type: "address[]" }
-          ],
-          name: "add",
-          payable: false
-        },
-        contractInputsValues: {
-          underlyings: underlyings,
-          _oracles: oracles
-        }
+      await prepareAndLogTransaction({
+        contractInstance: mpo,
+        functionName: "add",
+        args: [underlyings, oracles],
+        description: `Add oracles for ${underlyings.join(",")}`,
+        inputs: [
+          { internalType: "address[]", name: "underlyings", type: "address[]" },
+          { internalType: "address[]", name: "_oracles", type: "address[]" }
+        ]
       });
 
       console.log(`Logged Transaction for Master Price Oracle update for tokens ${underlyings.join(",")}`);
