@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { Address, formatUnits } from "viem";
+import { Address, formatUnits, zeroAddress } from "viem";
 
 import { assets as modeAssets } from "../../../../monorepo/packages/chains/src/mode/assets";
 import { assetSymbols } from "../../../../monorepo/packages/types";
@@ -8,29 +8,34 @@ import { prepareAndLogTransaction } from "../../../chainDeploy/helpers/logging";
 const COMPTROLLER = "0xfb3323e24743caf4add0fdccfb268565c0685556";
 
 task("markets:deploy:mode:new", "deploy new mode assets").setAction(async (_, { viem, run }) => {
-  const assetsToDeploy: string[] = [assetSymbols.USDe];
+  const assetsToDeploy: string[] = ["sUSDe"];
   for (const asset of modeAssets.filter((asset) => assetsToDeploy.includes(asset.symbol))) {
+    const name = `Ionic ${asset.name}`;
+    const symbol = "ion" + asset.symbol;
+    console.log(`Deploying ctoken ${name} with symbol ${symbol}`);
     await run("market:deploy", {
       signer: "deployer",
       cf: "0",
       underlying: asset.underlying,
       comptroller: COMPTROLLER,
-      symbol: "ion" + asset.symbol,
-      name: `Ionic ${asset.name}`
+      symbol,
+      name
     });
     const pool = await viem.getContractAt("IonicComptroller", COMPTROLLER);
     const cToken = await pool.read.cTokensByUnderlying([asset.underlying]);
     console.log(`Deployed ${asset.symbol} at ${cToken}`);
 
-    await run("market:set-supply-cap", {
-      market: cToken,
-      maxSupply: asset.initialSupplyCap
-    });
+    if (cToken !== zeroAddress) {
+      await run("market:set-supply-cap", {
+        market: cToken,
+        maxSupply: asset.initialSupplyCap
+      });
 
-    await run("market:set-borrow-cap", {
-      market: cToken,
-      maxBorrow: asset.initialBorrowCap
-    });
+      await run("market:set-borrow-cap", {
+        market: cToken,
+        maxBorrow: asset.initialBorrowCap
+      });
+    }
   }
 });
 

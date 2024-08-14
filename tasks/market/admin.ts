@@ -26,7 +26,7 @@ task("market:set:ltv", "Set the LTV (loan to value / collateral factor) of a mar
     console.log(`will set the LTV of market ${marketAddress} to ${ltvMantissa}`);
 
     if ((await pool.read.admin()).toLowerCase() !== deployer.toLowerCase()) {
-      prepareAndLogTransaction({
+      await prepareAndLogTransaction({
         contractInstance: pool,
         functionName: "_setCollateralFactor",
         args: [marketAddress, ltvMantissa],
