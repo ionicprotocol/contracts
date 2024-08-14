@@ -1,5 +1,6 @@
 import { task, types } from "hardhat/config";
 import { Address, parseEther, zeroAddress } from "viem";
+import { COMPTROLLER } from ".";
 
 task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing flywheel")
   .addParam("market", "market address", undefined, types.string)
@@ -167,10 +168,9 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       let booster = "";
       let flywheelBoosterAddress;
       let contractName;
-      const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
       if (name.includes("Borrow")) {
         contractName = "IonicFlywheelBorrow";
-        booster = "0x0e47b0fF7b5571047bb1A8b18C9444D25516e7F9";
+        booster = (await deployments.get("IonicFlywheelBoosterBorrow_ION")).address;
       } else {
         contractName = "IonicFlywheel";
       }
@@ -179,24 +179,28 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
         flywheelBoosterAddress = (await deployments.get(booster)).address as Address;
       } else flywheelBoosterAddress = zeroAddress;
 
-      const _flywheel = await deployments.deploy(`${contractName}_${name}`, {
-        contract: contractName,
-        from: deployer,
-        log: true,
-        proxy: {
-          proxyContract: "OpenZeppelinTransparentProxy",
-          execute: {
-            init: {
-              methodName: "initialize",
-              args: [reward, zeroAddress, flywheelBoosterAddress, deployer]
-            }
+      let _flywheel = await deployments.getOrNull(`${contractName}_${name}`);
+      if (!_flywheel) {
+        _flywheel = await deployments.deploy(`${contractName}_${name}`, {
+          contract: contractName,
+          from: deployer,
+          log: true,
+          proxy: {
+            proxyContract: "OpenZeppelinTransparentProxy",
+            execute: {
+              init: {
+                methodName: "initialize",
+                args: [reward, zeroAddress, flywheelBoosterAddress, deployer]
+              }
+            },
+            owner: deployer
           },
-          owner: deployer
-        },
-        waitConfirmations: 1
-      });
-
-      console.log(`Deployed flywheel: ${_flywheel.address}`);
+          waitConfirmations: 1
+        });
+        console.log(`Deployed flywheel: ${_flywheel.address}`);
+      } else {
+        console.log(`Flywheel ${name} already deployed at ${_flywheel.address}`);
+      }
 
       // Deploying flywheel rewards
       const flywheel = await viem.getContractAt(
@@ -204,17 +208,22 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
         (await deployments.get(`${contractName}_${name}`)).address as Address
       );
 
-      const flywheelRewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
-        contract: "IonicFlywheelDynamicRewards",
-        from: deployer,
-        log: true,
-        args: [
-          flywheel.address, // flywheel
-          epochDuration // epoch duration
-        ],
-        waitConfirmations: 1
-      });
-      console.log(`Deployed flywheel rewards: ${flywheelRewards.address}`);
+      let flywheelRewards = await deployments.getOrNull(`IonicFlywheelDynamicRewards_${name}`);
+      if (flywheelRewards) {
+        console.log(`Flywheel rewards ${name} already deployed at ${flywheelRewards.address}`);
+      } else {
+        flywheelRewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
+          contract: "IonicFlywheelDynamicRewards",
+          from: deployer,
+          log: true,
+          args: [
+            flywheel.address, // flywheel
+            epochDuration // epoch duration
+          ],
+          waitConfirmations: 1
+        });
+        console.log(`Deployed flywheel rewards: ${flywheelRewards.address}`);
+      }
 
       const txFlywheel = await flywheel.write.setFlywheelRewards([flywheelRewards.address as Address]);
       await publicClient.waitForTransactionReceipt({ hash: txFlywheel });
@@ -230,16 +239,16 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       } else console.log(`Strategy (${market}) was already added to flywheel (${flywheel.address})`);
 
       // Adding flywheel to comptroller
-      const comptroller = await viem.getContractAt("IonicComptroller", pool);
+      const comptroller = await viem.getContractAt("IonicComptroller", COMPTROLLER);
       const rewardsDistributors = (await comptroller.read.getRewardsDistributors()) as Address[];
       if (!rewardsDistributors.map((s) => s.toLowerCase()).includes(flywheel.address.toLowerCase())) {
         const addTx = await comptroller.write._addRewardsDistributor([flywheel.address]);
         await publicClient.waitForTransactionReceipt({ hash: addTx });
         console.log({ addTx });
       } else {
-        console.log(`Flywheel ${flywheel.address} already added to pool ${pool}`);
+        console.log(`Flywheel ${flywheel.address} already added to pool ${COMPTROLLER}`);
       }
-      console.log(`Added flywheel (${flywheel.address}) to pool (${pool})`);
+      console.log(`Added flywheel (${flywheel.address}) to pool (${COMPTROLLER})`);
 
       // Approving token sepening for fwRewards contract
       const _market = await viem.getContractAt("CErc20RewardsDelegate", market);
