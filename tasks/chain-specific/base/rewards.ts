@@ -1,8 +1,5 @@
 import { task } from "hardhat/config";
 import { Address, parseEther, zeroAddress } from "viem";
-import { assets as baseAssets } from "../../../../monorepo/packages/chains/src/base/assets";
-import { assetSymbols } from "../../../../monorepo/packages/types";
-import { COMPTROLLER } from ".";
 
 task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
@@ -19,7 +16,7 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
     const RSR = "0xab36452dbac151be02b16ca17d8919826072f64a";
     const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
     const comptrollerAddress = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const markets = `${eUSD}`;
+    const markets = `${ionhyUSD}`;
     const reward = "35000";
 
     /*
@@ -77,9 +74,9 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
 
     // Sending tokens
     const ionToken = await viem.getContractAt("EIP20Interface", ION);
-    const balance = await ionToken.read.balanceOf([ioneUSD]);
+    const balance = await ionToken.read.balanceOf([ionhyUSD]);
     if (balance < parseEther(reward)) {
-      await ionToken.write.transfer([ioneUSD, parseEther(reward)]);
+      await ionToken.write.transfer([ionhyUSD, parseEther(reward)]);
     }
 
     // Approving token sepening for fwRewards contract
@@ -127,8 +124,8 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
     const RSR = "0xab36452dbac151be02b16ca17d8919826072f64a";
     const pool = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
     const comptrollerAddress = "0x05c9C6417F246600f8f5f49fcA9Ee991bfF73D13";
-    const markets = `${hyUSD}`;
-    const reward = "3750";
+    const markets = `${ionhyUSD}`;
+    const reward = "1500"; // epoch will start 3 days so 15000 / 30 * 3
 
     /*
     // Upgrade markets to the new implementation
