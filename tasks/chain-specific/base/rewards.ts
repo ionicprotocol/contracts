@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { Address, parseEther } from "viem";
+import { Address, parseEther, zeroAddress } from "viem";
 import { assets as baseAssets } from "../../../../monorepo/packages/chains/src/base/assets";
 import { assetSymbols } from "../../../../monorepo/packages/types";
 import { COMPTROLLER } from ".";
@@ -88,7 +88,7 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
       (await deployments.get("IonicFlywheelBorrow_Borrow_ION")).address as Address
     );
 
-    const marketAddresses: Address[] = taskArgs.markets.split(",");
+    const marketAddresses = markets.split(",");
     for (const marketAddress of marketAddresses) {
       const market = await viem.getContractAt("CErc20RewardsDelegate", marketAddress);
       const fwRewards = await flywheel.read.flywheelRewards();
@@ -100,9 +100,8 @@ task("market:base:add-rewards-to-existing-flywheel", "Sets caps on a market").se
     }
     
     // Adding strategies to flywheel
-    const strategyAddresses = markets.split(",");
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
-    for (const strategy of strategyAddresses) {
+    for (const strategy of marketAddresses) {
       if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(strategy.toLowerCase())) {
         console.log(`Adding strategy ${strategy} to flywheel ${flywheel.address}`);
         const addTx = await flywheel.write.addStrategyForRewards([strategy]);
@@ -207,7 +206,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
       contractName = "IonicFlywheelBorrow";
     } else contractName = "IonicFlywheel";
 
-    const flywheel = await deployments.deploy(`${contractName}_${name}`, {
+    const _flywheel = await deployments.deploy(`${contractName}_${name}`, {
       contract: contractName,
       from: deployer,
       log: true,
@@ -224,7 +223,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
       waitConfirmations: 1
     });
 
-    console.log(`Deployed flywheel: ${flywheel.address}`);
+    console.log(`Deployed flywheel: ${_flywheel.address}`);
     
     // Deploying flywheel rewards
     const rewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
@@ -232,21 +231,26 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
       from: deployer,
       log: true,
       args: [
-        flywheel.address, // flywheel
+        _flywheel.address, // flywheel
         epochDuration // epoch duration
       ],
       waitConfirmations: 1
     });
     console.log(`Deployed flywheel rewards: ${rewards.address}`);
 
+    const flywheel = await viem.getContractAt(
+      `${contractName}`,
+      (await deployments.get(`${contractName}_${name}`)).address as Address
+    );
+
     const tx = await flywheel.write.setFlywheelRewards([rewards.address as Address]);
     await publicClient.waitForTransactionReceipt({ hash: tx });
     console.log(`Set rewards (${rewards.address}) to flywheel (${flywheel.address})`);
 
     // Adding strategies to flywheel
-    const strategyAddresses = strategies.split(",");
+    const marketAddresses = markets.split(",");
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
-    for (const strategy of strategyAddresses) {
+    for (const strategy of marketAddresses) {
       if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(strategy.toLowerCase())) {
         console.log(`Adding strategy ${strategy} to flywheel ${flywheel.address}`);
         const addTx = await flywheel.write.addStrategyForRewards([strategy]);
@@ -269,7 +273,6 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market").set
     console.log(`Added flywheel (${flywheel.address}) to pool (${pool})`);
 
     // Approving token sepening for fwRewards contract
-    const marketAddresses: Address[] = taskArgs.markets.split(",");
     for (const marketAddress of marketAddresses) {
       const market = await viem.getContractAt("CErc20RewardsDelegate", marketAddress);
       const fwRewards = await flywheel.read.flywheelRewards();
