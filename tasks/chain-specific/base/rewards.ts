@@ -264,7 +264,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
 task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to existing flywheel").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
     const market = "0x3d9669de9e3e98db41a1cbf6dc23446109945e3c"; // ionbsdETH
-    const rewardAmount = "2500"; // epoch will start 3 days so 25000 / 30 * 3
+    const rewardAmount = "1666"; // epoch will start 2 days so 25000 / 30 * 2
     const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
     await run("market:base:add-rewards-to-existing-flywheel", {
       market,
@@ -277,7 +277,7 @@ task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to exist
 task("market:base:deploy-flywheel-and-add-ION-rewards-to-ionhyUSD", "Deploys flywheel and adds rewards").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
     const market = "0x751911bDa88eFcF412326ABE649B7A3b28c4dEDe"; // ionhyUSD
-    const rewardAmount = "1500"; // epoch will start 3 days so 15000 / 30 * 3
+    const rewardAmount = "1000"; // epoch will start 2 days so 15000 / 30 * 2
     const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
     const name = "ION"; // For borrow flywheel use Borrow_ION for supply flywheel just ION
     // NOTE: Make sure that epoch duration for supply and borrow are not the same
