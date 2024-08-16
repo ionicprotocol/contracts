@@ -15,7 +15,8 @@
     "export:optimism": "hardhat export --network optimism --export ./deploymentsBrief/optimism.json && node ./scripts/prune.js ./deploymentsBrief/optimism.json",
     "export:fraxtal": "hardhat export --network fraxtal --export ./deploymentsBrief/fraxtal.json && node ./scripts/prune.js ./deploymentsBrief/fraxtal.json",
     "prune": "node ./scripts/prune.js ./deploymentsBrief/*.json",
-    "monorepo:setup": "bash ./scripts/move-to-monorepo.sh"
+    "monorepo:setup": "bash ./scripts/move-to-monorepo.sh",
+    "generate": "forge clean && forge build && wagmi generate"
   },
   "files": [
     "contracts"

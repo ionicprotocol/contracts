@@ -20,9 +20,8 @@ import { AuthoritiesRegistry } from "../../ionic/AuthoritiesRegistry.sol";
 import { PoolRolesAuthority } from "../../ionic/PoolRolesAuthority.sol";
 import { PrudentiaLib } from "../../adrastia/PrudentiaLib.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {IFlywheelBooster} from "../../ionic/strategies/flywheel/IFlywheelBooster.sol";
 
-import { IFlywheelBooster } from "flywheel-v2/interfaces/IFlywheelBooster.sol";
-import { IFlywheelRewards } from "flywheel-v2/interfaces/IFlywheelRewards.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { MockPriceOracle } from "../../oracles/1337/MockPriceOracle.sol";
