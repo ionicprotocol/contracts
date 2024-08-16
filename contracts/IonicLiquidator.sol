@@ -84,7 +84,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
    */
   uint256 public healthFactorThreshold;
 
-  modifier onlyPERPermissioned(address borrower, ICErc20 cToken) {
+  modifier onlyLowHF(address borrower, ICErc20 cToken) {
     uint256 currentHealthFactor = lens.getHealthFactor(borrower, cToken.comptroller());
     require(currentHealthFactor < healthFactorThreshold, "HF not low enough, reserving for PYTH");
     _;
@@ -168,7 +168,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
     ICErc20 cErc20,
     ICErc20 cTokenCollateral,
     uint256 minOutputAmount
-  ) external onlyPERPermissioned(borrower, cTokenCollateral) returns (uint256) {
+  ) external onlyLowHF(borrower, cTokenCollateral) returns (uint256) {
     return _safeLiquidate(borrower, repayAmount, cErc20, cTokenCollateral, minOutputAmount);
   }
 
@@ -203,7 +203,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
    */
   function safeLiquidateToTokensWithFlashLoan(LiquidateToTokensWithFlashSwapVars calldata vars)
     external
-    onlyPERPermissioned(vars.borrower, vars.cTokenCollateral)
+    onlyLowHF(vars.borrower, vars.cTokenCollateral)
     returns (uint256)
   {
     // Input validation
