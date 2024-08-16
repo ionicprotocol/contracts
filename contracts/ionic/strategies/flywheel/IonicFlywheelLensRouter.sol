@@ -96,7 +96,7 @@ contract IonicFlywheelLensRouter {
           rewardTokenPrices[j],
           price, 
           market.exchangeRateCurrent(),
-          flywheel.flywheelBooster.address != address(0)
+          address(flywheel.flywheelBooster()) != address(0)
         );
 
         rewardsInfo[j] = RewardsInfo({
@@ -177,7 +177,7 @@ contract IonicFlywheelLensRouter {
         oracle.price(address(rewardToken)),
         underlyingPrice,
         market.exchangeRateCurrent(),
-        flywheel.flywheelBooster.address != address(0)
+        address(flywheel.flywheelBooster()) != address(0)
       );
 
       totalMarketRewardsApr += int256(marketApr);
