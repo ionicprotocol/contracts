@@ -169,7 +169,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
     ICErc20 cTokenCollateral,
     uint256 minOutputAmount
   ) external onlyPERPermissioned(borrower, cTokenCollateral) returns (uint256) {
-    _safeLiquidate(borrower, repayAmount, cErc20, cTokenCollateral, minOutputAmount);
+    return _safeLiquidate(borrower, repayAmount, cErc20, cTokenCollateral, minOutputAmount);
   }
 
   function safeLiquidatePyth(
@@ -180,7 +180,7 @@ contract IonicLiquidator is OwnableUpgradeable, ILiquidator, IUniswapV2Callee, I
     uint256 minOutputAmount
   ) external returns (uint256) {
     require(expressRelay.isPermissioned(address(this), abi.encode(borrower)), "invalid liquidation");
-    _safeLiquidate(borrower, repayAmount, cErc20, cTokenCollateral, minOutputAmount);
+    return _safeLiquidate(borrower, repayAmount, cErc20, cTokenCollateral, minOutputAmount);
   }
 
   /**
