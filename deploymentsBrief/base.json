@@ -116,6 +116,15 @@
     "IonicFlywheel_ION_Proxy": {
       "address": "0x6e93f617AB6CEfFec7c276B4fD4c136B7A7aDD54"
     },
+    "IonicFlywheel_ION_v2": {
+      "address": "0x8D3879dAd76CaFF4b79F45Ca56bb90713182058a"
+    },
+    "IonicFlywheel_ION_v2_Implementation": {
+      "address": "0xeA19016fA9f4A2cce97d8aFA7D0D8e1b74a7887f"
+    },
+    "IonicFlywheel_ION_v2_Proxy": {
+      "address": "0x8D3879dAd76CaFF4b79F45Ca56bb90713182058a"
+    },
     "IonicFlywheel_RSR": {
       "address": "0xE4E74A0c98b8dEa4bcbB870C9391Bb73a230ced4"
     },
