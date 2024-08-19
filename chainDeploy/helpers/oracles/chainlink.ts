@@ -1,7 +1,7 @@
-import { addTransaction } from "../logging";
+import { prepareAndLogTransaction } from "../logging";
 
 import { addUnderlyingsToMpo } from "./utils";
-import { Address, encodeFunctionData } from "viem";
+import { Address, Hex, zeroAddress } from "viem";
 import { underlying } from "../utils";
 import { ChainlinkFeedBaseCurrency } from "../../../../monorepo/packages/types";
 import { ChainlinkDeployFnParams } from "../../types";
@@ -12,18 +12,21 @@ export const deployChainlinkOracle = async ({
   deployments,
   deployConfig,
   assets,
-  chainlinkAssets
+  chainlinkAssets,
+  namePostfix
 }: ChainlinkDeployFnParams): Promise<{ cpo: any; chainLinkv2: any }> => {
   const { deployer } = await getNamedAccounts();
   const publicClient = await viem.getPublicClient();
-  const walletClient = await viem.getWalletClient(deployer as Address);
-  let tx;
+  let tx: Hex;
 
   //// Chainlink Oracle
 
+  const contractName = ["ChainlinkPriceOracleV2", namePostfix].join("_");
+
   console.log("deployConfig.stableToken: ", deployConfig.stableToken);
   console.log("deployConfig.nativeTokenUsdChainlinkFeed: ", deployConfig.nativeTokenUsdChainlinkFeed);
-  const cpo = await deployments.deploy("ChainlinkPriceOracleV2", {
+  const cpo = await deployments.deploy(contractName, {
+    contract: "ChainlinkPriceOracleV2",
     from: deployer,
     args: [],
     log: true,
@@ -31,10 +34,9 @@ export const deployChainlinkOracle = async ({
       execute: {
         init: {
           methodName: "initialize",
-          args: [deployConfig.stableToken, deployConfig.nativeTokenUsdChainlinkFeed]
+          args: [deployConfig.stableToken, zeroAddress]
         }
       },
-      owner: deployer,
       proxyContract: "OpenZeppelinTransparentProxy"
     },
     waitConfirmations: 1
@@ -44,7 +46,7 @@ export const deployChainlinkOracle = async ({
 
   const chainLinkv2 = await viem.getContractAt(
     "ChainlinkPriceOracleV2",
-    (await deployments.get("ChainlinkPriceOracleV2")).address as Address
+    (await deployments.get(contractName)).address as Address
   );
 
   const chainlinkAssetsToChange = [];
@@ -75,37 +77,20 @@ export const deployChainlinkOracle = async ({
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`Set ${usdBasedFeeds.length} USD price feeds for ChainlinkPriceOracleV2 at ${tx}`);
     } else {
-      const tx = await walletClient.prepareTransactionRequest({
-        account: (await chainLinkv2.read.owner()) as Address,
-        to: chainLinkv2.address,
-        data: encodeFunctionData({
-          abi: chainLinkv2.abi,
-          functionName: "setPriceFeeds",
-          args: [
-            usdBasedFeeds.map((c) => underlying(assets, c.symbol)),
-            usdBasedFeeds.map((c) => c.aggregator),
-            feedCurrency
-          ]
-        })
-      });
-      addTransaction({
-        to: tx.to,
-        value: tx.value ? tx.value.toString() : "0",
-        data: null,
-        contractMethod: {
-          inputs: [
-            { internalType: "address[]", name: "underlyings", type: "address[]" },
-            { internalType: "address[]", name: "feeds", type: "address[]" },
-            { internalType: "uint8", name: "baseCurrency", type: "uint8" }
-          ],
-          name: "setPriceFeeds",
-          payable: false
-        },
-        contractInputsValues: {
-          underlyings: usdBasedFeeds.map((c) => underlying(assets, c.symbol)),
-          feeds: usdBasedFeeds.map((c) => c.aggregator),
-          baseCurrency: feedCurrency
-        }
+      await prepareAndLogTransaction({
+        contractInstance: chainLinkv2,
+        description: `Set ${usdBasedFeeds.length} USD price feeds for ChainlinkPriceOracleV2`,
+        functionName: "setPriceFeeds",
+        args: [
+          usdBasedFeeds.map((c) => underlying(assets, c.symbol)),
+          usdBasedFeeds.map((c) => c.aggregator),
+          feedCurrency
+        ],
+        inputs: [
+          { internalType: "address[]", name: "underlyings", type: "address[]" },
+          { internalType: "address[]", name: "feeds", type: "address[]" },
+          { internalType: "uint8", name: "baseCurrency", type: "uint8" }
+        ]
       });
       console.log(`Logged Transaction to set ${usdBasedFeeds.length} USD price feeds for ChainlinkPriceOracleV2`);
     }
@@ -121,37 +106,20 @@ export const deployChainlinkOracle = async ({
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`Set ${ethBasedFeeds.length} native price feeds for ChainlinkPriceOracleV2`);
     } else {
-      tx = await walletClient.prepareTransactionRequest({
-        account: (await chainLinkv2.read.owner()) as Address,
-        to: chainLinkv2.address,
-        data: encodeFunctionData({
-          abi: chainLinkv2.abi,
-          functionName: "setPriceFeeds",
-          args: [
-            ethBasedFeeds.map((c) => underlying(assets, c.symbol)),
-            ethBasedFeeds.map((c) => c.aggregator),
-            feedCurrency
-          ]
-        })
-      });
-      addTransaction({
-        to: tx.to,
-        value: tx.value ? tx.value.toString() : "0",
-        data: null,
-        contractMethod: {
-          inputs: [
-            { internalType: "address[]", name: "underlyings", type: "address[]" },
-            { internalType: "address[]", name: "feeds", type: "address[]" },
-            { internalType: "uint8", name: "baseCurrency", type: "uint8" }
-          ],
-          name: "setPriceFeeds",
-          payable: false
-        },
-        contractInputsValues: {
-          underlyings: ethBasedFeeds.map((c) => underlying(assets, c.symbol)),
-          feeds: ethBasedFeeds.map((c) => c.aggregator),
-          baseCurrency: feedCurrency
-        }
+      await prepareAndLogTransaction({
+        contractInstance: chainLinkv2,
+        description: `Set ${ethBasedFeeds.length} USD price feeds for ChainlinkPriceOracleV2`,
+        functionName: "setPriceFeeds",
+        args: [
+          ethBasedFeeds.map((c) => underlying(assets, c.symbol)),
+          ethBasedFeeds.map((c) => c.aggregator),
+          feedCurrency
+        ],
+        inputs: [
+          { internalType: "address[]", name: "underlyings", type: "address[]" },
+          { internalType: "address[]", name: "feeds", type: "address[]" },
+          { internalType: "uint8", name: "baseCurrency", type: "uint8" }
+        ]
       });
       console.log(`Logged Transaction to set ${ethBasedFeeds.length} ETH price feeds for ChainlinkPriceOracleV2`);
     }
@@ -163,44 +131,28 @@ export const deployChainlinkOracle = async ({
     "MasterPriceOracle",
     (await deployments.get("MasterPriceOracle")).address as Address
   );
-  await addUnderlyingsToMpo(mpo as any, underlyings, chainLinkv2.address, deployer, publicClient, walletClient);
+  await addUnderlyingsToMpo(mpo as any, underlyings, chainLinkv2.address, deployer, publicClient);
 
   const addressesProvider = await viem.getContractAt(
     "AddressesProvider",
     (await deployments.get("AddressesProvider")).address as Address
   );
-  const chainLinkv2Address = await addressesProvider.read.getAddress(["ChainlinkPriceOracleV2"]);
+  const chainLinkv2Address = await addressesProvider.read.getAddress([contractName]);
   if (chainLinkv2Address !== chainLinkv2.address) {
     if (((await addressesProvider.read.owner()) as Address).toLowerCase() === deployer.toLowerCase()) {
-      tx = await addressesProvider.write.setAddress(["ChainlinkPriceOracleV2", chainLinkv2.address]);
+      tx = await addressesProvider.write.setAddress([contractName, chainLinkv2.address]);
       await publicClient.waitForTransactionReceipt({ hash: tx });
-      console.log(`setAddress ChainlinkPriceOracleV2 at ${tx}`);
+      console.log(`setAddress ${contractName} at ${tx}`);
     } else {
-      tx = await walletClient.prepareTransactionRequest({
-        account: (await addressesProvider.read.owner()) as Address,
-        to: addressesProvider.address,
-        data: encodeFunctionData({
-          abi: addressesProvider.abi,
-          functionName: "setAddress",
-          args: ["ChainlinkPriceOracleV2", chainLinkv2.address]
-        })
-      });
-      addTransaction({
-        to: tx.to,
-        value: tx.value ? tx.value.toString() : "0",
-        data: null,
-        contractMethod: {
-          inputs: [
-            { internalType: "string", name: "id", type: "string" },
-            { internalType: "address", name: "newAddress", type: "address" }
-          ],
-          name: "setAddress",
-          payable: false
-        },
-        contractInputsValues: {
-          id: "ChainlinkPriceOracleV2",
-          newAddress: chainLinkv2.address
-        }
+      await prepareAndLogTransaction({
+        contractInstance: addressesProvider,
+        description: `setAddress ${contractName}`,
+        functionName: "setAddress",
+        args: [contractName, chainLinkv2.address],
+        inputs: [
+          { internalType: "string", name: "id", type: "string" },
+          { internalType: "address", name: "newAddress", type: "address" }
+        ]
       });
       console.log("Logged Transaction to setAddress ChainlinkPriceOracleV2 on AddressProvider");
     }

@@ -130,6 +130,8 @@ abstract contract BaseTest is Test {
         forkIds[chainid] = vm.createFork(vm.rpcUrl("zkevm")) + 100;
       } else if (chainid == MODE_MAINNET) {
         forkIds[chainid] = vm.createFork(vm.rpcUrl("mode")) + 100;
+      } else if (chainid == BASE_MAINNET) {
+        forkIds[chainid] = vm.createFork(vm.rpcUrl("base")) + 100;
       }
     }
 
@@ -184,6 +186,8 @@ abstract contract BaseTest is Test {
       ap = AddressesProvider(0x27aA55A3D55959261e119d75256aadAB79aE897C);
     } else if (chainid == MODE_MAINNET) {
       ap = AddressesProvider(0xb0033576a9E444Dd801d5B69e1b63DBC459A6115);
+    } else if (chainid == BASE_MAINNET) {
+      ap = AddressesProvider(0xcD4D7c8e2bA627684a9B18F7fe88239341D3ba5c);
     } else {
       dpa = new ProxyAdmin();
       AddressesProvider logic = new AddressesProvider();
