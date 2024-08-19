@@ -10,20 +10,10 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
   .setAction(async ({ market, rewardAmount, reward, name }, { viem, run, deployments, getNamedAccounts }) => {
     const { deployer } = await getNamedAccounts();
     const publicClient = await viem.getPublicClient();
-    /*
+
     // Upgrade markets to the new implementation
-    console.log(`Upgrading market: ${ionhyUSD} to CErc20RewardsDelegate`);
-    await run("market:upgrade", {
-      comptroller,
-      underlying: hyUSD,
-      implementationAddress: (await deployments.get("CErc20RewardsDelegate")).address,
-      signer: deployer
-    });
-
-    const publicClient = await viem.getPublicClient();
-    const { implementationAddress, comptroller: comptrollerAddress, underlying, signer: namedSigner } = taskArgs;
-
-    const comptroller = await viem.getContractAt("IonicComptroller", comptrollerAddress as Address);
+    console.log(`Upgrading market: ${market} to CErc20RewardsDelegate`);
+    const comptroller = await viem.getContractAt("IonicComptroller", COMPTROLLER);
 
     const allMarkets = await comptroller.read.getAllMarkets();
 
@@ -36,12 +26,12 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
     let cTokenInstance;
     for (let index = 0; index < cTokenInstances.length; index++) {
       const thisUnderlying = await cTokenInstances[index].read.underlying();
-      if (!cTokenInstance && thisUnderlying.toLowerCase() === hyUSD.toLowerCase()) {
+      if (!cTokenInstance && thisUnderlying.toLowerCase() === market.toLowerCase()) {
         cTokenInstance = cTokenInstances[index];
       }
     }
     if (!cTokenInstance) {
-      throw Error(`No market corresponds to this underlying: ${hyUSD}`);
+      throw Error(`No market corresponds to this underlying: ${market}`);
     }
 
     const implementationData = "0x";
@@ -61,13 +51,12 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
     console.log(
       `Implementation successfully set to ${implementationAddress}: ${setImplementationTx}`
     );
-    */
-
+    
     // Sending tokens
     const ionToken = await viem.getContractAt("EIP20Interface", reward);
     const balance = await ionToken.read.balanceOf([market]);
     if (balance < parseEther(rewardAmount)) {
-      await ionToken.write.transfer([market, parseEther(rewardAmount)]);
+      await ionToken.write.transfer([market, parseEther(rewardAmount) - balance]);
     }
 
     let contractName;
@@ -99,7 +88,7 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
       await publicClient.waitForTransactionReceipt({ hash: addTx });
       console.log(`Added strategy (${market}) to flywheel (${flywheel.address})`);
     } else console.log(`Strategy (${market}) was already added to flywheel (${flywheel.address})`);
-  });
+});
 
 task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
   .addParam("market", "market address", undefined, types.string)
@@ -112,66 +101,54 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       const { deployer } = await getNamedAccounts();
       const publicClient = await viem.getPublicClient();
 
-      /*
-    // Upgrade markets to the new implementation
-    console.log(`Upgrading market: ${ionhyUSD} to CErc20RewardsDelegate`);
-    await run("market:upgrade", {
-      comptroller,
-      underlying: hyUSD,
-      implementationAddress: (await deployments.get("CErc20RewardsDelegate")).address,
-      signer: deployer
-    });
+      const comptroller = await viem.getContractAt("IonicComptroller", COMPTROLLER);
 
-    const publicClient = await viem.getPublicClient();
-    const { implementationAddress, comptroller: comptrollerAddress, underlying, signer: namedSigner } = taskArgs;
+      // Upgrade markets to the new implementation
+      console.log(`Upgrading market: ${market} to CErc20RewardsDelegate`);
+      const allMarkets = await comptroller.read.getAllMarkets();
 
-    const comptroller = await viem.getContractAt("IonicComptroller", comptrollerAddress as Address);
+      const cTokenInstances = await Promise.all(
+        allMarkets.map(async (marketAddress) => {
+          return await viem.getContractAt("ICErc20PluginRewards", marketAddress);
+        })
+      );
 
-    const allMarkets = await comptroller.read.getAllMarkets();
-
-    const cTokenInstances = await Promise.all(
-      allMarkets.map(async (marketAddress) => {
-        return await viem.getContractAt("ICErc20PluginRewards", marketAddress);
-      })
-    );
-
-    let cTokenInstance;
-    for (let index = 0; index < cTokenInstances.length; index++) {
-      const thisUnderlying = await cTokenInstances[index].read.underlying();
-      if (!cTokenInstance && thisUnderlying.toLowerCase() === hyUSD.toLowerCase()) {
-        cTokenInstance = cTokenInstances[index];
+      let cTokenInstance;
+      for (let index = 0; index < cTokenInstances.length; index++) {
+        const thisUnderlying = await cTokenInstances[index].read.underlying();
+        if (!cTokenInstance && thisUnderlying.toLowerCase() === market.toLowerCase()) {
+          cTokenInstance = cTokenInstances[index];
+        }
       }
-    }
-    if (!cTokenInstance) {
-      throw Error(`No market corresponds to this underlying: ${hyUSD}`);
-    }
+      if (!cTokenInstance) {
+        throw Error(`No market corresponds to this underlying: ${market}`);
+      }
 
-    const implementationData = "0x";
-    const implementationAddress = (await deployments.get("CErc20RewardsDelegate")).address;
-    console.log(`Setting implementation to ${implementationAddress}`);
-    const setImplementationTx = await cTokenInstance.write._setImplementationSafe([
-      implementationAddress,
-      implementationData
-    ]);
+      const implementationData = "0x";
+      const implementationAddress = (await deployments.get("CErc20RewardsDelegate")).address;
+      console.log(`Setting implementation to ${implementationAddress}`);
+      const setImplementationTx = await cTokenInstance.write._setImplementationSafe([
+        implementationAddress,
+        implementationData
+      ]);
 
-    const receipt = await publicClient.waitForTransactionReceipt({
-      hash: setImplementationTx
-    });
-    if (receipt.status !== "success") {
-      throw `Failed set implementation to ${implementationAddress}`;
-    }
-    console.log(
-      `Implementation successfully set to ${implementationAddress}: ${setImplementationTx}`
-    );
-    */
-      /*
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: setImplementationTx
+      });
+      if (receipt.status !== "success") {
+        throw `Failed set implementation to ${implementationAddress}`;
+      }
+      console.log(
+        `Implementation successfully set to ${implementationAddress}: ${setImplementationTx}`
+      );
+
       // Sending tokens
       const ionToken = await viem.getContractAt("EIP20Interface", reward);
       const balance = await ionToken.read.balanceOf([market]);
       if (balance < parseEther(rewardAmount)) {
-        await ionToken.write.transfer([market, parseEther(rewardAmount)]);
+        await ionToken.write.transfer([market, parseEther(rewardAmount) - balance]);
       }
-      */
+
       // Deploying flywheel
       let booster = "";
       let flywheelBoosterAddress;
@@ -247,7 +224,6 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       } else console.log(`Strategy (${market}) was already added to flywheel (${flywheel.address})`);
 
       // Adding flywheel to comptroller
-      const comptroller = await viem.getContractAt("IonicComptroller", COMPTROLLER);
       const rewardsDistributors = (await comptroller.read.getRewardsDistributors()) as Address[];
       if (!rewardsDistributors.map((s) => s.toLowerCase()).includes(flywheel.address.toLowerCase())) {
         const addTx = await comptroller.write._addRewardsDistributor([flywheel.address]);
@@ -266,8 +242,8 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       console.log(`mining tx ${tx}`);
       await publicClient.waitForTransactionReceipt({ hash: tx });
       console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${market}`);
-    }
-  );
+  }
+);
 
 task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to existing flywheel").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
