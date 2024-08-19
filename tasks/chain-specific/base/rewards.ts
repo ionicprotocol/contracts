@@ -61,18 +61,18 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
       `Implementation successfully set to ${implementationAddress}: ${setImplementationTx}`
     );
     */
-
+/*
     // Sending tokens
     const ionToken = await viem.getContractAt("EIP20Interface", reward);
     const balance = await ionToken.read.balanceOf([market]);
     if (balance < parseEther(rewardAmount)) {
       await ionToken.write.transfer([market, parseEther(rewardAmount)]);
     }
-
+*/
     // Approving token sepening for fwRewards contract
     const flywheel = await viem.getContractAt(
       "IonicFlywheel",
-      (await deployments.get("IonicFlywheel_ION")).address as Address
+      (await deployments.get("IonicFlywheel_ION_v3")).address as Address
     );
 
     const _market = await viem.getContractAt("CErc20RewardsDelegate", market);
@@ -82,7 +82,7 @@ task("market:base:add-rewards-to-existing-flywheel", "Adds rewards to existing f
     console.log(`mining tx ${tx}`);
     await publicClient.waitForTransactionReceipt({ hash: tx });
     console.log(`approved flywheel ${flywheel.address} to pull reward tokens from market ${market}`);
-
+    
     // Adding strategies to flywheel
     const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
     if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(market.toLowerCase())) {
@@ -156,14 +156,14 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       `Implementation successfully set to ${implementationAddress}: ${setImplementationTx}`
     );
     */
-
+      /*
       // Sending tokens
       const ionToken = await viem.getContractAt("EIP20Interface", reward);
       const balance = await ionToken.read.balanceOf([market]);
       if (balance < parseEther(rewardAmount)) {
         await ionToken.write.transfer([market, parseEther(rewardAmount)]);
       }
-
+      */
       // Deploying flywheel
       let booster = "";
       let flywheelBoosterAddress;
@@ -174,14 +174,14 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       } else {
         contractName = "IonicFlywheel";
       }
-
+      
       if (booster != "") {
         flywheelBoosterAddress = (await deployments.get(booster)).address as Address;
       } else flywheelBoosterAddress = zeroAddress;
 
-      let _flywheel = await deployments.getOrNull(`${contractName}_${name}`);
+      let _flywheel = await deployments.getOrNull(`${contractName}_${name}_v3`);
       if (!_flywheel) {
-        _flywheel = await deployments.deploy(`${contractName}_${name}`, {
+        _flywheel = await deployments.deploy(`${contractName}_${name}_v3`, {
           contract: contractName,
           from: deployer,
           log: true,
@@ -201,18 +201,18 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       } else {
         console.log(`Flywheel ${name} already deployed at ${_flywheel.address}`);
       }
-
+      
       // Deploying flywheel rewards
       const flywheel = await viem.getContractAt(
         `${contractName}`,
-        (await deployments.get(`${contractName}_${name}`)).address as Address
+        (await deployments.get(`${contractName}_${name}_v3`)).address as Address
       );
 
-      let flywheelRewards = await deployments.getOrNull(`IonicFlywheelDynamicRewards_${name}`);
+      let flywheelRewards = await deployments.getOrNull(`IonicFlywheelDynamicRewards_${name}_v3`);
       if (flywheelRewards) {
         console.log(`Flywheel rewards ${name} already deployed at ${flywheelRewards.address}`);
       } else {
-        flywheelRewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}`, {
+        flywheelRewards = await deployments.deploy(`IonicFlywheelDynamicRewards_${name}_v3`, {
           contract: "IonicFlywheelDynamicRewards",
           from: deployer,
           log: true,
@@ -228,7 +228,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
       const txFlywheel = await flywheel.write.setFlywheelRewards([flywheelRewards.address as Address]);
       await publicClient.waitForTransactionReceipt({ hash: txFlywheel });
       console.log(`Set rewards (${flywheelRewards.address}) to flywheel (${flywheel.address})`);
-
+      
       // Adding strategies to flywheel
       const allFlywheelStrategies = (await flywheel.read.getAllStrategies()) as Address[];
       if (!allFlywheelStrategies.map((s) => s.toLowerCase()).includes(market.toLowerCase())) {
@@ -249,7 +249,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
         console.log(`Flywheel ${flywheel.address} already added to pool ${COMPTROLLER}`);
       }
       console.log(`Added flywheel (${flywheel.address}) to pool (${COMPTROLLER})`);
-
+      
       // Approving token sepening for fwRewards contract
       const _market = await viem.getContractAt("CErc20RewardsDelegate", market);
       const fwRewards = await flywheel.read.flywheelRewards();
@@ -264,7 +264,7 @@ task("market:base:deploy-flywheel-and-add-rewards", "Sets caps on a market")
 task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to existing flywheel").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
     const market = "0x3d9669de9e3e98db41a1cbf6dc23446109945e3c"; // ionbsdETH
-    const rewardAmount = "1666"; // epoch will start 2 days so 25000 / 30 * 2
+    const rewardAmount = "23334"; // epoch will start 2 days so 25000 / 30 * 2
     const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
     await run("market:base:add-rewards-to-existing-flywheel", {
       market,
@@ -277,7 +277,7 @@ task("market:base:add-flywheel-ION-rewards-to-ionbsdETH", "Adds rewards to exist
 task("market:base:deploy-flywheel-and-add-ION-rewards-to-ionhyUSD", "Deploys flywheel and adds rewards").setAction(
   async (_, { viem, run, deployments, getNamedAccounts }) => {
     const market = "0x751911bDa88eFcF412326ABE649B7A3b28c4dEDe"; // ionhyUSD
-    const rewardAmount = "1000"; // epoch will start 2 days so 15000 / 30 * 2
+    const rewardAmount = "14000"; // epoch will start 2 days so 15000 / 30 * 2
     const ion = "0x3eE5e23eEE121094f1cFc0Ccc79d6C809Ebd22e5";
     const name = "ION"; // For borrow flywheel use Borrow_ION for supply flywheel just ION
     // NOTE: Make sure that epoch duration for supply and borrow are not the same
