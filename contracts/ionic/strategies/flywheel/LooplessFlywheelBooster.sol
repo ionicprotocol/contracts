@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.10;
 
-import "./IFlywheelBooster.sol";
+import {IFlywheelBooster} from "./IFlywheelBooster.sol";
 import { ICErc20 } from "../../../compound/CTokenInterfaces.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 contract LooplessFlywheelBooster is IFlywheelBooster {
   string public constant BOOSTER_TYPE = "LooplessFlywheelBooster";
