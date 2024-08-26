@@ -1,3 +1,5 @@
+NOTE: This repo has been deprecated and is in read-only mode! The contracts have been moved into the main Ionic monorepo: https://github.com/ionicprotocol/monorepo/tree/development/packages/contracts
+
 # Contracts
 
 Main repository for Ionic Protocol's contracts
